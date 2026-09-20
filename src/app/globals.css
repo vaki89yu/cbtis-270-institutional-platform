@@ -1,0 +1,313 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta institucional AZUL (unificada con el panel de acceso) */
+  --color-inst-50: #eff8ff;
+  --color-inst-100: #dbeefe;
+  --color-inst-200: #bfe0fd;
+  --color-inst-300: #93cdfc;
+  --color-inst-400: #60b0f8;
+  --color-inst-500: #3b91f3;
+  --color-inst-600: #2572e8;
+  --color-inst-700: #1d5bd5;
+  --color-inst-800: #1e4bad;
+  --color-inst-900: #1e4188;
+  --color-inst-950: #17295a;
+
+  /* Acento dorado institucional (uso mínimo) */
+  --color-oro-400: #e5c165;
+  --color-oro-500: #d4a73c;
+  --color-oro-600: #b3862a;
+}
+
+html,
+body {
+  scroll-behavior: smooth;
+}
+
+/* ---------- WALLPAPER DEL PANEL INTERNO ---------- */
+body {
+  position: relative;
+  background-color: #dceeff;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: url("/images/panel-logistica-wallpaper.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.42), transparent 40%),
+    radial-gradient(circle at 88% 10%, rgba(147, 205, 252, 0.32), transparent 42%),
+    linear-gradient(170deg, rgba(23, 41, 90, 0.55) 0%, rgba(37, 114, 232, 0.22) 40%, rgba(219, 238, 254, 0.42) 100%);
+}
+
+/* Capa clara para las zonas de contenido de trabajo (paneles) */
+.lienzo-claro {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(239, 248, 255, 0.86));
+  backdrop-filter: blur(4px);
+}
+
+.trama-institucional {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(147, 205, 252, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(96, 176, 248, 0.3), transparent 40%),
+    linear-gradient(140deg, rgba(23, 41, 90, 0.92) 0%, rgba(30, 75, 173, 0.86) 55%, rgba(37, 114, 232, 0.78) 100%);
+}
+
+.panel-vidrio {
+  @apply border border-white/25 bg-white/12 backdrop-blur-md;
+}
+
+.tarjeta {
+  @apply rounded-2xl border border-white/75 bg-white/88 shadow-md shadow-blue-950/5 backdrop-blur-md;
+}
+
+/* Scrollbar estilizado de alta tecnología */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(23, 41, 90, 0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(96, 176, 248, 0.5), rgba(37, 114, 232, 0.6));
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(96, 176, 248, 0.7), rgba(37, 114, 232, 0.8));
+}
+
+.tarjeta-azul {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(226, 241, 255, 0.62);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.22), transparent 42%),
+    linear-gradient(145deg, rgba(18, 50, 82, 0.72), rgba(58, 95, 132, 0.54));
+  box-shadow:
+    0 22px 55px rgba(10, 32, 56, 0.26),
+    0 6px 18px rgba(10, 32, 56, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(18px) saturate(125%);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, background-color;
+}
+
+/* Efecto de barrido de luz brillante al pasar el cursor (hover sweep) */
+.tarjeta-azul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  z-index: 10;
+  display: block;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.18) 100%);
+  transform: skewX(-25deg);
+  pointer-events: none;
+}
+
+.tarjeta-azul:hover::before {
+  animation: sweep 0.85s ease-out;
+}
+
+.tarjeta-azul:hover {
+  transform: translateY(-5px) scale(1.018);
+  box-shadow:
+    0 32px 70px rgba(10, 32, 56, 0.35),
+    0 12px 28px rgba(10, 32, 56, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  background-color: rgba(18, 50, 82, 0.8);
+  border-color: rgba(226, 241, 255, 0.85);
+}
+
+@keyframes sweep {
+  100% {
+    left: 125%;
+  }
+}
+
+.seccion-azul {
+  border-block: 1px solid rgba(226, 241, 255, 0.36);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.15), transparent 36%),
+    linear-gradient(135deg, rgba(15, 44, 76, 0.72), rgba(64, 102, 142, 0.38));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 50px rgba(10, 32, 56, 0.16);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+.icono-azul {
+  @apply flex h-11 w-11 items-center justify-center rounded-xl bg-white/22 text-xl shadow-sm ring-1 ring-white/35 backdrop-blur;
+}
+
+.etiqueta {
+  @apply text-xs font-semibold uppercase tracking-wider text-inst-700;
+}
+
+.campo {
+  @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-inst-600 focus:ring-2 focus:ring-inst-600/20;
+}
+
+.btn-primario {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60;
+  background: linear-gradient(135deg, #2f6f9f, #3f83b6);
+  box-shadow: 0 10px 24px rgba(16, 55, 88, 0.2);
+}
+
+.btn-primario:hover {
+  background: linear-gradient(135deg, #275f8a, #3677aa);
+}
+
+.btn-secundario {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-inst-600/25 bg-white px-4 py-2.5 text-sm font-semibold text-inst-800 transition hover:bg-inst-50 disabled:opacity-60;
+}
+
+.btn-oro {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-inst-800 shadow-sm transition hover:bg-inst-50;
+}
+
+.btn-mini {
+  @apply inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-inst-300 hover:text-inst-800;
+}
+
+/* Encabezado y pie del panel interno */
+.panel-barra {
+  background: linear-gradient(120deg, rgba(15, 44, 76, 0.86), rgba(58, 95, 132, 0.72));
+  border-color: rgba(226, 241, 255, 0.2);
+  backdrop-filter: blur(20px) saturate(130%);
+}
+
+/* Lienzo translúcido donde vive el contenido del panel */
+.panel-lienzo {
+  border: 1px solid rgba(226, 241, 255, 0.62);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.72), rgba(226, 241, 255, 0.58));
+  box-shadow:
+    0 30px 80px rgba(10, 32, 56, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px) saturate(135%);
+}
+
+/* ---------- IDENTIDAD VISUAL DE ACCESO Y REGISTRO ---------- */
+.auth-wallpaper {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: #dceeff;
+  background-image:
+    radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.5), transparent 28%),
+    linear-gradient(110deg, rgba(3, 38, 87, 0.78) 0%, rgba(13, 78, 145, 0.48) 35%, rgba(219, 238, 255, 0.14) 68%, rgba(255, 255, 255, 0.06) 100%),
+    url("/images/auth-logistica-azul.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.auth-wallpaper::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.45) 1px, transparent 1px);
+  background-size: 76px 76px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.auth-wallpaper::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(4, 35, 76, 0.06), rgba(4, 35, 76, 0.22)),
+    radial-gradient(ellipse at center, transparent 42%, rgba(2, 35, 78, 0.16) 100%);
+}
+
+.auth-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(95px);
+  pointer-events: none;
+  animation: auth-float 10s ease-in-out infinite;
+}
+
+.auth-card {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.32), rgba(210, 235, 255, 0.22));
+  box-shadow:
+    0 28px 80px rgba(4, 43, 91, 0.12),
+    0 6px 22px rgba(4, 43, 91, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(30px) saturate(155%);
+}
+
+.auth-dark-card {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(145deg, rgba(17, 88, 158, 0.45), rgba(3, 42, 91, 0.38));
+  box-shadow:
+    0 22px 60px rgba(4, 37, 77, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.auth-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(191, 224, 255, 0.58);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.45rem 0.8rem;
+  color: #e8f5ff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.auth-rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(21, 112, 201, 0.72), rgba(21, 112, 201, 0));
+}
+
+@keyframes auth-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -18px, 0) scale(1.06); }
+}
+
+@media (max-width: 768px) {
+  body::before {
+    background-attachment: scroll;
+    background-position: 55% center;
+  }
+  .auth-wallpaper {
+    background-attachment: scroll;
+    background-position: 55% center;
+    background-image:
+      linear-gradient(180deg, rgba(4, 47, 100, 0.62) 0%, rgba(216, 237, 255, 0.16) 46%, rgba(4, 44, 92, 0.38) 100%),
+      url("/images/auth-logistica-azul.jpg");
+  }
+  .auth-wallpaper::before {
+    background-size: 48px 48px;
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "CBTIS 270 · Plataforma de Logística",
+  "short_name": "CBTIS 270",
+  "description": "Plataforma institucional de la Carrera Técnica en Logística del CBTIS No. 270, Ciudad Juárez.",
+  "id": "/",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17295a",
+  "theme_color": "#1d5bd5",
+  "lang": "es-MX",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Iniciar sesión", "url": "/login", "description": "Acceso a la plataforma" },
+    { "name": "Mi panel", "url": "/panel", "description": "Panel de estudiante o docente" },
+    { "name": "Asistencias", "url": "/panel/asistencias", "description": "Control de asistencia" }
+  ]
+}
