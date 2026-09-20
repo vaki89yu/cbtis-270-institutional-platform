@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// Videos reales de logística/almacén con licencia gratuita de Pexels.
 const CLIPS = [
-  "/videos/hero-logistica.mp4",
-  "/videos/hero-logistica-2.mp4",
-  "/videos/hero-logistica-3.mp4",
+  "https://videos.pexels.com/video-files/5370836/5370836-hd_1920_1080_30fps.mp4",
+  "https://videos.pexels.com/video-files/4292581/4292581-uhd_3840_2160_25fps.mp4",
+  "https://videos.pexels.com/video-files/5977711/5977711-hd_1366_586_30fps.mp4",
 ];
 
 const POSTER_SRC = "/images/panel-logistica-wallpaper.jpg";
