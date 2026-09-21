@@ -69,10 +69,34 @@ export async function POST(request: Request) {
       codigo: envio.codigo,
       message: envio.message,
     });
-  } catch {
-    return Response.json(
-      { ok: false, error: "No se pudo generar el código. Intenta nuevamente." },
-      { status: 500 },
-    );
+  } catch (error) {
+    console.error("OTP route error:", error);
+    // Último respaldo: nunca bloquear el registro por un fallo transitorio
+    // de correo o base de datos.
+    try {
+      const body = (await request.clone().json()) as { email?: string };
+      const email = String(body.email ?? "").trim().toLowerCase();
+      const codigo = generarOtp();
+      const jar = await cookies();
+      jar.set("otp_fallback", `${email}|${codigo}|${Date.now() + 10 * 60 * 1000}`, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 10 * 60,
+      });
+      return Response.json({
+        ok: true,
+        sent: false,
+        modo: "demo",
+        codigo,
+        message: "Modo demostración: usa el código que aparece abajo para continuar.",
+      });
+    } catch {
+      return Response.json(
+        { ok: false, error: "No se pudo procesar la solicitud. Intenta nuevamente." },
+        { status: 500 },
+      );
+    }
   }
 }
