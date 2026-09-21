@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
@@ -7,6 +7,15 @@ import { asegurarEsquemaCore } from "@/lib/ensure-schema";
 
 export const SESSION_COOKIE = "cbtis270_session";
 const SESSION_DAYS = 14;
+const SESSION_HINT_COOKIE = "cbtis270_session_hint";
+
+function sessionHintSecret() {
+  return process.env.AUTH_SECRET || process.env.DATABASE_URL || "cbtis270-institutional-session-secret";
+}
+
+function signSessionHint(userId: number, token: string) {
+  return createHmac("sha256", sessionHintSecret()).update(`${userId}:${token}`).digest("hex");
+}
 
 export type Rol = "admin" | "docente" | "estudiante";
 
@@ -64,6 +73,15 @@ export async function createSession(userId: number) {
     secure: process.env.NODE_ENV === "production",
   });
 
+  // Respaldo firmado para producción si el lookup de la tabla sessions falla.
+  jar.set(SESSION_HINT_COOKIE, `${userId}:${signSessionHint(userId, token)}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    expires: expiresAt,
+    secure: process.env.NODE_ENV === "production",
+  });
+
   try {
     const userRows = await db
       .select({ nombre: users.nombre, email: users.email, rol: users.rol })
@@ -113,32 +131,56 @@ export async function destroySession() {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) {
-    await db.delete(sessions).where(eq(sessions.token, token));
+    try {
+      await db.delete(sessions).where(eq(sessions.token, token));
+    } catch {}
   }
   jar.delete(SESSION_COOKIE);
+  jar.delete(SESSION_HINT_COOKIE);
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  try {
-    await asegurarEsquemaCore();
-  } catch {
-    return null;
-  }
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
+
+  // Ruta normal: sesión persistida en Postgres.
+  if (token) {
+    try {
+      await asegurarEsquemaCore();
+      const rows = await db
+        .select({ user: users })
+        .from(sessions)
+        .innerJoin(users, eq(users.id, sessions.userId))
+        .where(and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())))
+        .limit(1);
+
+      const row = rows[0];
+      if (row?.user?.activo) return toSessionUser(row.user);
+    } catch {
+      // Se intenta el respaldo firmado.
+    }
+  }
+
+  // Respaldo firmado para evitar el bucle login -> módulo -> login.
+  const hint = jar.get(SESSION_HINT_COOKIE)?.value;
+  if (!hint || !token) return null;
+
+  const separator = hint.indexOf(":");
+  if (separator <= 0) return null;
+
+  const userId = Number(hint.slice(0, separator));
+  const signature = hint.slice(separator + 1);
+  if (!Number.isInteger(userId) || !signature) return null;
+
+  const expected = signSessionHint(userId, token);
+  if (expected.length !== signature.length) return null;
+  if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return null;
 
   try {
-    const rows = await db
-      .select({ user: users })
-      .from(sessions)
-      .innerJoin(users, eq(users.id, sessions.userId))
-      .where(and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())))
-      .limit(1);
-
-    const row = rows[0];
-    if (!row || !row.user.activo) return null;
-    return toSessionUser(row.user);
+    const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const user = rows[0];
+    if (!user?.activo) return null;
+    return toSessionUser(user);
   } catch {
     return null;
   }
