@@ -98,6 +98,7 @@ export async function solicitarOtpAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await asegurarEsquemaCore();
   const email = valor(formData, "email").toLowerCase();
   if (!email || !email.includes("@")) return { error: "Escribe un correo válido." };
   if (!esCorreoInstitucional(email)) {
@@ -125,6 +126,7 @@ export async function loginAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await asegurarEsquemaCore();
   const email = valor(formData, "email").toLowerCase();
   const password = String(formData.get("password") ?? "");
 
@@ -167,6 +169,7 @@ export async function registroAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await asegurarEsquemaCore();
   const tipoCuenta = valor(formData, "tipoCuenta") || "estudiante";
   const nombre = valor(formData, "nombre");
   const email = valor(formData, "email").toLowerCase();
@@ -335,6 +338,7 @@ export async function continuarConGoogleCorreoAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await asegurarEsquemaCore();
   const email = valor(formData, "email").toLowerCase();
   const otp = valor(formData, "otp");
   const nombre = valor(formData, "nombre");
@@ -396,6 +400,7 @@ export async function continuarConGoogleCorreoAction(
 }
 
 export async function googlePreviewAction(formData: FormData) {
+  await asegurarEsquemaCore();
   const email = valor(formData, "email").toLowerCase();
   const nombre = valor(formData, "nombre");
 
