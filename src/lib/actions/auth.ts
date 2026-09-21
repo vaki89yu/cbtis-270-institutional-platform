@@ -162,7 +162,7 @@ export async function loginAction(
     }
   }
 
-  redirect("/panel");
+  redirect("/inicio");
 }
 
 export async function registroAction(
@@ -331,7 +331,7 @@ export async function registroAction(
     return { error: msg };
   }
 
-  redirect("/panel");
+  redirect("/inicio");
 }
 
 export async function continuarConGoogleCorreoAction(
@@ -378,7 +378,7 @@ export async function continuarConGoogleCorreoAction(
       }
     }
 
-    redirect("/panel");
+    redirect("/inicio");
   }
 
   const jar = await cookies();
@@ -433,7 +433,7 @@ export async function googlePreviewAction(formData: FormData) {
       }
     }
 
-    redirect("/panel");
+    redirect("/inicio");
   }
 
   const jar = await cookies();
