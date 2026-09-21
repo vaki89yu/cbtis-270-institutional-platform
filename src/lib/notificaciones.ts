@@ -4,7 +4,11 @@ import { notifications, studentProfiles, teacherProfiles, userActivity, users } 
 
 export async function registrarActividad(userId: number | null, accion: string, detalle?: string) {
   if (userId === null || userId === 0) return;
-  await db.insert(userActivity).values({ userId, accion, detalle: detalle ?? null });
+  try {
+    await db.insert(userActivity).values({ userId, accion, detalle: detalle ?? null });
+  } catch (error) {
+    console.error("No se pudo registrar la actividad (no bloqueante):", error);
+  }
 }
 
 export async function crearNotificacion(
@@ -13,7 +17,11 @@ export async function crearNotificacion(
   contenido: string,
   tipo = "sistema",
 ) {
-  await db.insert(notifications).values({ userId, titulo, contenido, tipo });
+  try {
+    await db.insert(notifications).values({ userId, titulo, contenido, tipo });
+  } catch (error) {
+    console.error("No se pudo crear la notificación (no bloqueante):", error);
+  }
 }
 
 export async function docentesResponsables({
@@ -100,6 +108,7 @@ export async function notificarDocentesRegistroAlumno({
 }
 
 export async function notificarDocentesInicioSesion(alumnoId: number) {
+  try {
   const rows = await db
     .select({ alumno: users, perfil: studentProfiles })
     .from(users)
@@ -126,4 +135,7 @@ export async function notificarDocentesInicioSesion(alumnoId: number) {
   }
 
   await registrarActividad(alumnoId, "inicio_sesion", `Notificación enviada a ${docentes.length} docente(s).`);
+  } catch (error) {
+    console.error("No se pudo notificar el inicio de sesión (no bloqueante):", error);
+  }
 }
