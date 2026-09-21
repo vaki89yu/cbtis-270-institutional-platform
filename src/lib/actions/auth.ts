@@ -143,10 +143,23 @@ export async function loginAction(
   }
 
   await createSession(user.id);
-  await registrarActividad(user.id, "inicio_sesion", "Acceso correcto a la plataforma.");
-  if (user.rol === "estudiante") {
-    await notificarDocentesInicioSesion(user.id);
+
+  // Estas notificaciones son complementarias: nunca deben impedir que el usuario
+  // entre al panel si alguna tabla secundaria de actividad/notificaciones falla.
+  try {
+    await registrarActividad(user.id, "inicio_sesion", "Acceso correcto a la plataforma.");
+  } catch (error) {
+    console.error("No se pudo registrar la actividad de inicio de sesión:", error);
   }
+
+  if (user.rol === "estudiante") {
+    try {
+      await notificarDocentesInicioSesion(user.id);
+    } catch (error) {
+      console.error("No se pudieron notificar los docentes del inicio de sesión:", error);
+    }
+  }
+
   redirect("/panel");
 }
 
@@ -346,8 +359,21 @@ export async function continuarConGoogleCorreoAction(
   if (user) {
     if (!user.activo) return { error: "Tu cuenta está desactivada." };
     await createSession(user.id);
-    await registrarActividad(user.id, "inicio_sesion_otp", "Inicio de sesión con correo verificado por OTP.");
-    if (user.rol === "estudiante") await notificarDocentesInicioSesion(user.id);
+
+    try {
+      await registrarActividad(user.id, "inicio_sesion_otp", "Inicio de sesión con correo verificado por OTP.");
+    } catch (error) {
+      console.error("No se pudo registrar la actividad de inicio de sesión OTP:", error);
+    }
+
+    if (user.rol === "estudiante") {
+      try {
+        await notificarDocentesInicioSesion(user.id);
+      } catch (error) {
+        console.error("No se pudieron notificar los docentes del inicio de sesión OTP:", error);
+      }
+    }
+
     redirect("/panel");
   }
 
@@ -383,8 +409,25 @@ export async function googlePreviewAction(formData: FormData) {
   if (user) {
     if (!user.activo) redirect("/login?google=inactivo");
     await createSession(user.id);
-    await registrarActividad(user.id, "inicio_sesion_google_preview", "Acceso mediante selector Google de vista previa.");
-    if (user.rol === "estudiante") await notificarDocentesInicioSesion(user.id);
+
+    try {
+      await registrarActividad(
+        user.id,
+        "inicio_sesion_google_preview",
+        "Acceso mediante selector Google de vista previa.",
+      );
+    } catch (error) {
+      console.error("No se pudo registrar la actividad de inicio Google:", error);
+    }
+
+    if (user.rol === "estudiante") {
+      try {
+        await notificarDocentesInicioSesion(user.id);
+      } catch (error) {
+        console.error("No se pudieron notificar los docentes del inicio Google:", error);
+      }
+    }
+
     redirect("/panel");
   }
 
