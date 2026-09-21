@@ -144,7 +144,7 @@ export async function loginAction(
     return { error: "Tu cuenta está desactivada. Acude a Jefatura de Logística." };
   }
 
-  await createSession(user.id);
+  await createSession(user.id, user);
 
   // Estas notificaciones son complementarias: nunca deben impedir que el usuario
   // entre al panel si alguna tabla secundaria de actividad/notificaciones falla.
