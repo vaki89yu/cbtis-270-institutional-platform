@@ -3,6 +3,7 @@ import { otpCodes } from "@/db/schema";
 import { asegurarEsquemaCore } from "@/lib/ensure-schema";
 import { esCorreoInstitucional, generarOtp } from "@/lib/email";
 import { enviarOtpReal } from "@/lib/verificacion";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +26,30 @@ export async function POST(request: Request) {
     }
 
     const codigo = generarOtp();
-    await asegurarEsquemaCore();
-    await db.insert(otpCodes).values({
-      email,
-      code: codigo,
-      purpose: "registro",
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    // Guardar también una copia de respaldo en cookie para que el OTP siga
+    // funcionando si Neon presenta un fallo temporal.
+    const jar = await cookies();
+    jar.set("otp_fallback", `${email}|${codigo}|${expiresAt}`, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 10 * 60,
     });
+
+    try {
+      await asegurarEsquemaCore();
+      await db.insert(otpCodes).values({
+        email,
+        code: codigo,
+        purpose: "registro",
+        expiresAt: new Date(expiresAt),
+      });
+    } catch (dbError) {
+      console.error("OTP storage error:", dbError);
+      // Continuamos: la cookie permite completar la verificación.
 
     const envio = await enviarOtpReal({
       email,
