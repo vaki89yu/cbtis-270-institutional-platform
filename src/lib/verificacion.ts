@@ -36,7 +36,8 @@ async function enviarResend(para: string, codigo: string, apiKey: string) {
 }
 
 async function enviarFormSubmit(para: string, codigo: string, origin: string) {
-  const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(para)}`, {
+  try {
+    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(para)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -52,10 +53,14 @@ async function enviarFormSubmit(para: string, codigo: string, origin: string) {
       mensaje: `Tu código de verificación de la plataforma de Logística es: ${codigo}. Expira en 10 minutos. Si no lo pediste, ignora este correo.`,
     }),
   });
-  const json = (await res.json().catch(() => ({}))) as { success?: string | boolean; message?: string };
-  const success = json.success === true || json.success === "true";
-  const activation = String(json.message ?? "").toLowerCase().includes("activation");
-  return { ok: success || activation, activation };
+    const json = (await res.json().catch(() => ({}))) as { success?: string | boolean; message?: string };
+    const success = json.success === true || json.success === "true";
+    const activation = String(json.message ?? "").toLowerCase().includes("activation");
+    return { ok: success || activation, activation };
+  } catch (error) {
+    console.error("FormSubmit OTP error:", error);
+    return { ok: false, activation: false };
+  }
 }
 
 export type ResultadoOtp = {
