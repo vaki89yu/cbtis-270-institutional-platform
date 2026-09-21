@@ -119,6 +119,11 @@ export async function destroySession() {
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
+  try {
+    await asegurarEsquemaCore();
+  } catch {
+    return null;
+  }
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
