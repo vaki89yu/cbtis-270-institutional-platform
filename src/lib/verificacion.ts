@@ -83,13 +83,22 @@ export async function enviarOtpReal({
   const settings = await getDeliverySettings();
 
   if (settings.resendApiKey) {
-    const ok = await enviarResend(email, codigo, settings.resendApiKey);
-    if (ok) {
-      return { sent: true, modo: "real", message: `Código enviado a ${email}. Revisa bandeja de entrada y spam.` };
+    try {
+      const ok = await enviarResend(email, codigo, settings.resendApiKey);
+      if (ok) {
+        return { sent: true, modo: "real", message: `Código enviado a ${email}. Revisa bandeja de entrada y spam.` };
+      }
+    } catch (error) {
+      console.error("Resend OTP error:", error);
     }
   }
 
-  const smtp = await enviarCorreo({ para: email, ...plantillaOtp(codigo) });
+  let smtp: { sent: boolean } = { sent: false };
+  try {
+    smtp = await enviarCorreo({ para: email, ...plantillaOtp(codigo) });
+  } catch (error) {
+    console.error("SMTP OTP error:", error);
+  }
   if (smtp.sent) {
     return { sent: true, modo: "real", message: `Código enviado a ${email}. Revisa bandeja de entrada y spam.` };
   }
