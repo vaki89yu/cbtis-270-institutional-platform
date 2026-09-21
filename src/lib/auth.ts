@@ -13,8 +13,22 @@ function sessionHintSecret() {
   return process.env.AUTH_SECRET || process.env.DATABASE_URL || "cbtis270-institutional-session-secret";
 }
 
-function signSessionHint(userId: number, token: string) {
-  return createHmac("sha256", sessionHintSecret()).update(`${userId}:${token}`).digest("hex");
+function signSessionHint(payload: string, token: string) {
+  return createHmac("sha256", sessionHintSecret()).update(`${payload}:${token}`).digest("hex");
+}
+
+function encodeSessionUser(user: User) {
+  const payload = JSON.stringify({
+    id: user.id,
+    nombre: user.nombre,
+    email: user.email,
+    rol: user.rol,
+    matricula: user.matricula,
+    especialidad: user.especialidad,
+    semestre: user.semestre,
+    turno: user.turno,
+  });
+  return Buffer.from(payload, "utf8").toString("base64url");
 }
 
 export type Rol = "admin" | "docente" | "estudiante";
@@ -73,14 +87,20 @@ export async function createSession(userId: number) {
     secure: process.env.NODE_ENV === "production",
   });
 
-  // Respaldo firmado para producción si el lookup de la tabla sessions falla.
-  jar.set(SESSION_HINT_COOKIE, `${userId}:${signSessionHint(userId, token)}`, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-    secure: process.env.NODE_ENV === "production",
-  });
+  // Sesión stateless firmada: permite recuperar al usuario aunque la tabla
+  // sessions esté temporalmente inaccesible en producción.
+  const baseUserRows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const baseUser = baseUserRows[0];
+  if (baseUser) {
+    const payload = encodeSessionUser(baseUser);
+    jar.set(SESSION_HINT_COOKIE, `${payload}.${signSessionHint(payload, token)}`, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
 
   try {
     const userRows = await db
@@ -165,22 +185,30 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const hint = jar.get(SESSION_HINT_COOKIE)?.value;
   if (!hint || !token) return null;
 
-  const separator = hint.indexOf(":");
+  const separator = hint.lastIndexOf(".");
   if (separator <= 0) return null;
 
-  const userId = Number(hint.slice(0, separator));
+  const payload = hint.slice(0, separator);
   const signature = hint.slice(separator + 1);
-  if (!Number.isInteger(userId) || !signature) return null;
-
-  const expected = signSessionHint(userId, token);
+  const expected = signSessionHint(payload, token);
   if (expected.length !== signature.length) return null;
   if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return null;
 
   try {
-    const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    const user = rows[0];
-    if (!user?.activo) return null;
-    return toSessionUser(user);
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (!parsed?.id || !parsed?.email || parsed?.nombre || parsed?.rol) {
+      // El usuario puede tener un nombre vacío únicamente si la base ya lo permitiera.
+    }
+    return {
+      id: Number(parsed.id),
+      nombre: String(parsed.nombre ?? ""),
+      email: String(parsed.email ?? ""),
+      rol: (parsed.rol as Rol) ?? "estudiante",
+      matricula: parsed.matricula ?? null,
+      especialidad: parsed.especialidad ?? null,
+      semestre: parsed.semestre ?? null,
+      turno: parsed.turno ?? null,
+    };
   } catch {
     return null;
   }
