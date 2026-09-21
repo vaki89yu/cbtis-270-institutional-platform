@@ -33,25 +33,47 @@ function numero(formData: FormData, key: string, fallback: number | null = null)
 }
 
 async function verificarOtp(email: string, codigo: string) {
-  await asegurarEsquemaCore();
-  const rows = await db
-    .select()
-    .from(otpCodes)
-    .where(
-      and(
-        eq(otpCodes.email, email),
-        eq(otpCodes.code, codigo),
-        eq(otpCodes.used, false),
-        gt(otpCodes.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(desc(otpCodes.createdAt))
-    .limit(1);
+  try {
+    await asegurarEsquemaCore();
+    const rows = await db
+      .select()
+      .from(otpCodes)
+      .where(
+        and(
+          eq(otpCodes.email, email),
+          eq(otpCodes.code, codigo),
+          eq(otpCodes.used, false),
+          gt(otpCodes.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(otpCodes.createdAt))
+      .limit(1);
 
-  const otp = rows[0];
-  if (!otp) return false;
-  await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
-  return true;
+    const otp = rows[0];
+    if (otp) {
+      await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
+      return true;
+    }
+  } catch (error) {
+    console.error("OTP database verification error:", error);
+  }
+
+  // Fallback: permite verificar el OTP emitido en esta sesión aunque el almacenamiento
+  // de la base de datos temporalmente no esté disponible.
+  const jar = await cookies();
+  const fallback = jar.get("otp_fallback")?.value ?? "";
+  const [savedEmail, savedCode, expiresRaw] = fallback.split("|");
+  const expires = Number(expiresRaw);
+  if (
+    savedEmail?.toLowerCase() === email.toLowerCase() &&
+    savedCode === codigo &&
+    Number.isFinite(expires) &&
+    expires > Date.now()
+  ) {
+    jar.delete("otp_fallback");
+    return true;
+  }
+  return false;
 }
 
 async function marcarCorreoVerificado(email: string) {
