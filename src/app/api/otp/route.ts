@@ -17,19 +17,23 @@ function originFrom(request: Request) {
 }
 
 export async function POST(request: Request) {
+  let email = "";
+
   try {
     const body = (await request.json()) as { email?: string };
-    const email = String(body.email ?? "").trim().toLowerCase();
+    email = String(body.email ?? "").trim().toLowerCase();
 
     if (!email || !esCorreoInstitucional(email)) {
-      return Response.json({ ok: false, error: "Escribe un correo válido." }, { status: 400 });
+      return Response.json(
+        { ok: false, error: "Escribe un correo válido." },
+        { status: 400 },
+      );
     }
 
     const codigo = generarOtp();
     const expiresAt = Date.now() + 10 * 60 * 1000;
 
-    // Guardar también una copia de respaldo en cookie para que el OTP siga
-    // funcionando si Neon presenta un fallo temporal.
+    // Respaldo de sesión: permite verificar el código aunque falle temporalmente la BD.
     const jar = await cookies();
     jar.set("otp_fallback", `${email}|${codigo}|${expiresAt}`, {
       httpOnly: true,
@@ -49,33 +53,50 @@ export async function POST(request: Request) {
       });
     } catch (dbError) {
       console.error("OTP storage error:", dbError);
-      // Continuamos: la cookie permite completar la verificación.
-
-    const envio = await enviarOtpReal({
-      email,
-      codigo,
-      origin: originFrom(request),
-    });
-
-    if (envio.sent) {
-      return Response.json({ ok: true, sent: true, modo: "real", message: envio.message });
     }
 
-    // Modo demostración: sin proveedor de correo configurado.
-    return Response.json({
-      ok: true,
-      sent: false,
-      modo: "demo",
-      codigo: envio.codigo,
-      message: envio.message,
-    });
+    try {
+      const envio = await enviarOtpReal({
+        email,
+        codigo,
+        origin: originFrom(request),
+      });
+
+      if (envio.sent) {
+        return Response.json({
+          ok: true,
+          sent: true,
+          modo: "real",
+          message: envio.message,
+        });
+      }
+
+      return Response.json({
+        ok: true,
+        sent: false,
+        modo: "demo",
+        codigo,
+        message:
+          envio.message ||
+          "Modo demostración: usa el código que aparece abajo para continuar.",
+      });
+    } catch (mailError) {
+      console.error("OTP delivery error:", mailError);
+      return Response.json({
+        ok: true,
+        sent: false,
+        modo: "demo",
+        codigo,
+        message:
+          "Modo demostración: el envío por correo no está disponible. Usa el código que aparece abajo para continuar.",
+      });
+    }
   } catch (error) {
     console.error("OTP route error:", error);
-    // Último respaldo: nunca bloquear el registro por un fallo transitorio
-    // de correo o base de datos.
+
+    // El código ya fue generado antes de los servicios externos siempre que fue posible.
+    // Si el fallo ocurrió antes, generamos uno nuevo y lo dejamos disponible en la cookie.
     try {
-      const body = (await request.clone().json()) as { email?: string };
-      const email = String(body.email ?? "").trim().toLowerCase();
       const codigo = generarOtp();
       const jar = await cookies();
       jar.set("otp_fallback", `${email}|${codigo}|${Date.now() + 10 * 60 * 1000}`, {
@@ -85,16 +106,22 @@ export async function POST(request: Request) {
         path: "/",
         maxAge: 10 * 60,
       });
+
       return Response.json({
         ok: true,
         sent: false,
         modo: "demo",
         codigo,
-        message: "Modo demostración: usa el código que aparece abajo para continuar.",
+        message:
+          "Modo demostración: usa el código que aparece abajo para continuar.",
       });
-    } catch {
+    } catch (fallbackError) {
+      console.error("OTP fallback error:", fallbackError);
       return Response.json(
-        { ok: false, error: "No se pudo procesar la solicitud. Intenta nuevamente." },
+        {
+          ok: false,
+          error: "No se pudo procesar la solicitud. Intenta nuevamente.",
+        },
         { status: 500 },
       );
     }
