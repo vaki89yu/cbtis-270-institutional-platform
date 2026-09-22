@@ -119,7 +119,7 @@ function toSessionUserFromDemo(demo: ReturnType<typeof demoFindUserById>): Sessi
   };
 }
 
-export async function createSession(userId: number, userOverride?: User | any) {
+export async function createSession(userId: number, userOverride?: User | any): Promise<{ token: string; hint: string }> {
   try {
     await asegurarEsquemaCore();
   } catch {
@@ -128,6 +128,7 @@ export async function createSession(userId: number, userOverride?: User | any) {
 
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  let hintValue = "";
 
   // Intentar guardar en DB, pero no fallar si no hay DB
   try {
@@ -143,6 +144,7 @@ export async function createSession(userId: number, userOverride?: User | any) {
   const isProd = process.env.NODE_ENV === "production";
   const useNone = true; // Forzar None para compatibilidad preview
   
+  // Cookie httpOnly principal (segura)
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "none",
@@ -150,7 +152,18 @@ export async function createSession(userId: number, userOverride?: User | any) {
     expires: expiresAt,
     maxAge: SESSION_DAYS * 24 * 60 * 60,
     secure: true,
-    // @ts-ignore - partitioned for CHIPS to allow 3rd party in iframe
+    // @ts-ignore
+    partitioned: true,
+  } as any);
+  // Cookie espejo no-httpOnly para fallback en iframe con bloqueo 3rd party
+  jar.set(`${SESSION_COOKIE}_client`, token, {
+    httpOnly: false,
+    sameSite: "none",
+    path: "/",
+    expires: expiresAt,
+    maxAge: SESSION_DAYS * 24 * 60 * 60,
+    secure: true,
+    // @ts-ignore
     partitioned: true,
   } as any);
 
@@ -186,8 +199,22 @@ export async function createSession(userId: number, userOverride?: User | any) {
   if (baseUser) {
     const payload = encodeSessionUser(baseUser);
     const signature = signSessionHint(payload, token);
-    jar.set(SESSION_HINT_COOKIE, `${payload}.${signature}`, {
+    const fullHint = `${payload}.${signature}`;
+    hintValue = fullHint;
+
+    jar.set(SESSION_HINT_COOKIE, fullHint, {
       httpOnly: true,
+      sameSite: "none",
+      path: "/",
+      expires: expiresAt,
+      maxAge: SESSION_DAYS * 24 * 60 * 60,
+      secure: true,
+      // @ts-ignore
+      partitioned: true,
+    } as any);
+    // Espejo no-httpOnly para fallback iframe
+    jar.set(`${SESSION_HINT_COOKIE}_client`, fullHint, {
+      httpOnly: false,
       sameSite: "none",
       path: "/",
       expires: expiresAt,
@@ -240,11 +267,13 @@ export async function createSession(userId: number, userOverride?: User | any) {
       // Los cookies auxiliares nunca deben bloquear el inicio de sesión.
     }
   }
+
+  return { token, hint: hintValue };
 }
 
 export async function destroySession() {
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
+  const token = jar.get(SESSION_COOKIE)?.value || jar.get(`${SESSION_COOKIE}_client`)?.value;
   if (token) {
     try {
       await db.delete(sessions).where(eq(sessions.token, token));
@@ -253,23 +282,55 @@ export async function destroySession() {
     }
   }
   jar.delete(SESSION_COOKIE);
+  jar.delete(`${SESSION_COOKIE}_client`);
   jar.delete(SESSION_HINT_COOKIE);
+  jar.delete(`${SESSION_HINT_COOKIE}_client`);
   jar.delete("otp_verified_email");
   jar.delete("google_verified_email");
+  jar.delete("cbtis270_saved_account");
+  jar.delete("cbtis270_saved_accounts_list");
   console.log("[auth] Sesión destruida");
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  const hint = jar.get(SESSION_HINT_COOKIE)?.value;
+  let token = jar.get(SESSION_COOKIE)?.value || jar.get(`${SESSION_COOKIE}_client`)?.value;
+  let hint = jar.get(SESSION_HINT_COOKIE)?.value || jar.get(`${SESSION_HINT_COOKIE}_client`)?.value;
   const allCookies = jar.getAll().map(c => c.name).join(",");
-  // Intentar leer headers para debug
+  // Intentar leer headers para debug y fallback
   let cookieHeader = "";
+  let xToken = "";
+  let xHint = "";
   try {
     const { headers } = await import("next/headers");
     const h = await headers();
     cookieHeader = h.get("cookie") || "";
+    xToken = h.get("x-session-token") || h.get("authorization")?.replace("Bearer ","") || "";
+    xHint = h.get("x-session-hint") || "";
+    // Si no hay token en cookies pero sí en header, usarlo
+    if (!token && xToken) {
+      token = xToken;
+      console.log(`[auth] Token tomado de header x-session-token: ${token.slice(0,8)}...`);
+    }
+    if (!hint && xHint) {
+      hint = xHint;
+      console.log(`[auth] Hint tomado de header x-session-hint`);
+    }
+    // También intentar leer token de cookie header manualmente si jar no lo tiene (fallback)
+    if (!token && cookieHeader) {
+      const m = cookieHeader.match(/cbtis270_session(?:_client)?=([^;]+)/);
+      if (m) {
+        token = m[1];
+        console.log(`[auth] Token tomado de cookie header manual: ${token.slice(0,8)}...`);
+      }
+    }
+    if (!hint && cookieHeader) {
+      const m2 = cookieHeader.match(/cbtis270_session_hint(?:_client)?=([^;]+)/);
+      if (m2) {
+        hint = m2[1];
+        console.log(`[auth] Hint tomado de cookie header manual`);
+      }
+    }
   } catch {}
 
   console.log(`[auth] getCurrentUser: token=${token ? token.slice(0,8)+"..." : "no"} hint=${hint ? "si" : "no"} all=[${allCookies}] headerLen=${cookieHeader.length} hasSession=${cookieHeader.includes("cbtis270_session")}`);

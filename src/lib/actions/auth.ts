@@ -28,6 +28,14 @@ import {
 
 export type ActionState = { error?: string; ok?: string };
 
+function buildPanelRedirect(sess?: { token?: string; hint?: string } | null) {
+  if (!sess?.token) return "/panel";
+  const p = new URLSearchParams();
+  p.set("session_token", sess.token);
+  if (sess.hint) p.set("session_hint", sess.hint);
+  return `/panel?${p.toString()}`;
+}
+
 function valor(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -314,7 +322,7 @@ export async function loginAction(
     return { error: "Tu cuenta está desactivada. Acude a Jefatura de Logística." };
   }
 
-  await createSession(user.id, user);
+  const sess = await createSession(user.id, user);
 
   // Notificaciones no bloqueantes
   try {
@@ -331,7 +339,12 @@ export async function loginAction(
     }
   }
 
-  redirect("/panel");
+  // Redirigir con token en URL como fallback para iframe con bloqueo 3rd party
+  const params = new URLSearchParams();
+  if (sess?.token) params.set("session_token", sess.token);
+  if (sess?.hint) params.set("session_hint", sess.hint);
+  const dest = params.toString() ? `/panel?${params.toString()}` : "/panel";
+  redirect(dest);
 }
 
 export async function registroAction(
@@ -600,9 +613,8 @@ export async function registroAction(
 
         jar.delete("google_verified_email");
         jar.delete("otp_verified_email");
-        await createSession(userId, createdUser);
-        // Importante: redirect lanza excepción NEXT_REDIRECT, no debe ser capturada como error
-        redirect("/panel");
+        const sessDemo = await createSession(userId, createdUser);
+        redirect(buildPanelRedirect(sessDemo));
       } catch (demoErr: any) {
         // Si es redirect de Next.js, re-lanzar para que funcione
         if (String(demoErr?.message || "").includes("NEXT_REDIRECT") || String(demoErr?.digest || "").includes("NEXT_REDIRECT")) {
@@ -627,10 +639,11 @@ export async function registroAction(
     return { error: msg };
   }
 
+  let finalSess: any = null;
   try {
     jar.delete("google_verified_email");
     jar.delete("otp_verified_email");
-    await createSession(userId, createdUser);
+    finalSess = await createSession(userId, createdUser);
   } catch (e) {
     console.warn("Error creando sesión post-registro:", (e as Error).message?.slice(0, 150));
     // Intentar de nuevo con demo user si falló
@@ -663,7 +676,7 @@ export async function registroAction(
     }
   }
 
-  redirect("/panel");
+  redirect(buildPanelRedirect(finalSess));
 }
 
 export async function continuarConGoogleCorreoAction(
@@ -705,7 +718,7 @@ export async function continuarConGoogleCorreoAction(
 
   if (user) {
     if (!user.activo) return { error: "Tu cuenta está desactivada." };
-    await createSession(user.id, user);
+    const sessOtp = await createSession(user.id, user);
 
     try {
       await registrarActividad(user.id, "inicio_sesion_otp", "Inicio de sesión con correo verificado por OTP.");
@@ -717,7 +730,7 @@ export async function continuarConGoogleCorreoAction(
       } catch {}
     }
 
-    redirect("/panel");
+    redirect(buildPanelRedirect(sessOtp));
   }
 
   const jar = await cookies();
@@ -763,7 +776,7 @@ export async function googlePreviewAction(formData: FormData) {
 
   if (user) {
     if (!user.activo) redirect("/login?google=inactivo");
-    await createSession(user.id, user);
+    const sessPreview = await createSession(user.id, user);
 
     try {
       await registrarActividad(
@@ -779,7 +792,7 @@ export async function googlePreviewAction(formData: FormData) {
       } catch {}
     }
 
-    redirect("/panel");
+    redirect(buildPanelRedirect(sessPreview));
   }
 
   const jar = await cookies();

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { MarcaInstitucional } from "@/components/marca";
 import { PanelNav } from "@/components/panel-nav";
+import { SessionSync } from "@/components/session-sync";
 import { requireUser } from "@/lib/guards";
 import { logoutAction } from "@/lib/actions/auth";
 
@@ -24,6 +25,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   return (
     <div className="flex min-h-screen flex-col">
+      <SessionSync />
       <header className="panel-barra sticky top-0 z-40 border-b">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <MarcaInstitucional href="/panel" variante="claro" />
