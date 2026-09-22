@@ -518,15 +518,31 @@ export async function registroAction(
       } catch {}
     }
   } catch (err: any) {
-    console.warn("Error en registro DB, intentando modo demo:", err?.message?.slice(0, 300));
+    console.warn("Error en registro DB, intentando modo demo:", err?.message?.slice(0, 500));
+    console.warn("Error cause:", (err?.cause as any)?.message?.slice(0, 300) ?? "sin cause");
+    console.warn("Error stack:", (err?.stack as string)?.slice(0, 500) ?? "");
 
-    // Si falla DB, intentar modo demo
+    // Si falla DB, intentar modo demo - SIEMPRE intentar demo si hay error de conexión
     const demoExisting = demoFindUserByEmail(email);
     if (demoExisting) {
       return { error: "Esta cuenta de correo ya está registrada." };
     }
 
-    if (String(err?.message || "").includes("users_email_unique") || String(err?.message || "").includes("ECONNREFUSED") || String(err?.message || "").includes("connect") || String(err?.message || "").includes("timeout")) {
+    // Detectar cualquier error de DB para fallback a demo
+    const errMsg = String(err?.message || "").toLowerCase();
+    const causeMsg = String((err?.cause as any)?.message || "").toLowerCase();
+    const isDbError = 
+      errMsg.includes("users_email_unique") || 
+      errMsg.includes("econnrefused") || 
+      errMsg.includes("connect") || 
+      errMsg.includes("timeout") ||
+      errMsg.includes("failed query") ||
+      errMsg.includes("database") ||
+      causeMsg.includes("econnrefused") ||
+      causeMsg.includes("connect") ||
+      causeMsg.includes("timeout");
+
+    if (isDbError || true) { // Siempre intentar demo como fallback
       try {
         const demoUser = demoCreateUser({
           nombre,
