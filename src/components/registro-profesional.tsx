@@ -159,6 +159,7 @@ export function RegistroProfesional({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailOtp }),
+        credentials: "same-origin",
       });
       console.log("[OTP] Respuesta status:", res.status);
       const data = (await res.json()) as {

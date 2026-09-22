@@ -55,6 +55,7 @@ export function AccesoGoogle({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: correo }),
+        credentials: "same-origin",
       });
       console.log("[AccesoGoogle] Status:", res.status);
       const data = (await res.json()) as {
