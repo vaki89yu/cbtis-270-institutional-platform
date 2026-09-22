@@ -25,18 +25,27 @@ export function AccesoGoogle({
   const [estado, action] = useActionState(continuarConGoogleCorreoAction, {} as ActionState);
 
   function autocompletar(valor: string) {
-    setOtpMsg(`Código cargado. Presiona "Continuar con esta cuenta".`);
+    setOtpMsg(`✅ Código ${valor} cargado. Ahora presiona "Continuar con esta cuenta".`);
     if (otpRef.current) {
       otpRef.current.value = valor;
       otpRef.current.focus();
+    } else {
+      // Fallback: buscar por name
+      const input = document.querySelector('input[name="otp"]') as HTMLInputElement;
+      if (input) {
+        input.value = valor;
+        input.focus();
+      }
     }
   }
 
   async function enviarCodigo(correo: string) {
+    console.log("[AccesoGoogle] Enviando OTP a:", correo);
     setOtpError("");
     setOtpMsg("");
-    if (!correo.includes("@")) {
-      setOtpError("Escribe o elige el correo de tu cuenta.");
+    setCodigoDemo("");
+    if (!correo || !correo.includes("@") || !correo.includes(".")) {
+      setOtpError("Escribe un correo válido con @ y dominio.");
       return;
     }
     setLoading(true);
@@ -47,6 +56,7 @@ export function AccesoGoogle({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: correo }),
       });
+      console.log("[AccesoGoogle] Status:", res.status);
       const data = (await res.json()) as {
         ok?: boolean;
         error?: string;
@@ -54,20 +64,26 @@ export function AccesoGoogle({
         modo?: string;
         codigo?: string;
       };
+      console.log("[AccesoGoogle] Data:", data);
       if (!res.ok || !data.ok) {
-        setOtpError(data.error ?? "No se pudo generar el código.");
+        setOtpError(data.error ?? "No se pudo generar el código. Intenta con otro correo.");
         setCodigoDemo("");
         return;
       }
-      if (data.modo === "demo" && data.codigo) {
+      if (data.codigo) {
         setCodigoDemo(data.codigo);
-        setOtpMsg("Modo demostración: usa el código que aparece abajo para continuar.");
+        setOtpMsg(
+          data.modo === "demo"
+            ? `✅ Código demo: ${data.codigo}. Úsalo abajo para continuar.`
+            : data.message ?? "Código enviado. Revisa tu correo.",
+        );
       } else {
         setCodigoDemo("");
         setOtpMsg(data.message ?? "Código enviado. Revisa tu correo.");
       }
-    } catch {
-      setOtpError("No se pudo generar el código. Intenta de nuevo.");
+    } catch (err) {
+      console.error("[AccesoGoogle] Error:", err);
+      setOtpError("No se pudo generar el código. Verifica tu conexión e intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -109,44 +125,45 @@ export function AccesoGoogle({
             />
           </label>
           <p className="text-xs text-slate-500">
-            Al pulsar enviar código, lo recibirás en tu correo y tu cuenta se guardará en este dispositivo.
+            Al pulsar enviar código, lo recibirás en tu correo y tu cuenta se guardará en este dispositivo. En modo demo el código aparece aquí.
           </p>
           <button
             type="button"
             onClick={pedirCodigo}
-            disabled={loading}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+            disabled={loading || !email.includes("@")}
+            className="w-full rounded-xl border-2 border-blue-600 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Enviando código..." : "Enviar código al correo"}
+            {loading ? "⏳ Enviando..." : "📧 Enviar código al correo"}
           </button>
-      {otpError ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{otpError}</p> : null}
-      {otpMsg ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">{otpMsg}</p> : null}
-      {codigoDemo ? (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">
-            Código de verificación
-          </p>
-          <div className="mt-1.5 flex items-center justify-between gap-3">
-            <span className="text-2xl font-black tracking-[0.3em] text-blue-900">{codigoDemo}</span>
-            <button
-              type="button"
-              onClick={() => autocompletar(codigoDemo)}
-              className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-            >
-              Autocompletar
-            </button>
-          </div>
-        </div>
-      ) : null}
-      <label className="block text-sm font-semibold text-slate-800">
-        Código OTP recibido
+          {otpError ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{otpError}</p> : null}
+          {otpMsg ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{otpMsg}</p> : null}
+          {codigoDemo ? (
+            <div className="rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                🎉 Código generado
+              </p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <span className="text-3xl font-black tracking-[0.3em] text-blue-900">{codigoDemo}</span>
+                <button
+                  type="button"
+                  onClick={() => autocompletar(codigoDemo)}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-blue-700"
+                >
+                  Usar
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <label className="block text-sm font-semibold text-slate-800">
+            Código OTP recibido
             <input
+              ref={otpRef}
               name="otp"
               required
               inputMode="numeric"
               maxLength={6}
               autoComplete="one-time-code"
-              className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm tracking-[0.3em] outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+              className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm tracking-[0.3em] font-bold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
               placeholder="123456"
             />
           </label>
@@ -156,9 +173,9 @@ export function AccesoGoogle({
             onClick={() => {
               if (email) guardarCuentaEnDispositivo({ email, nombre: email.split("@")[0] });
             }}
-            className="w-full rounded-xl bg-gradient-to-r from-sky-400 to-blue-400 px-4 py-3 text-sm font-medium text-white shadow-md shadow-sky-200/50 transition hover:from-sky-500 hover:to-blue-500"
+            className="w-full rounded-xl bg-gradient-to-r from-sky-400 to-blue-400 px-4 py-3 text-sm font-bold text-white shadow-md shadow-sky-200/50 transition hover:from-sky-500 hover:to-blue-500"
           >
-            Continuar con esta cuenta
+            Continuar con esta cuenta →
           </button>
         </form>
       ) : (
