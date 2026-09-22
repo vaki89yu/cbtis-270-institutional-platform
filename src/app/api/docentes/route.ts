@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { teacherProfiles, users } from "@/db/schema";
+import { demoGetAllDocentes } from "@/lib/demo-store";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +40,22 @@ export async function GET() {
       };
     });
 
+    // Si no hay docentes en DB, intentar demo
+    if (docentes.length === 0) {
+      const demo = demoGetAllDocentes();
+      if (demo.length > 0) {
+        return Response.json({ ok: true, docentes: demo });
+      }
+    }
+
     return Response.json({ ok: true, docentes });
-  } catch {
-    return Response.json({ ok: false, docentes: [] }, { status: 500 });
+  } catch (error) {
+    console.warn("[api/docentes] DB falló, usando demo:", (error as Error).message?.slice(0, 200));
+    try {
+      const demo = demoGetAllDocentes();
+      return Response.json({ ok: true, docentes: demo });
+    } catch {
+      return Response.json({ ok: true, docentes: [] });
+    }
   }
 }

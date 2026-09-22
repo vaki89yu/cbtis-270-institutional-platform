@@ -23,22 +23,22 @@ const competencias = [
   },
   {
     nombre: "Transporte y distribución",
-    imagen: "https://images.pexels.com/photos/12418932/pexels-photo-12418932.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+    imagen: "/images/competencia-transporte.jpg",
     texto: "Selección de modos de transporte, diseño de rutas, consolidación de carga y última milla.",
   },
   {
     nombre: "Compras y abastecimiento",
-    imagen: "https://images.pexels.com/photos/24244235/pexels-photo-24244235.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+    imagen: "/images/competencia-compras.jpg",
     texto: "Evaluación de proveedores, órdenes de compra, negociación y punto de reorden.",
   },
   {
     nombre: "Comercio exterior",
-    imagen: "https://images.pexels.com/photos/27130409/pexels-photo-27130409.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+    imagen: "/images/competencia-comercio-exterior.jpg",
     texto: "INCOTERMS, pedimentos, regímenes aduaneros y documentación de importación y exportación.",
   },
   {
     nombre: "Logística sustentable",
-    imagen: "https://images.pexels.com/photos/9694390/pexels-photo-9694390.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+    imagen: "/images/competencia-sustentable.jpg",
     texto: "Logística inversa, manejo de devoluciones, empaque responsable e indicadores KPI.",
   },
 ];

@@ -14,7 +14,9 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/15 bg-inst-900/60 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:gap-4 sm:px-4 sm:py-3">
-        <MarcaInstitucional variante="claro" />
+        <div className="flex items-center gap-4">
+          <MarcaInstitucional variante="claro" />
+        </div>
         <nav className="hidden items-center gap-6 lg:flex">
           {enlaces.map((enlace) => (
             <Link

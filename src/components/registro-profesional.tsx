@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { registroAction, type ActionState } from "@/lib/actions/auth";
@@ -69,7 +69,7 @@ export function RegistroProfesional({
 }: Props) {
   const [tipo, setTipo] = useState<"estudiante" | "docente">("estudiante");
   const [turno, setTurno] = useState("Matutino");
-  const [semestre, setSemestre] = useState("1");
+  const [semestre, setSemestre] = useState("2");
   const [grupo, setGrupo] = useState("E");
   const [gruposDocente, setGruposDocente] = useState<string[]>(["E"]);
   const [turnosDocente, setTurnosDocente] = useState<string[]>(["Matutino"]);
@@ -79,6 +79,8 @@ export function RegistroProfesional({
 
   const [otpState, setOtpState] = useState<ActionState>({});
   const [otpLoading, setOtpLoading] = useState(false);
+  const [codigoDemo, setCodigoDemo] = useState("");
+  const otpInputRef = useRef<HTMLInputElement>(null);
   const [registroState, registroFormAction] = useActionState(registroAction, {});
   const [docentesLive, setDocentesLive] = useState<Docente[]>(docentes);
 
@@ -99,6 +101,11 @@ export function RegistroProfesional({
   useEffect(() => {
     if (tipo === "estudiante") cargarDocentes();
   }, [tipo, cargarDocentes]);
+
+  // Sincronizar email si viene de Google
+  useEffect(() => {
+    if (googleEmail) setEmailOtp(googleEmail);
+  }, [googleEmail]);
 
   const docentesSugeridos = useMemo(
     () =>
@@ -128,15 +135,33 @@ export function RegistroProfesional({
     return `${valores.slice(0, -1).join(", ")} y ${valores[valores.length - 1]}`;
   }
 
+  function autocompletarOtp(codigo: string) {
+    setOtpState({ ok: `Código ${codigo} cargado. Ahora completa el formulario y crea tu cuenta.` });
+    // Buscar el input OTP en el formulario
+    const otpInput = document.querySelector('input[name="otp"]') as HTMLInputElement;
+    if (otpInput) {
+      otpInput.value = codigo;
+      otpInput.focus();
+    }
+  }
+
   async function pedirOtp() {
+    console.log("[OTP] Solicitando código para:", emailOtp);
+    if (!emailOtp || !emailOtp.includes("@")) {
+      setOtpState({ error: "Escribe un correo válido primero." });
+      return;
+    }
     setOtpLoading(true);
     setOtpState({});
+    setCodigoDemo("");
     try {
       const res = await fetch("/api/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailOtp, canal: "correo" }),
+        body: JSON.stringify({ email: emailOtp }),
+        credentials: "same-origin",
       });
+      console.log("[OTP] Respuesta status:", res.status);
       const data = (await res.json()) as {
         ok?: boolean;
         error?: string;
@@ -144,19 +169,24 @@ export function RegistroProfesional({
         modo?: string;
         codigo?: string;
       };
+      console.log("[OTP] Data:", data);
       if (!res.ok || !data.ok) {
         setOtpState({ error: data.error ?? "No se pudo generar el código." });
         return;
       }
-      if (data.modo === "demo" && data.codigo) {
+      if (data.codigo) {
+        setCodigoDemo(data.codigo);
         setOtpState({
-          ok: `Modo demostración: tu código es ${data.codigo}. Escríbelo en el campo Código OTP.`,
+          ok: data.modo === "demo" 
+            ? `✅ Modo demo: tu código es ${data.codigo}. ¡Ya puedes usarlo abajo!`
+            : data.message ?? "Código enviado. Revisa tu correo.",
         });
       } else {
         setOtpState({ ok: data.message ?? "Código enviado. Revisa tu correo." });
       }
-    } catch {
-      setOtpState({ error: "No se pudo conectar para generar el código. Intenta nuevamente." });
+    } catch (err) {
+      console.error("[OTP] Error fetch:", err);
+      setOtpState({ error: "No se pudo conectar para generar el código. Intenta nuevamente. Verifica que el correo sea válido." });
     } finally {
       setOtpLoading(false);
     }
@@ -215,17 +245,36 @@ export function RegistroProfesional({
               />
             </Campo>
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-              El código de verificación se envía únicamente a tu correo electrónico.
+              El código de verificación se envía únicamente a tu correo electrónico. En modo demo se muestra aquí mismo.
             </p>
             <Estado estado={otpState} />
+            {codigoDemo ? (
+              <div className="rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                  🎉 Código generado
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-3xl font-black tracking-[0.3em] text-blue-900">{codigoDemo}</span>
+                  <button
+                    type="button"
+                    onClick={() => autocompletarOtp(codigoDemo)}
+                    className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-blue-700"
+                  >
+                    Usar código
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-blue-600">Click en "Usar código" para autocompletar abajo</p>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={pedirOtp}
-              disabled={otpLoading}
-              className="btn-primario w-full border-2 border-blue-700 shadow-md shadow-blue-900/15 font-bold"
+              disabled={otpLoading || !emailOtp.includes("@")}
+              className="btn-primario w-full border-2 border-blue-700 shadow-md shadow-blue-900/15 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {otpLoading ? "Enviando..." : "Enviar código al correo"}
+              {otpLoading ? "⏳ Generando..." : "📧 Enviar código al correo"}
             </button>
+            <p className="text-[11px] text-slate-400 text-center">Si el botón no responde, verifica que el correo tenga @ y dominio</p>
           </div>
         </div>
 
@@ -236,7 +285,7 @@ export function RegistroProfesional({
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white font-black text-inst-800 shadow-sm">
             G
           </span>
-Continuar con Google
+          Continuar con Google
         </a>
 
         {googleMode && !googleVerified ? (
@@ -268,7 +317,7 @@ Continuar con Google
             <button
               type="button"
               onClick={() => setTipo("estudiante")}
-                  className={`group rounded-2xl border p-4 text-left transition ${tipo === "estudiante" ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white shadow-md ring-1 ring-sky-200/50" : "border-slate-200 bg-white/80 hover:border-sky-200 hover:bg-sky-50/50"}`}
+              className={`group rounded-2xl border p-4 text-left transition ${tipo === "estudiante" ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white shadow-md ring-1 ring-sky-200/50" : "border-slate-200 bg-white/80 hover:border-sky-200 hover:bg-sky-50/50"}`}
             >
               <span className="flex items-center gap-3">
                 <span className={`flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold shadow-sm ${tipo === "estudiante" ? "bg-sky-300 text-white" : "bg-slate-100 text-slate-500"}`}>A</span>
@@ -281,7 +330,7 @@ Continuar con Google
             <button
               type="button"
               onClick={() => setTipo("docente")}
-                  className={`group rounded-2xl border p-4 text-left transition ${tipo === "docente" ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white shadow-md ring-1 ring-sky-200/50" : "border-slate-200 bg-white/80 hover:border-sky-200 hover:bg-sky-50/50"}`}
+              className={`group rounded-2xl border p-4 text-left transition ${tipo === "docente" ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white shadow-md ring-1 ring-sky-200/50" : "border-slate-200 bg-white/80 hover:border-sky-200 hover:bg-sky-50/50"}`}
             >
               <span className="flex items-center gap-3">
                 <span className={`flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold shadow-sm ${tipo === "docente" ? "bg-sky-300 text-white" : "bg-slate-100 text-slate-500"}`}>D</span>
@@ -319,8 +368,8 @@ Continuar con Google
                 Correo verificado. Completa tus datos de alumno o docente para guardar la cuenta.
               </div>
             ) : (
-              <Campo label="Código OTP" helper="El mismo código que te llegó a tu correo.">
-                <input name="otp" required={!googleVerified} inputMode="numeric" maxLength={6} className="campo tracking-[0.35em]" placeholder="123456" />
+              <Campo label="Código OTP" helper={codigoDemo ? `Usa: ${codigoDemo}` : "El mismo código que te llegó a tu correo."}>
+                <input ref={otpInputRef} name="otp" required={!googleVerified} inputMode="numeric" maxLength={6} className="campo tracking-[0.35em] font-bold" placeholder="123456" />
               </Campo>
             )}
 
@@ -519,7 +568,7 @@ Continuar con Google
           </div>
 
           <Estado estado={registroState} />
-            <Boton className="btn-primario px-8 text-base" pendingText="Creando cuenta ...">
+          <Boton className="btn-primario px-8 text-base" pendingText="Creando cuenta ...">
             Crear cuenta
           </Boton>
         </form>

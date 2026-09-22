@@ -28,7 +28,7 @@ body {
 /* ---------- WALLPAPER DEL PANEL INTERNO ---------- */
 body {
   position: relative;
-  background-color: #dceeff;
+  background-color: #0a1f3d;
 }
 
 body::before {
@@ -36,11 +36,14 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background-image: url("/images/panel-logistica-wallpaper.jpg");
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(96, 176, 248, 0.25), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(59, 145, 243, 0.2), transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(29, 91, 213, 0.15), transparent 50%),
+    linear-gradient(170deg, #0f2c4c 0%, #1a3a5f 40%, #0d213f 100%);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  background-repeat: no-repeat;
 }
 
 body::after {
@@ -49,9 +52,9 @@ body::after {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.42), transparent 40%),
-    radial-gradient(circle at 88% 10%, rgba(147, 205, 252, 0.32), transparent 42%),
-    linear-gradient(170deg, rgba(23, 41, 90, 0.55) 0%, rgba(37, 114, 232, 0.22) 40%, rgba(219, 238, 254, 0.42) 100%);
+    radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 88% 10%, rgba(147, 205, 252, 0.12), transparent 42%),
+    linear-gradient(170deg, rgba(23, 41, 90, 0.3) 0%, rgba(37, 114, 232, 0.1) 40%, rgba(219, 238, 254, 0.05) 100%);
 }
 
 /* Capa clara para las zonas de contenido de trabajo (paneles) */
@@ -207,11 +210,11 @@ body::after {
   isolation: isolate;
   min-height: 100vh;
   overflow: hidden;
-  background-color: #dceeff;
+  background-color: #0a1f3d;
   background-image:
-    radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.5), transparent 28%),
-    linear-gradient(110deg, rgba(3, 38, 87, 0.78) 0%, rgba(13, 78, 145, 0.48) 35%, rgba(219, 238, 255, 0.14) 68%, rgba(255, 255, 255, 0.06) 100%),
-    url("/images/auth-logistica-azul.jpg");
+    radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.08), transparent 28%),
+    radial-gradient(circle at 15% 80%, rgba(96, 176, 248, 0.15), transparent 35%),
+    linear-gradient(110deg, #0f2c4c 0%, #1a3a5f 35%, #1e4bad 68%, #17295a 100%);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -304,8 +307,7 @@ body::after {
     background-attachment: scroll;
     background-position: 55% center;
     background-image:
-      linear-gradient(180deg, rgba(4, 47, 100, 0.62) 0%, rgba(216, 237, 255, 0.16) 46%, rgba(4, 44, 92, 0.38) 100%),
-      url("/images/auth-logistica-azul.jpg");
+      linear-gradient(180deg, rgba(4, 47, 100, 0.85) 0%, rgba(26, 58, 95, 0.6) 46%, rgba(4, 44, 92, 0.8) 100%);
   }
   .auth-wallpaper::before {
     background-size: 48px 48px;

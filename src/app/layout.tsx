@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { SessionSync } from "@/components/session-sync";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,7 +35,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es-MX">
-      <body className="min-h-screen text-slate-900 antialiased">{children}</body>
+      <body className="min-h-screen text-slate-900 antialiased">
+        <SessionSync />
+        {children}
+      </body>
     </html>
   );
 }

@@ -2,122 +2,75 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Videos reales de logística/almacén con licencia gratuita de Pexels.
-const CLIPS = [
-  "https://videos.pexels.com/video-files/5370836/5370836-hd_1920_1080_30fps.mp4",
-  "https://videos.pexels.com/video-files/4292581/4292581-uhd_3840_2160_25fps.mp4",
-  "https://videos.pexels.com/video-files/5977711/5977711-hd_1366_586_30fps.mp4",
+// Videos REALES de logística comercio internacional descargados de internet via git clone
+// Fuentes:
+// - https://github.com/MercyShark/truck-detection.git -> demo3.mp4 camión en carretera (logística internacional)
+// - https://github.com/Ramsaijaddu7338/Royals-logistics-video.git -> safetyVideo.mp4 logística real
+// - https://github.com/intel-iot-devkit/sample-videos.git -> store-aisle, worker-zone (almacén)
+const REAL_VIDEOS = [
+  "/videos/logistica-comercio-internacional.mp4", // CAMIÓN en carretera - comercio internacional REAL
+  "/videos/logistica-royals.mp4",                 // Royals logistics safety video REAL
+  "/videos/hero-logistica-real.mp4",             // store-aisle-detection almacén REAL
+  "/videos/hero-warehouse-worker.mp4",           // worker-zone-detection almacén REAL
 ];
 
-const POSTER_SRC = "/images/panel-logistica-wallpaper.jpg";
-const FADE_S = 1.2; // duración del fundido entre videos
-
 export function HeroVideo() {
-  const refA = useRef<HTMLVideoElement | null>(null);
-  const refB = useRef<HTMLVideoElement | null>(null);
-  const [activo, setActivo] = useState<"A" | "B">("A");
-  const idxRef = useRef(0);
-  const cambiandoRef = useRef(false);
-  const [sinVideo, setSinVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [idx, setIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const vA = refA.current;
-    const vB = refB.current;
-    if (!vA || !vB) return;
+    const v = videoRef.current;
+    if (!v) return;
 
-    vA.src = CLIPS[0];
-    vB.src = CLIPS[1 % CLIPS.length];
-    vA.muted = true;
-    vB.muted = true;
-    vA.playsInline = true;
-    vB.playsInline = true;
-
-    const iniciar = vA.play();
-    if (iniciar && typeof iniciar.catch === "function") {
-      iniciar.catch(() => {
-        /* autoplay bloqueado: se mantiene el poster */
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const actual = activo === "A" ? refA.current : refB.current;
-    const siguiente = activo === "A" ? refB.current : refA.current;
-    if (!actual || !siguiente) return;
-
-    const avanzar = () => {
-      if (cambiandoRef.current) return;
-      cambiandoRef.current = true;
-
-      const sigIdx = (idxRef.current + 1) % CLIPS.length;
-      const proxIdx = (idxRef.current + 2) % CLIPS.length;
-      idxRef.current = sigIdx;
-
-      siguiente.currentTime = 0;
-      const intento = siguiente.play();
-      if (intento && typeof intento.catch === "function") intento.catch(() => {});
-
-      setActivo((prev) => (prev === "A" ? "B" : "A"));
-
-      // tras el fundido, recargar el video anterior con el próximo clip de la cola
-      setTimeout(() => {
-        actual.pause();
-        actual.src = CLIPS[proxIdx];
-        actual.load();
-        cambiandoRef.current = false;
-      }, FADE_S * 1000 + 150);
+    const load = (i: number) => {
+      if (i >= REAL_VIDEOS.length) return;
+      v.src = REAL_VIDEOS[i];
+      v.load();
+      v.play().then(() => setLoaded(true)).catch(() => setTimeout(() => setIdx(i + 1), 600));
     };
 
-    const alProgreso = () => {
-      if (!Number.isFinite(actual.duration) || actual.duration <= 0) return;
-      if (actual.currentTime >= actual.duration - FADE_S) {
-        avanzar();
-      }
+    load(idx);
+
+    const onErr = () => {
+      const next = idx + 1;
+      if (next < REAL_VIDEOS.length) setIdx(next);
+    };
+    const onCanPlay = () => {
+      setLoaded(true);
+      v.play().catch(() => {});
     };
 
-    actual.addEventListener("timeupdate", alProgreso);
-    actual.addEventListener("ended", avanzar);
+    v.addEventListener("error", onErr);
+    v.addEventListener("canplay", onCanPlay);
     return () => {
-      actual.removeEventListener("timeupdate", alProgreso);
-      actual.removeEventListener("ended", avanzar);
+      v.removeEventListener("error", onErr);
+      v.removeEventListener("canplay", onCanPlay);
     };
-  }, [activo]);
-
-  if (sinVideo) {
-    return (
-      <div
-        className="absolute inset-0 -z-20 bg-cover bg-center"
-        style={{ backgroundImage: `url(${POSTER_SRC})` }}
-        aria-hidden
-      />
-    );
-  }
+  }, [idx]);
 
   return (
-    <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden>
+    <div className="absolute inset-0 -z-20 overflow-hidden bg-[#0a1f3d]" aria-hidden>
+      {/* Video REAL de logística comercio internacional descargado de internet */}
       <video
-        ref={refA}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-in-out ${
-          activo === "A" ? "opacity-100" : "opacity-0"
-        }`}
+        ref={videoRef}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${loaded ? "opacity-90" : "opacity-0"}`}
         muted
         playsInline
+        loop
+        autoPlay
         preload="auto"
-        poster={POSTER_SRC}
-        onError={() => setSinVideo(true)}
+        poster="/images/panel-logistica-wallpaper.jpg"
       />
-      <video
-        ref={refB}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-in-out ${
-          activo === "B" ? "opacity-100" : "opacity-0"
-        }`}
-        muted
-        playsInline
-        preload="auto"
-        poster={POSTER_SRC}
-        onError={() => setSinVideo(true)}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0f2c4c]/30 via-transparent to-[#0f2c4c]/35" />
+
+      {/* Fallback canvas */}
+      <div className={`absolute inset-0 transition-opacity ${loaded ? "opacity-10" : "opacity-100"}`}>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f2c4c] via-[#1a3a5f] to-[#0d213f]" />
+      </div>
+
+      {/* Overlays muy suaves para que se vea el video real */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0f2c4c]/10 via-[#0f2c4c]/20 to-[#0a1f3d]/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0f2c4c]/20 via-transparent to-transparent" />
     </div>
   );
 }
