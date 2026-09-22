@@ -137,15 +137,19 @@ export async function createSession(userId: number, userOverride?: User | any) {
   }
 
   const jar = await cookies();
-  // En dev, secure=false para que funcione en http y https preview
+  // Para preview https://xxx.e2b.app dentro de iframe, necesitamos SameSite=None; Secure
+  // En dev local http, SameSite=Lax sin secure funciona, pero preview es https
+  // Usamos SameSite=None + Secure=true siempre para que funcione en preview
   const isProd = process.env.NODE_ENV === "production";
+  const useNone = true; // Forzar None para compatibilidad preview
   
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: useNone ? "none" : "lax",
     path: "/",
     expires: expiresAt,
-    secure: isProd ? true : false, // En dev permitir http
+    maxAge: SESSION_DAYS * 24 * 60 * 60,
+    secure: true, // Siempre secure porque preview es https
   });
 
   let baseUser = userOverride;
@@ -182,10 +186,11 @@ export async function createSession(userId: number, userOverride?: User | any) {
     const signature = signSessionHint(payload, token);
     jar.set(SESSION_HINT_COOKIE, `${payload}.${signature}`, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: useNone ? "none" : "lax",
       path: "/",
       expires: expiresAt,
-      secure: isProd ? true : false,
+      maxAge: SESSION_DAYS * 24 * 60 * 60,
+      secure: true,
     });
 
     console.log(`[auth] Sesión creada para ${baseUser.email} id=${userId} token=${token.slice(0,8)}...`);
@@ -198,7 +203,8 @@ export async function createSession(userId: number, userOverride?: User | any) {
       };
       jar.set("cbtis270_saved_account", JSON.stringify(savedItem), {
         httpOnly: false,
-        sameSite: "lax",
+        sameSite: "none",
+        secure: true,
         path: "/",
         maxAge: 60 * 24 * 60 * 60,
       });
@@ -217,7 +223,8 @@ export async function createSession(userId: number, userOverride?: User | any) {
       list.unshift(savedItem);
       jar.set("cbtis270_saved_accounts_list", JSON.stringify(list.slice(0, 5)), {
         httpOnly: false,
-        sameSite: "lax",
+        sameSite: "none",
+        secure: true,
         path: "/",
         maxAge: 60 * 24 * 60 * 60,
       });
@@ -248,8 +255,16 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   const hint = jar.get(SESSION_HINT_COOKIE)?.value;
+  const allCookies = jar.getAll().map(c => c.name).join(",");
+  // Intentar leer headers para debug
+  let cookieHeader = "";
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    cookieHeader = h.get("cookie") || "";
+  } catch {}
 
-  console.log(`[auth] getCurrentUser: token=${token ? token.slice(0,8)+"..." : "no"} hint=${hint ? "si" : "no"}`);
+  console.log(`[auth] getCurrentUser: token=${token ? token.slice(0,8)+"..." : "no"} hint=${hint ? "si" : "no"} all=[${allCookies}] headerLen=${cookieHeader.length} hasSession=${cookieHeader.includes("cbtis270_session")}`);
 
   // Prioridad 1: hint cookie (funciona sin DB) - con verificación de firma flexible
   if (hint && token) {
@@ -294,14 +309,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
                 // Re-firmar con secreto actual para futuras requests
                 try {
                   const newSig = signSessionHint(payload, token);
-                  const isProd = process.env.NODE_ENV === "production";
                   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
                   jar.set(SESSION_HINT_COOKIE, `${payload}.${newSig}`, {
                     httpOnly: true,
-                    sameSite: "lax",
+                    sameSite: "none",
                     path: "/",
                     expires: expiresAt,
-                    secure: isProd ? true : false,
+                    maxAge: SESSION_DAYS * 24 * 60 * 60,
+                    secure: true,
                   });
                 } catch {}
                 return {

@@ -155,10 +155,10 @@ async function marcarCorreoVerificado(email: string) {
   const jar = await cookies();
   jar.set("otp_verified_email", email.toLowerCase(), {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 30 * 60,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
   });
   console.log(`[auth] Correo marcado verificado: ${email}`);
 }
@@ -208,15 +208,15 @@ export async function solicitarOtpAction(
     const jar = await cookies();
     jar.set("otp_fallback", `${email}|${codigo}|${expiresAt}`, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      secure: true,
       path: "/",
       maxAge: 10 * 60,
     });
     jar.set("otp_fallback_client", `${email}|${codigo}|${expiresAt}`, {
       httpOnly: false,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      secure: true,
       path: "/",
       maxAge: 10 * 60,
     });
@@ -717,10 +717,10 @@ export async function continuarConGoogleCorreoAction(
   const jar = await cookies();
   jar.set("google_verified_email", email, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 30 * 60,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
   });
 
   const params = new URLSearchParams({
@@ -777,10 +777,10 @@ export async function googlePreviewAction(formData: FormData) {
   const jar = await cookies();
   jar.set("google_verified_email", email, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 20 * 60,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
   });
 
   const params = new URLSearchParams({
