@@ -290,7 +290,20 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
               // Verificar que el usuario existe en demo store
               const demoUser = demoFindUserById(Number(parsed.id));
               if (demoUser && demoUser.email.toLowerCase() === String(parsed.email).toLowerCase()) {
-                console.log(`[auth] Usuario via hint sin verificar pero demo válido: ${parsed.email}`);
+                console.log(`[auth] Usuario via hint sin verificar pero demo válido: ${parsed.email} - re-firmando cookie`);
+                // Re-firmar con secreto actual para futuras requests
+                try {
+                  const newSig = signSessionHint(payload, token);
+                  const isProd = process.env.NODE_ENV === "production";
+                  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+                  jar.set(SESSION_HINT_COOKIE, `${payload}.${newSig}`, {
+                    httpOnly: true,
+                    sameSite: "lax",
+                    path: "/",
+                    expires: expiresAt,
+                    secure: isProd ? true : false,
+                  });
+                } catch {}
                 return {
                   id: Number(parsed.id),
                   nombre: String(parsed.nombre ?? ""),
