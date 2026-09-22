@@ -4,6 +4,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, users, type User } from "@/db/schema";
 import { asegurarEsquemaCore } from "@/lib/ensure-schema";
+import { demoFindUserById } from "@/lib/demo-store";
 
 export const SESSION_COOKIE = "cbtis270_session";
 const SESSION_DAYS = 14;
@@ -17,16 +18,16 @@ function signSessionHint(payload: string, token: string) {
   return createHmac("sha256", sessionHintSecret()).update(`${payload}:${token}`).digest("hex");
 }
 
-function encodeSessionUser(user: User) {
+function encodeSessionUser(user: User | { id: number; nombre: string; email: string; rol: string; matricula?: string | null; especialidad?: string | null; semestre?: number | null; turno?: string | null }) {
   const payload = JSON.stringify({
     id: user.id,
     nombre: user.nombre,
     email: user.email,
     rol: user.rol,
-    matricula: user.matricula,
-    especialidad: user.especialidad,
-    semestre: user.semestre,
-    turno: user.turno,
+    matricula: (user as any).matricula ?? null,
+    especialidad: (user as any).especialidad ?? null,
+    semestre: (user as any).semestre ?? null,
+    turno: (user as any).turno ?? null,
   });
   return Buffer.from(payload, "utf8").toString("base64url");
 }
@@ -51,12 +52,16 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-  const derived = scryptSync(password, salt, 64);
-  const known = Buffer.from(hash, "hex");
-  if (known.length !== derived.length) return false;
-  return timingSafeEqual(known, derived);
+  try {
+    const [salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const derived = scryptSync(password, salt, 64);
+    const known = Buffer.from(hash, "hex");
+    if (known.length !== derived.length) return false;
+    return timingSafeEqual(known, derived);
+  } catch {
+    return false;
+  }
 }
 
 function toSessionUser(row: User): SessionUser {
@@ -72,13 +77,36 @@ function toSessionUser(row: User): SessionUser {
   };
 }
 
-export async function createSession(userId: number, userOverride?: User) {
-  await asegurarEsquemaCore();
+function toSessionUserFromDemo(demo: ReturnType<typeof demoFindUserById>): SessionUser | null {
+  if (!demo) return null;
+  return {
+    id: demo.id,
+    nombre: demo.nombre,
+    email: demo.email,
+    rol: demo.rol as Rol,
+    matricula: demo.matricula ?? null,
+    especialidad: demo.especialidad ?? null,
+    semestre: demo.semestre ?? null,
+    turno: demo.turno ?? null,
+  };
+}
+
+export async function createSession(userId: number, userOverride?: User | any) {
+  try {
+    await asegurarEsquemaCore();
+  } catch {
+    // No bloquear sesión si falla ensure
+  }
 
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
-  await db.insert(sessions).values({ token, userId, expiresAt });
+  // Intentar guardar en DB, pero no fallar si no hay DB
+  try {
+    await db.insert(sessions).values({ token, userId, expiresAt });
+  } catch (error) {
+    console.warn("[auth] No se pudo guardar sesión en DB (modo demo):", (error as Error).message?.slice(0, 200));
+  }
 
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
@@ -95,7 +123,26 @@ export async function createSession(userId: number, userOverride?: User) {
       const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       baseUser = rows[0];
     } catch {
-      baseUser = undefined;
+      // Fallback demo store
+      const demo = demoFindUserById(userId);
+      if (demo) {
+        baseUser = {
+          id: demo.id,
+          nombre: demo.nombre,
+          email: demo.email,
+          rol: demo.rol,
+          matricula: demo.matricula,
+          especialidad: demo.especialidad,
+          semestre: demo.semestre,
+          turno: demo.turno,
+          passwordHash: demo.passwordHash,
+          activo: demo.activo,
+          emailVerificado: demo.emailVerificado,
+          createdAt: new Date(demo.createdAt),
+        } as unknown as User;
+      } else {
+        baseUser = undefined;
+      }
     }
   }
 
@@ -147,7 +194,9 @@ export async function destroySession() {
   if (token) {
     try {
       await db.delete(sessions).where(eq(sessions.token, token));
-    } catch {}
+    } catch {
+      // Ignorar si no hay DB
+    }
   }
   jar.delete(SESSION_COOKIE);
   jar.delete(SESSION_HINT_COOKIE);
@@ -158,6 +207,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const token = jar.get(SESSION_COOKIE)?.value;
   const hint = jar.get(SESSION_HINT_COOKIE)?.value;
 
+  // Prioridad 1: hint cookie (funciona sin DB)
   if (hint && token) {
     try {
       const separator = hint.lastIndexOf(".");
@@ -190,6 +240,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
   if (!token) return null;
 
+  // Prioridad 2: DB
   try {
     await asegurarEsquemaCore();
     const rows = await db
@@ -201,7 +252,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
     const row = rows[0];
     if (row?.user?.activo) return toSessionUser(row.user);
-  } catch {}
+  } catch {
+    // Si falla DB, intentar demo store por si el token es de demo
+    // En modo demo, el hint ya debió resolver, pero por si acaso
+    try {
+      // No tenemos mapping token->user en demo, pero el hint ya cubre
+      // Intentar buscar usuario demo por token no es posible, retornar null
+    } catch {}
+  }
 
   return null;
 }

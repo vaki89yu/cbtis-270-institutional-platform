@@ -1,11 +1,15 @@
 import { pool } from "@/db";
 
 let esquemaListo = false;
+let intentoFallido = false;
 
 /**
  * Esquema autocurable para producción.
  * La plataforma no depende de que Vercel haya ejecutado una migración externa:
  * crea de forma idempotente todas las tablas que utiliza el portal y el panel.
+ * 
+ * MODO DEMO: Si la DB no está disponible, no lanza error, solo advierte
+ * y permite que la app siga funcionando con almacenamiento demo.
  */
 const DDL = `
 CREATE TABLE IF NOT EXISTS users (
@@ -278,16 +282,40 @@ CREATE TABLE IF NOT EXISTS warehouse_practices (
 
 export async function asegurarEsquemaCore(): Promise<void> {
   if (esquemaListo) return;
-  const cliente = await pool.connect();
-  try {
-    await cliente.query("BEGIN");
-    await cliente.query(DDL);
-    await cliente.query("COMMIT");
+  if (intentoFallido) return; // Evitar reintentos constantes si ya falló
+
+  // Si no hay DATABASE_URL, modo demo directo
+  if (!process.env.DATABASE_URL) {
+    console.warn("[ensure-schema] Sin DATABASE_URL - modo demo activado, saltando creación de tablas");
     esquemaListo = true;
-  } catch (error) {
-    await cliente.query("ROLLBACK");
-    throw error;
-  } finally {
-    cliente.release();
+    return;
   }
+
+  try {
+    const cliente = await pool.connect();
+    try {
+      await cliente.query("BEGIN");
+      await cliente.query(DDL);
+      await cliente.query("COMMIT");
+      esquemaListo = true;
+      console.log("[ensure-schema] Esquema verificado/creado correctamente");
+    } catch (error) {
+      await cliente.query("ROLLBACK");
+      throw error;
+    } finally {
+      cliente.release();
+    }
+  } catch (error) {
+    // No lanzar error - modo demo
+    console.warn("[ensure-schema] No se pudo conectar a la BD, activando modo demo:", (error as Error).message?.slice(0, 300));
+    intentoFallido = true;
+    esquemaListo = true; // Marcar como listo para no bloquear login/registro
+    // No throw - permitir que la app siga
+  }
+}
+
+// Para forzar reintento si se configura la DB después
+export function resetEsquemaCache() {
+  esquemaListo = false;
+  intentoFallido = false;
 }

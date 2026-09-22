@@ -69,7 +69,7 @@ export function RegistroProfesional({
 }: Props) {
   const [tipo, setTipo] = useState<"estudiante" | "docente">("estudiante");
   const [turno, setTurno] = useState("Matutino");
-  const [semestre, setSemestre] = useState("1");
+  const [semestre, setSemestre] = useState("2");
   const [grupo, setGrupo] = useState("E");
   const [gruposDocente, setGruposDocente] = useState<string[]>(["E"]);
   const [turnosDocente, setTurnosDocente] = useState<string[]>(["Matutino"]);

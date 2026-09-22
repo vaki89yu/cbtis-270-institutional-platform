@@ -37,7 +37,7 @@ function leerJsonCookie<T>(value?: string): T | null {
 
 export default async function LoginPage({ searchParams }: Props) {
   const user = await getCurrentUser();
-  if (user) redirect("/inicio");
+  if (user) redirect("/panel");
 
   const params = searchParams ? await searchParams : {};
   const googleError = params.google ? googleMensajes[params.google] : null;

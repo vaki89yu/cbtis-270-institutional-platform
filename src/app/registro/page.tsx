@@ -62,6 +62,17 @@ export default async function RegistroPage({ searchParams }: Props) {
     docentes = [];
   }
 
+  // Fallback demo store si no hay docentes en DB
+  if (docentes.length === 0) {
+    try {
+      const { demoGetAllDocentes } = await import("@/lib/demo-store");
+      const demoDocentes = demoGetAllDocentes();
+      if (demoDocentes.length > 0) {
+        docentes = demoDocentes;
+      }
+    } catch {}
+  }
+
   return (
     <main className="auth-wallpaper min-h-screen py-6 sm:py-8 lg:py-10">
       <span className="auth-glow -left-24 top-40 h-80 w-80 bg-sky-200/18" />
