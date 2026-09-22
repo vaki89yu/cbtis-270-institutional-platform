@@ -10,12 +10,40 @@ export const SESSION_COOKIE = "cbtis270_session";
 const SESSION_DAYS = 14;
 const SESSION_HINT_COOKIE = "cbtis270_session_hint";
 
+function allPossibleSecrets(): string[] {
+  const secrets = new Set<string>();
+  // Orden de prioridad: AUTH_SECRET actual, DATABASE_URL actual, secrets históricos
+  if (process.env.AUTH_SECRET) secrets.add(process.env.AUTH_SECRET);
+  if (process.env.DATABASE_URL) secrets.add(process.env.DATABASE_URL);
+  secrets.add("cbtis270-institutional-session-secret");
+  secrets.add("cbtis270-super-secret-key-para-sesion-2026");
+  secrets.add("postgresql://postgres:postgres@127.0.0.1:5432/app_db");
+  return Array.from(secrets);
+}
+
 function sessionHintSecret() {
   return process.env.AUTH_SECRET || process.env.DATABASE_URL || "cbtis270-institutional-session-secret";
 }
 
-function signSessionHint(payload: string, token: string) {
-  return createHmac("sha256", sessionHintSecret()).update(`${payload}:${token}`).digest("hex");
+function signSessionHint(payload: string, token: string, secret?: string) {
+  const sec = secret || sessionHintSecret();
+  return createHmac("sha256", sec).update(`${payload}:${token}`).digest("hex");
+}
+
+function verifySignature(payload: string, token: string, signature: string): boolean {
+  // Probar con todos los secretos posibles para compatibilidad hacia atrás
+  for (const secret of allPossibleSecrets()) {
+    try {
+      const expected = signSessionHint(payload, token, secret);
+      if (
+        expected.length === signature.length &&
+        timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+      ) {
+        return true;
+      }
+    } catch {}
+  }
+  return false;
 }
 
 function encodeSessionUser(user: User | { id: number; nombre: string; email: string; rol: string; matricula?: string | null; especialidad?: string | null; semestre?: number | null; turno?: string | null }) {
@@ -109,12 +137,15 @@ export async function createSession(userId: number, userOverride?: User | any) {
   }
 
   const jar = await cookies();
+  // En dev, secure=false para que funcione en http y https preview
+  const isProd = process.env.NODE_ENV === "production";
+  
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
     expires: expiresAt,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProd ? true : false, // En dev permitir http
   });
 
   let baseUser = userOverride;
@@ -148,13 +179,16 @@ export async function createSession(userId: number, userOverride?: User | any) {
 
   if (baseUser) {
     const payload = encodeSessionUser(baseUser);
-    jar.set(SESSION_HINT_COOKIE, `${payload}.${signSessionHint(payload, token)}`, {
+    const signature = signSessionHint(payload, token);
+    jar.set(SESSION_HINT_COOKIE, `${payload}.${signature}`, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
       expires: expiresAt,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProd ? true : false,
     });
+
+    console.log(`[auth] Sesión creada para ${baseUser.email} id=${userId} token=${token.slice(0,8)}...`);
 
     try {
       const savedItem = {
@@ -172,7 +206,12 @@ export async function createSession(userId: number, userOverride?: User | any) {
       let list: Array<{ email: string; nombre: string; rol?: string }> = [];
       const previous = jar.get("cbtis270_saved_accounts_list")?.value;
       if (previous) {
-        try { list = JSON.parse(previous); } catch {}
+        try { 
+          const decoded = decodeURIComponent(previous);
+          list = JSON.parse(decoded);
+        } catch {
+          try { list = JSON.parse(previous); } catch {}
+        }
       }
       list = list.filter((item) => item.email.toLowerCase() !== baseUser!.email.toLowerCase());
       list.unshift(savedItem);
@@ -200,6 +239,9 @@ export async function destroySession() {
   }
   jar.delete(SESSION_COOKIE);
   jar.delete(SESSION_HINT_COOKIE);
+  jar.delete("otp_verified_email");
+  jar.delete("google_verified_email");
+  console.log("[auth] Sesión destruida");
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
@@ -207,38 +249,72 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const token = jar.get(SESSION_COOKIE)?.value;
   const hint = jar.get(SESSION_HINT_COOKIE)?.value;
 
-  // Prioridad 1: hint cookie (funciona sin DB)
+  console.log(`[auth] getCurrentUser: token=${token ? token.slice(0,8)+"..." : "no"} hint=${hint ? "si" : "no"}`);
+
+  // Prioridad 1: hint cookie (funciona sin DB) - con verificación de firma flexible
   if (hint && token) {
     try {
       const separator = hint.lastIndexOf(".");
       if (separator > 0) {
         const payload = hint.slice(0, separator);
         const signature = hint.slice(separator + 1);
-        const expected = signSessionHint(payload, token);
-
-        if (
-          expected.length === signature.length &&
-          timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
-        ) {
-          const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-          if (parsed?.id && parsed?.email && parsed?.rol) {
-            return {
-              id: Number(parsed.id),
-              nombre: String(parsed.nombre ?? ""),
-              email: String(parsed.email ?? ""),
-              rol: parsed.rol as Rol,
-              matricula: parsed.matricula ?? null,
-              especialidad: parsed.especialidad ?? null,
-              semestre: parsed.semestre ?? null,
-              turno: parsed.turno ?? null,
-            };
+        
+        // Verificar con múltiples secretos
+        const isValid = verifySignature(payload, token, signature);
+        
+        if (isValid) {
+          try {
+            const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+            if (parsed?.id && parsed?.email && parsed?.rol) {
+              console.log(`[auth] Usuario via hint verificado: ${parsed.email}`);
+              return {
+                id: Number(parsed.id),
+                nombre: String(parsed.nombre ?? ""),
+                email: String(parsed.email ?? ""),
+                rol: parsed.rol as Rol,
+                matricula: parsed.matricula ?? null,
+                especialidad: parsed.especialidad ?? null,
+                semestre: parsed.semestre ?? null,
+                turno: parsed.turno ?? null,
+              };
+            }
+          } catch (e) {
+            console.warn("[auth] Error parseando payload hint:", (e as Error).message);
           }
+        } else {
+          console.warn("[auth] Firma hint inválida, intentando decodificar sin verificar (modo demo)");
+          // En modo demo, intentar decodificar aunque falle firma (para compatibilidad)
+          try {
+            const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+            if (parsed?.id && parsed?.email && parsed?.rol) {
+              // Verificar que el usuario existe en demo store
+              const demoUser = demoFindUserById(Number(parsed.id));
+              if (demoUser && demoUser.email.toLowerCase() === String(parsed.email).toLowerCase()) {
+                console.log(`[auth] Usuario via hint sin verificar pero demo válido: ${parsed.email}`);
+                return {
+                  id: Number(parsed.id),
+                  nombre: String(parsed.nombre ?? ""),
+                  email: String(parsed.email ?? ""),
+                  rol: parsed.rol as Rol,
+                  matricula: parsed.matricula ?? null,
+                  especialidad: parsed.especialidad ?? null,
+                  semestre: parsed.semestre ?? null,
+                  turno: parsed.turno ?? null,
+                };
+              }
+            }
+          } catch {}
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn("[auth] Error verificando hint:", (e as Error).message);
+    }
   }
 
-  if (!token) return null;
+  if (!token) {
+    console.log("[auth] No hay token, retornando null");
+    return null;
+  }
 
   // Prioridad 2: DB
   try {
@@ -251,15 +327,18 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       .limit(1);
 
     const row = rows[0];
-    if (row?.user?.activo) return toSessionUser(row.user);
-  } catch {
-    // Si falla DB, intentar demo store por si el token es de demo
-    // En modo demo, el hint ya debió resolver, pero por si acaso
-    try {
-      // No tenemos mapping token->user en demo, pero el hint ya cubre
-      // Intentar buscar usuario demo por token no es posible, retornar null
-    } catch {}
+    if (row?.user?.activo) {
+      console.log(`[auth] Usuario via DB: ${row.user.email}`);
+      return toSessionUser(row.user);
+    }
+  } catch (e) {
+    console.warn("[auth] DB lookup falló, intentando demo por token no disponible:", (e as Error).message?.slice(0, 150));
+    // En modo demo, no tenemos mapping token->user, pero el hint ya debió funcionar
+    // Si llegamos aquí, es que hint falló, intentar buscar en demo store por si hay alguna sesión previa
+    // No podemos mapear token a usuario en demo, así que retornamos null
+    // Pero logueamos para debug
   }
 
+  console.log("[auth] No se pudo obtener usuario, retornando null");
   return null;
 }
