@@ -159,6 +159,8 @@ async function marcarCorreoVerificado(email: string) {
     path: "/",
     maxAge: 30 * 60,
     secure: true,
+      // @ts-ignore
+      partitioned: true as any,
   });
   console.log(`[auth] Correo marcado verificado: ${email}`);
 }
@@ -210,6 +212,8 @@ export async function solicitarOtpAction(
       httpOnly: true,
       sameSite: "none",
       secure: true,
+      // @ts-ignore
+      partitioned: true as any,
       path: "/",
       maxAge: 10 * 60,
     });
@@ -217,6 +221,8 @@ export async function solicitarOtpAction(
       httpOnly: false,
       sameSite: "none",
       secure: true,
+      // @ts-ignore
+      partitioned: true as any,
       path: "/",
       maxAge: 10 * 60,
     });
@@ -721,6 +727,8 @@ export async function continuarConGoogleCorreoAction(
     path: "/",
     maxAge: 30 * 60,
     secure: true,
+      // @ts-ignore
+      partitioned: true as any,
   });
 
   const params = new URLSearchParams({
@@ -781,6 +789,8 @@ export async function googlePreviewAction(formData: FormData) {
     path: "/",
     maxAge: 20 * 60,
     secure: true,
+      // @ts-ignore
+      partitioned: true as any,
   });
 
   const params = new URLSearchParams({

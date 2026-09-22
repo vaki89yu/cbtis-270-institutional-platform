@@ -145,12 +145,14 @@ export async function createSession(userId: number, userOverride?: User | any) {
   
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: useNone ? "none" : "lax",
+    sameSite: "none",
     path: "/",
     expires: expiresAt,
     maxAge: SESSION_DAYS * 24 * 60 * 60,
-    secure: true, // Siempre secure porque preview es https
-  });
+    secure: true,
+    // @ts-ignore - partitioned for CHIPS to allow 3rd party in iframe
+    partitioned: true,
+  } as any);
 
   let baseUser = userOverride;
   if (!baseUser) {
@@ -186,12 +188,14 @@ export async function createSession(userId: number, userOverride?: User | any) {
     const signature = signSessionHint(payload, token);
     jar.set(SESSION_HINT_COOKIE, `${payload}.${signature}`, {
       httpOnly: true,
-      sameSite: useNone ? "none" : "lax",
+      sameSite: "none",
       path: "/",
       expires: expiresAt,
       maxAge: SESSION_DAYS * 24 * 60 * 60,
       secure: true,
-    });
+      // @ts-ignore
+      partitioned: true,
+    } as any);
 
     console.log(`[auth] Sesión creada para ${baseUser.email} id=${userId} token=${token.slice(0,8)}...`);
 
@@ -207,7 +211,9 @@ export async function createSession(userId: number, userOverride?: User | any) {
         secure: true,
         path: "/",
         maxAge: 60 * 24 * 60 * 60,
-      });
+        // @ts-ignore
+        partitioned: true,
+      } as any);
 
       let list: Array<{ email: string; nombre: string; rol?: string }> = [];
       const previous = jar.get("cbtis270_saved_accounts_list")?.value;
@@ -227,7 +233,9 @@ export async function createSession(userId: number, userOverride?: User | any) {
         secure: true,
         path: "/",
         maxAge: 60 * 24 * 60 * 60,
-      });
+        // @ts-ignore
+        partitioned: true,
+      } as any);
     } catch {
       // Los cookies auxiliares nunca deben bloquear el inicio de sesión.
     }
@@ -317,7 +325,9 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
                     expires: expiresAt,
                     maxAge: SESSION_DAYS * 24 * 60 * 60,
                     secure: true,
-                  });
+                    // @ts-ignore
+                    partitioned: true,
+                  } as any);
                 } catch {}
                 return {
                   id: Number(parsed.id),
