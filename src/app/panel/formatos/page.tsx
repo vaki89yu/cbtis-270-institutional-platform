@@ -7,18 +7,26 @@ import { FORMATOS_DINAMICOS, NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 export const metadata: Metadata = { title: "Biblioteca de Formatos Logísticos" };
 export const dynamic = "force-dynamic";
 
-const ARCHIVOS: Record<string, { url: string; ext: string }> = {
-  "FOR-LOG-01": { url: "/formatos/FOR-LOG-01_Kardex-de-Control-de-Existencias_CBTIS270.xlsx", ext: "xlsx" },
-  "FOR-LOG-02": { url: "/formatos/FOR-LOG-02_Orden-de-Compra_CBTIS270.xlsx", ext: "xlsx" },
-  "FOR-LOG-03": { url: "/formatos/FOR-LOG-03_Carta-Porte-Guia-de-Llenado_CBTIS270.xlsx", ext: "xlsx" },
-  "FOR-LOG-04": { url: "/formatos/FOR-LOG-04_Costeo-de-Fletes-y-Rutas_CBTIS270.xlsx", ext: "xlsx" },
-  "FOR-LOG-05": { url: "/formatos/FOR-LOG-05_Pedimento-Aduanal-A1_CBTIS270.xlsx", ext: "xlsx" },
-  "FOR-LOG-06": { url: "/formatos/FOR-LOG-06_Checklist-Montacargas-y-Seguridad_CBTIS270.xlsx", ext: "xlsx" },
+const ARCHIVOS: Record<string, { url: string; ext: string; titulo: string; categoria: string }> = {
+  "FOR-LOG-01": { url: "/formatos/FOR-LOG-01_Kardex-de-Control-de-Existencias_CBTIS270.xlsx", ext: "xlsx", titulo: "Kardex de Control de Existencias (PEPS y Promedios)", categoria: "Almacén e Inventarios" },
+  "FOR-LOG-02": { url: "/formatos/FOR-LOG-02_Orden-de-Compra_CBTIS270.xlsx", ext: "xlsx", titulo: "Orden de Compra y Requisición de Materiales", categoria: "Compras y Abastecimiento" },
+  "FOR-LOG-03": { url: "/formatos/FOR-LOG-03_Carta-Porte-Guia-de-Llenado_CBTIS270.xlsx", ext: "xlsx", titulo: "Carta Porte - Guía de Llenado SAT", categoria: "Transporte y Rutas" },
+  "FOR-LOG-04": { url: "/formatos/FOR-LOG-04_Costeo-de-Fletes-y-Rutas_CBTIS270.xlsx", ext: "xlsx", titulo: "Matriz de Costeo de Fletes y Selección de Rutas", categoria: "Transporte y Rutas" },
+  "FOR-LOG-05": { url: "/formatos/FOR-LOG-05_Pedimento-Aduanal-A1_CBTIS270.xlsx", ext: "xlsx", titulo: "Pedimento Aduanal Simplificado (Importación A1)", categoria: "Comercio Exterior" },
+  "FOR-LOG-06": { url: "/formatos/FOR-LOG-06_Checklist-Montacargas-y-Seguridad_CBTIS270.xlsx", ext: "xlsx", titulo: "Checklist Pre-operacional de Montacargas y Seguridad", categoria: "Seguridad y Calidad" },
 };
+
+const FALLBACK_FORMATOS = Object.entries(ARCHIVOS).map(([codigo, info], idx) => ({
+  id: idx + 1,
+  codigo,
+  titulo: info.titulo,
+  categoria: info.categoria,
+}));
 
 export default async function FormatosPage() {
   await requireUser();
-  const descargables = await catalogoFormatosLogistica();
+  const dbFormatos = await catalogoFormatosLogistica();
+  const descargables = dbFormatos.length > 0 ? dbFormatos : FALLBACK_FORMATOS;
 
   // Agrupar los formatos llenables por módulo
   const porModulo = [1, 2, 3, 4, 5].map((m) => ({
