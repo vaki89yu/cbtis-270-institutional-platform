@@ -595,9 +595,15 @@ export async function registroAction(
         jar.delete("google_verified_email");
         jar.delete("otp_verified_email");
         await createSession(userId, createdUser);
+        // Importante: redirect lanza excepción NEXT_REDIRECT, no debe ser capturada como error
         redirect("/panel");
       } catch (demoErr: any) {
+        // Si es redirect de Next.js, re-lanzar para que funcione
+        if (String(demoErr?.message || "").includes("NEXT_REDIRECT") || String(demoErr?.digest || "").includes("NEXT_REDIRECT")) {
+          throw demoErr;
+        }
         console.error("Error en registro demo:", demoErr);
+        console.error("demoErr stack:", demoErr?.stack?.slice(0, 500));
         let msg = "No se pudo guardar la cuenta. Verifica que los datos sean correctos.";
         if (String(demoErr?.message || "").includes("users_email_unique")) {
           msg = "Esta cuenta de correo ya está registrada.";
