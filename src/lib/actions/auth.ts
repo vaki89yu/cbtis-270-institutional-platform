@@ -22,6 +22,8 @@ import {
   demoCreateStudentProfile,
   demoCreateTeacherProfile,
   demoFindUserById,
+  demoSaveOtp,
+  demoVerifyOtp,
 } from "@/lib/demo-store";
 
 export type ActionState = { error?: string; ok?: string };
@@ -40,6 +42,12 @@ function numero(formData: FormData, key: string, fallback: number | null = null)
 }
 
 async function verificarOtp(email: string, codigo: string) {
+  const emailLower = email.toLowerCase().trim();
+  const codigoTrim = codigo.trim();
+  
+  console.log(`[verificarOtp] Iniciando verificación: email=${emailLower} codigo=${codigoTrim}`);
+
+  // 1. Intentar DB
   try {
     await asegurarEsquemaCore();
     const rows = await db
@@ -47,8 +55,8 @@ async function verificarOtp(email: string, codigo: string) {
       .from(otpCodes)
       .where(
         and(
-          eq(otpCodes.email, email),
-          eq(otpCodes.code, codigo),
+          eq(otpCodes.email, emailLower),
+          eq(otpCodes.code, codigoTrim),
           eq(otpCodes.used, false),
           gt(otpCodes.expiresAt, new Date()),
         ),
@@ -58,30 +66,88 @@ async function verificarOtp(email: string, codigo: string) {
 
     const otp = rows[0];
     if (otp) {
+      console.log(`[verificarOtp] Encontrado en DB: ${otp.email} ${otp.code}`);
       try {
         await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
       } catch {}
       return true;
     }
+    console.log(`[verificarOtp] No encontrado en DB, probando fallbacks`);
   } catch (error) {
-    console.warn("OTP database verification fallback:", (error as Error).message?.slice(0, 200));
+    console.warn("[verificarOtp] DB falló, usando fallbacks:", (error as Error).message?.slice(0, 200));
   }
 
-  // Fallback: permite verificar el OTP emitido en esta sesión aunque el almacenamiento
-  // de la base de datos temporalmente no esté disponible.
-  const jar = await cookies();
-  const fallback = jar.get("otp_fallback")?.value ?? "";
-  const [savedEmail, savedCode, expiresRaw] = fallback.split("|");
-  const expires = Number(expiresRaw);
-  if (
-    savedEmail?.toLowerCase() === email.toLowerCase() &&
-    savedCode === codigo &&
-    Number.isFinite(expires) &&
-    expires > Date.now()
-  ) {
-    jar.delete("otp_fallback");
-    return true;
+  // 2. Intentar demo store (más confiable que cookies)
+  try {
+    const demoOk = demoVerifyOtp(emailLower, codigoTrim);
+    if (demoOk) {
+      console.log(`[verificarOtp] Verificado via demo-store: ${emailLower}`);
+      // También limpiar cookie fallback si existe
+      try {
+        const jar = await cookies();
+        jar.delete("otp_fallback");
+        jar.delete("otp_fallback_client");
+      } catch {}
+      return true;
+    }
+  } catch (e) {
+    console.warn("[verificarOtp] demo store falló:", (e as Error).message);
   }
+
+  // 3. Fallback: cookie
+  try {
+    const jar = await cookies();
+    // Intentar ambas cookies
+    let fallback = jar.get("otp_fallback")?.value ?? jar.get("otp_fallback_client")?.value ?? "";
+    console.log(`[verificarOtp] Cookie raw: ${fallback.slice(0, 100)}`);
+    
+    if (fallback) {
+      // Decodificar si está URL-encoded
+      try {
+        const decoded = decodeURIComponent(fallback);
+        if (decoded !== fallback) {
+          console.log(`[verificarOtp] Cookie decodificada: ${decoded.slice(0, 100)}`);
+          fallback = decoded;
+        }
+      } catch {
+        // Intentar decodificar solo si parece encoded
+        if (fallback.includes("%")) {
+          try {
+            fallback = decodeURIComponent(fallback);
+          } catch {}
+        }
+      }
+      
+      const parts = fallback.split("|");
+      console.log(`[verificarOtp] Cookie parts:`, parts);
+      if (parts.length >= 3) {
+        const [savedEmail, savedCode, expiresRaw] = parts;
+        const expires = Number(expiresRaw);
+        console.log(`[verificarOtp] Comparando: savedEmail=${savedEmail} savedCode=${savedCode} expires=${expires} now=${Date.now()}`);
+        if (
+          savedEmail?.toLowerCase().trim() === emailLower &&
+          savedCode?.trim() === codigoTrim &&
+          Number.isFinite(expires) &&
+          expires > Date.now()
+        ) {
+          console.log(`[verificarOtp] Verificado via cookie: ${emailLower}`);
+          try {
+            jar.delete("otp_fallback");
+            jar.delete("otp_fallback_client");
+          } catch {}
+          // También marcar como usado en demo store si existe
+          try {
+            demoVerifyOtp(emailLower, codigoTrim);
+          } catch {}
+          return true;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[verificarOtp] Error leyendo cookies:", (e as Error).message);
+  }
+
+  console.log(`[verificarOtp] Falló verificación para ${emailLower} código ${codigoTrim}`);
   return false;
 }
 
@@ -94,13 +160,16 @@ async function marcarCorreoVerificado(email: string) {
     maxAge: 30 * 60,
     secure: process.env.NODE_ENV === "production",
   });
+  console.log(`[auth] Correo marcado verificado: ${email}`);
 }
 
 async function correoEstaVerificado(email: string) {
   const jar = await cookies();
   const a = jar.get("otp_verified_email")?.value?.toLowerCase();
   const b = jar.get("google_verified_email")?.value?.toLowerCase();
-  return a === email.toLowerCase() || b === email.toLowerCase();
+  const isVerified = a === email.toLowerCase() || b === email.toLowerCase();
+  console.log(`[auth] correoEstaVerificado ${email}: ${isVerified} (otp=${a} google=${b})`);
+  return isVerified;
 }
 
 export async function solicitarOtpAction(
@@ -117,12 +186,18 @@ export async function solicitarOtpAction(
   }
 
   const codigo = generarOtp();
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  
+  try {
+    demoSaveOtp(email, codigo, expiresAt);
+  } catch {}
+
   try {
     await db.insert(otpCodes).values({
       email,
       code: codigo,
       purpose: "registro",
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      expiresAt: new Date(expiresAt),
     });
   } catch {
     // Continuar en modo demo
@@ -131,8 +206,15 @@ export async function solicitarOtpAction(
   // Guardar fallback siempre
   try {
     const jar = await cookies();
-    jar.set("otp_fallback", `${email}|${codigo}|${Date.now() + 10 * 60 * 1000}`, {
+    jar.set("otp_fallback", `${email}|${codigo}|${expiresAt}`, {
       httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 10 * 60,
+    });
+    jar.set("otp_fallback_client", `${email}|${codigo}|${expiresAt}`, {
+      httpOnly: false,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
@@ -292,7 +374,7 @@ export async function registroAction(
     if (otp.length !== 6) return { error: "Primero verifica tu correo con el código OTP de 6 dígitos." };
     const otpValido = await verificarOtp(email, otp);
     if (!otpValido) {
-      return { error: "El código OTP es incorrecto, ya fue usado o expiró. Solicita uno nuevo." };
+      return { error: `El código OTP ${otp} es incorrecto para ${email}, ya fue usado o expiró. Solicita uno nuevo. Revisa que estés usando el último código generado.` };
     }
     await marcarCorreoVerificado(email);
   }
@@ -577,7 +659,7 @@ export async function continuarConGoogleCorreoAction(
 
   const otpValido = await verificarOtp(email, otp);
   if (!otpValido) {
-    return { error: "El código OTP es incorrecto o ya expiró. Solicita uno nuevo." };
+    return { error: `El código OTP ${otp} es incorrecto o ya expiró para ${email}. Solicita uno nuevo.` };
   }
 
   await marcarCorreoVerificado(email);

@@ -40,10 +40,19 @@ type DemoProfileTeacher = {
   submoduloNumero?: number | null;
 };
 
+type DemoOtp = {
+  email: string;
+  code: string;
+  expiresAt: number;
+  used: boolean;
+  createdAt: number;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
   teacherProfiles: DemoProfileTeacher[];
+  otps: DemoOtp[];
   nextId: number;
 };
 
@@ -55,13 +64,19 @@ function loadStore(): DemoStore {
       const raw = readFileSync(STORE_PATH, "utf8");
       const parsed = JSON.parse(raw) as DemoStore;
       if (parsed.users && Array.isArray(parsed.users)) {
-        return parsed;
+        return {
+          users: parsed.users,
+          studentProfiles: parsed.studentProfiles ?? [],
+          teacherProfiles: parsed.teacherProfiles ?? [],
+          otps: parsed.otps ?? [],
+          nextId: parsed.nextId ?? 1,
+        };
       }
     }
   } catch (e) {
     console.warn("[demo-store] Error cargando store:", (e as Error).message);
   }
-  return { users: [], studentProfiles: [], teacherProfiles: [], nextId: 1 };
+  return { users: [], studentProfiles: [], teacherProfiles: [], otps: [], nextId: 1 };
 }
 
 function saveStore(store: DemoStore) {
@@ -84,6 +99,10 @@ const globalForDemo = globalThis as typeof globalThis & {
 function getStore(): DemoStore {
   if (!globalForDemo.__cbtisDemoStore) {
     globalForDemo.__cbtisDemoStore = loadStore();
+  }
+  // Asegurar otps existe
+  if (!globalForDemo.__cbtisDemoStore.otps) {
+    globalForDemo.__cbtisDemoStore.otps = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -175,8 +194,55 @@ export function demoListUsers(): DemoUser[] {
 }
 
 export function demoClearStore() {
-  globalForDemo.__cbtisDemoStore = { users: [], studentProfiles: [], teacherProfiles: [], nextId: 1 };
+  globalForDemo.__cbtisDemoStore = { users: [], studentProfiles: [], teacherProfiles: [], otps: [], nextId: 1 };
   persist();
+}
+
+// ========== OTP DEMO STORE ==========
+
+export function demoSaveOtp(email: string, code: string, expiresAtMs: number) {
+  const store = getStore();
+  // Limpiar OTPs expirados del mismo email
+  store.otps = store.otps.filter(o => o.email.toLowerCase() !== email.toLowerCase() || o.expiresAt > Date.now());
+  store.otps.push({
+    email: email.toLowerCase(),
+    code,
+    expiresAt: expiresAtMs,
+    used: false,
+    createdAt: Date.now(),
+  });
+  persist();
+  console.log(`[demo-store] OTP guardado: ${email} -> ${code} expira ${new Date(expiresAtMs).toISOString()}`);
+}
+
+export function demoVerifyOtp(email: string, code: string): boolean {
+  const store = getStore();
+  const now = Date.now();
+  // Buscar OTP válido más reciente
+  const validOtps = store.otps
+    .filter(o => 
+      o.email.toLowerCase() === email.toLowerCase() && 
+      o.code === code && 
+      !o.used && 
+      o.expiresAt > now
+    )
+    .sort((a, b) => b.createdAt - a.createdAt);
+
+  console.log(`[demo-store] Verificando OTP: email=${email} code=${code} encontrados=${validOtps.length} totalOtps=${store.otps.length}`);
+  if (validOtps.length > 0) {
+    validOtps[0].used = true;
+    persist();
+    console.log(`[demo-store] OTP verificado correctamente: ${email}`);
+    return true;
+  }
+  // Debug: mostrar OTPs del email
+  const emailOtps = store.otps.filter(o => o.email.toLowerCase() === email.toLowerCase());
+  console.log(`[demo-store] OTPs para ${email}:`, emailOtps.map(o => `${o.code} usado=${o.used} exp=${o.expiresAt > now}`));
+  return false;
+}
+
+export function demoListOtps() {
+  return getStore().otps;
 }
 
 // Para debug
