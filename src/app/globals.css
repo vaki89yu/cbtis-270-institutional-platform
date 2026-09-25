@@ -144,6 +144,29 @@ body::after {
   }
 }
 
+/*
+ * Tarjeta documental estática.
+ *
+ * La biblioteca de formatos y los formatos llenables se comportan como un
+ * catálogo documental institucional, no como piezas promocionales: se les
+ * retira el barrido de luz sobre cristal, el desplazamiento vertical y
+ * cualquier transición de entrada o salida.
+ */
+.tarjeta-estatica,
+.tarjeta-estatica:hover {
+  transform: none;
+  transition: none;
+  animation: none;
+  will-change: auto;
+}
+
+.tarjeta-estatica::before,
+.tarjeta-estatica:hover::before {
+  content: none;
+  display: none;
+  animation: none;
+}
+
 .seccion-azul {
   border-block: 1px solid rgba(226, 241, 255, 0.36);
   background:
@@ -349,6 +372,27 @@ body::after {
 .panel-cristal .tarjeta:hover {
   border-color: rgba(200, 228, 255, 0.5);
   background: rgba(10, 32, 60, 0.36);
+}
+
+/* Dentro del panel no hay barrido de luz sobre cristal: es una herramienta de
+   trabajo académico, no una portada promocional. */
+.panel-cristal .tarjeta-azul::before,
+.panel-cristal .tarjeta-azul:hover::before {
+  content: none;
+  display: none;
+  animation: none;
+}
+
+.panel-cristal .tarjeta-azul,
+.panel-cristal .tarjeta-azul:hover {
+  transform: none;
+  animation: none;
+}
+
+/* La tarjeta estática tampoco cambia de superficie al pasar el cursor */
+.panel-cristal .tarjeta-estatica:hover {
+  background: rgba(8, 26, 50, 0.26);
+  border-color: rgba(200, 228, 255, 0.34);
 }
 
 .panel-cristal .bg-white,

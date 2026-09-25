@@ -56,7 +56,7 @@ export default async function FormatoLlenablePage({ params }: Props) {
         </span>
       </div>
 
-      <header className="tarjeta-azul rounded-2xl p-6 text-white">
+      <header className="tarjeta-azul tarjeta-estatica rounded-2xl p-6 text-white">
         <span className="rounded-full bg-white/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wider ring-1 ring-white/30">
           {NOMBRE_MODULO[formato.modulo]}
         </span>

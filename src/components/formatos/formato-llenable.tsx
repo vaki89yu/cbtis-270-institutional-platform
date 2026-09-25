@@ -391,7 +391,7 @@ export function FormatoLlenable({ formato, perfilUsuario, docentes }: Props) {
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-600 transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-600"
             style={{ width: `${progreso.pct}%` }}
           />
         </div>
@@ -399,7 +399,7 @@ export function FormatoLlenable({ formato, perfilUsuario, docentes }: Props) {
 
       {/* Secciones */}
       {formato.secciones.map((seccion, si) => (
-        <section key={si} className="tarjeta-azul rounded-2xl p-5 text-white">
+        <section key={si} className="tarjeta-azul tarjeta-estatica rounded-2xl p-5 text-white">
           <h3 className="text-xs font-black uppercase tracking-wider text-sky-200">{seccion.titulo}</h3>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {seccion.campos.map((campo) => {

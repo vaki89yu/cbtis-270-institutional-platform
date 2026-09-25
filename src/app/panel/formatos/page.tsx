@@ -75,7 +75,7 @@ export default async function FormatosPage() {
                 <Link
                   key={f.codigo}
                   href={`/panel/formatos/${f.codigo}`}
-                  className="tarjeta group flex flex-col justify-between p-5 transition hover:shadow-lg"
+                  className="tarjeta tarjeta-estatica group flex flex-col justify-between p-5"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
