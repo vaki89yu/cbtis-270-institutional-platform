@@ -2,6 +2,11 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { MarcaInstitucional } from "@/components/marca";
 import { PanelNav } from "@/components/panel-nav";
+import {
+  BandaSeccion,
+  FondoPrincipalPanel,
+  MarcaAguaSeccion,
+} from "@/components/panel-wallpaper";
 import { SessionSync } from "@/components/session-sync";
 import { requireUser } from "@/lib/guards";
 import { logoutAction } from "@/lib/actions/auth";
@@ -26,6 +31,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
   return (
     <div className="flex min-h-screen flex-col">
       <SessionSync />
+      <FondoPrincipalPanel />
       <header className="panel-barra sticky top-0 z-40 border-b">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <MarcaInstitucional href="/panel" variante="claro" />
@@ -50,7 +56,13 @@ export default async function PanelLayout({ children }: { children: ReactNode })
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-6 sm:px-4 sm:py-8">
-        <div className="panel-lienzo rounded-3xl p-4 sm:p-6">{children}</div>
+        <div className="panel-lienzo rounded-3xl">
+          <BandaSeccion />
+          <div className="relative p-4 sm:p-6">
+            <MarcaAguaSeccion />
+            {children}
+          </div>
+        </div>
       </main>
 
       <footer className="panel-barra border-t py-6">
