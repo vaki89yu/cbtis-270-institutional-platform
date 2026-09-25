@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { MarcaInstitucional } from "@/components/marca";
 import type { NombreIcono } from "@/components/iconos";
+import { BotonSalir } from "@/components/boton-salir";
 import { PanelNav } from "@/components/panel-nav";
 import {
   EtiquetaSeccion,
@@ -44,9 +45,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
               {user.nombre.charAt(0).toUpperCase()}
             </div>
             <form action={logoutAction}>
-              <button type="submit" className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20">
-                Salir
-              </button>
+              <BotonSalir />
             </form>
           </div>
         </div>

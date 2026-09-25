@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { teacherProfiles, users } from "@/db/schema";
 import { MarcaInstitucional } from "@/components/marca";
 import { RegistroProfesional } from "@/components/registro-profesional";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, sesionRecienCerrada } from "@/lib/auth";
 import { ESPECIALIDADES } from "@/lib/guards";
 
 export const metadata: Metadata = { title: "Registro de usuarios" };
@@ -22,7 +22,10 @@ type Props = {
 };
 
 export default async function RegistroPage({ searchParams }: Props) {
-  const user = await getCurrentUser();
+  // Tras cerrar sesión no se debe reenviar al panel aunque queden restos de
+  // la sesión anterior en el navegador.
+  const recienCerrada = await sesionRecienCerrada();
+  const user = recienCerrada ? null : await getCurrentUser();
   if (user) redirect("/panel");
   const params = searchParams ? await searchParams : {};
 

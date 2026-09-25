@@ -6,7 +6,7 @@ import { AccesoGoogle } from "@/components/acceso-google";
 import { FormEstado } from "@/components/form-estado";
 import { MarcaInstitucional } from "@/components/marca";
 import { loginAction } from "@/lib/actions/auth";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, sesionRecienCerrada } from "@/lib/auth";
 import { Icono } from "@/components/iconos";
 
 export const metadata: Metadata = { title: "Acceso a la plataforma" };
@@ -37,7 +37,10 @@ function leerJsonCookie<T>(value?: string): T | null {
 }
 
 export default async function LoginPage({ searchParams }: Props) {
-  const user = await getCurrentUser();
+  // Tras cerrar sesión no se debe reenviar al panel aunque queden restos de
+  // la sesión anterior en el navegador.
+  const recienCerrada = await sesionRecienCerrada();
+  const user = recienCerrada ? null : await getCurrentUser();
   if (user) redirect("/panel");
 
   const params = searchParams ? await searchParams : {};

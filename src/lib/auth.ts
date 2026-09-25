@@ -271,6 +271,47 @@ export async function createSession(userId: number, userOverride?: User | any): 
   return { token, hint: hintValue };
 }
 
+/** Marca que el servidor cerró la sesión; la lee el cliente para purgar su copia local. */
+export const LOGOUT_COOKIE = "cbtis270_sesion_cerrada";
+
+/**
+ * Las cookies de sesión se emiten con SameSite=None, Secure y Partitioned.
+ * Un `delete` simple no siempre las elimina, porque el navegador exige que la
+ * cookie de borrado coincida en atributos con la original (sobre todo en
+ * cookies particionadas). Por eso se sobrescriben expiradas con los mismos
+ * atributos y además se borran por nombre.
+ */
+function borrarCookieSesion(
+  jar: Awaited<ReturnType<typeof cookies>>,
+  nombre: string,
+  httpOnly: boolean,
+) {
+  // El jar de Next indexa por nombre: la última escritura es la que viaja en la
+  // respuesta. Por eso la variante Partitioned/Secure/SameSite=None se emite al
+  // final, porque es la que coincide con los atributos usados al crear la
+  // sesión y la única que el navegador acepta para expirar cookies
+  // particionadas. Las copias no httpOnly las remata purgarSesionLocal() en el
+  // cliente, que prueba las tres variantes.
+  try {
+    jar.delete(nombre);
+  } catch {}
+  try {
+    jar.set(nombre, "", { path: "/", expires: new Date(0), maxAge: 0 } as any);
+  } catch {}
+  try {
+    jar.set(nombre, "", {
+      httpOnly,
+      sameSite: "none",
+      path: "/",
+      expires: new Date(0),
+      maxAge: 0,
+      secure: true,
+      // @ts-ignore atributo aún no tipado en Next
+      partitioned: true,
+    } as any);
+  } catch {}
+}
+
 export async function destroySession() {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value || jar.get(`${SESSION_COOKIE}_client`)?.value;
@@ -281,15 +322,48 @@ export async function destroySession() {
       // Ignorar si no hay DB
     }
   }
-  jar.delete(SESSION_COOKIE);
-  jar.delete(`${SESSION_COOKIE}_client`);
-  jar.delete(SESSION_HINT_COOKIE);
-  jar.delete(`${SESSION_HINT_COOKIE}_client`);
-  jar.delete("otp_verified_email");
-  jar.delete("google_verified_email");
-  jar.delete("cbtis270_saved_account");
-  jar.delete("cbtis270_saved_accounts_list");
-  console.log("[auth] Sesión destruida");
+
+  const httpOnlyCookies = [SESSION_COOKIE, SESSION_HINT_COOKIE];
+  const clientCookies = [
+    `${SESSION_COOKIE}_client`,
+    `${SESSION_HINT_COOKIE}_client`,
+    "otp_verified_email",
+    "google_verified_email",
+    "cbtis270_saved_account",
+    "cbtis270_saved_accounts_list",
+  ];
+
+  for (const nombre of httpOnlyCookies) borrarCookieSesion(jar, nombre, true);
+  for (const nombre of clientCookies) borrarCookieSesion(jar, nombre, false);
+
+  // Señal para que SessionSync borre localStorage y no resucite la sesión.
+  try {
+    jar.set(LOGOUT_COOKIE, "1", {
+      httpOnly: false,
+      sameSite: "none",
+      path: "/",
+      maxAge: 120,
+      secure: true,
+      // @ts-ignore
+      partitioned: true,
+    } as any);
+  } catch {}
+
+  console.log("[auth] Sesión destruida y cookies expiradas");
+}
+
+/**
+ * Indica si el servidor acaba de cerrar la sesión. Las pantallas de acceso y
+ * registro lo consultan para no reenviar al panel mientras el navegador aún
+ * conserva restos de la sesión anterior.
+ */
+export async function sesionRecienCerrada(): Promise<boolean> {
+  try {
+    const jar = await cookies();
+    return jar.get(LOGOUT_COOKIE)?.value === "1";
+  } catch {
+    return false;
+  }
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {

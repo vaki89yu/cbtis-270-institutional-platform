@@ -8,8 +8,51 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
+const CLAVES_SESION = ["cbtis270_session", "cbtis270_session_hint"];
+const COOKIES_SESION = [
+  "cbtis270_session",
+  "cbtis270_session_client",
+  "cbtis270_session_hint",
+  "cbtis270_session_hint_client",
+  "otp_verified_email",
+  "google_verified_email",
+];
+const COOKIE_LOGOUT = "cbtis270_sesion_cerrada";
+
+function borrarCookieCliente(nombre: string) {
+  const variantes = [
+    `${nombre}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`,
+    `${nombre}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure`,
+    `${nombre}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure; Partitioned`,
+  ];
+  for (const v of variantes) {
+    try {
+      document.cookie = v;
+    } catch {}
+  }
+}
+
+/** Borra por completo la copia local de la sesión (localStorage + cookies de cliente). */
+export function purgarSesionLocal() {
+  try {
+    for (const clave of CLAVES_SESION) localStorage.removeItem(clave);
+  } catch {}
+  for (const nombre of COOKIES_SESION) borrarCookieCliente(nombre);
+}
+
 export function SessionSync() {
   useEffect(() => {
+    // 0. Si el servidor cerró la sesión, purgar la copia local ANTES de
+    //    cualquier intento de restauración. Sin esto, el token guardado en
+    //    localStorage volvía a escribir las cookies y el usuario seguía dentro.
+    const sesionCerrada = getCookie(COOKIE_LOGOUT);
+    if (sesionCerrada) {
+      purgarSesionLocal();
+      borrarCookieCliente(COOKIE_LOGOUT);
+      console.log("[SessionSync] Sesión cerrada por el servidor: copia local purgada");
+      return;
+    }
+
     // 1. Intentar recuperar sesión desde URL (fallback cuando cookies bloqueadas en iframe)
     try {
       const url = new URL(window.location.href);
