@@ -189,22 +189,30 @@ body::after {
 
 /* Encabezado y pie del panel interno */
 .panel-barra {
-  background: linear-gradient(120deg, rgba(15, 44, 76, 0.86), rgba(58, 95, 132, 0.72));
-  border-color: rgba(226, 241, 255, 0.2);
-  backdrop-filter: blur(20px) saturate(130%);
+  /* Translúcida para que el wallpaper también se vea detrás de barra y pie */
+  background: linear-gradient(120deg, rgba(6, 22, 44, 0.42), rgba(14, 40, 70, 0.32));
+  border-color: rgba(226, 241, 255, 0.24);
+  backdrop-filter: blur(10px) saturate(130%);
+}
+
+.panel-barra p,
+.panel-barra span,
+.panel-barra a,
+.panel-barra button {
+  text-shadow: 0 1px 4px rgba(3, 12, 26, 0.85);
 }
 
 /* Lienzo translúcido donde vive el contenido del panel */
 .panel-lienzo {
   position: relative;
   isolation: isolate;
-  border: 1px solid rgba(190, 222, 255, 0.24);
-  /* Translúcido: deja ver el wallpaper de logística a través del área de trabajo */
-  background: linear-gradient(165deg, rgba(8, 26, 50, 0.34), rgba(10, 32, 60, 0.42));
+  border: 1px solid rgba(190, 222, 255, 0.26);
+  /* Prácticamente transparente: el wallpaper se ve a plena intensidad */
+  background: linear-gradient(165deg, rgba(6, 22, 44, 0.1), rgba(8, 28, 54, 0.16));
   box-shadow:
-    0 30px 80px rgba(4, 15, 30, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(10px) saturate(125%);
+    0 30px 80px rgba(4, 15, 30, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(2px) saturate(115%);
 }
 
 /* ---------- WALLPAPERS DE LOGÍSTICA REAL DEL PANEL INTERNO ---------- */
@@ -228,18 +236,19 @@ body::after {
   object-fit: cover;
   object-position: center;
   transform: scale(1.02);
-  filter: saturate(118%) contrast(104%);
+  /* Realce fotográfico: el wallpaper es el primer remate visual de cada apartado */
+  filter: saturate(128%) contrast(110%) brightness(106%);
   animation: fondo-aparece 0.8s ease-out;
 }
 
-/* Velo institucional tenue: protege la lectura sin ocultar la fotografía */
+/* Velo mínimo: sólo el necesario para anclar el contraste, la foto manda */
 .panel-fondo__velo {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 12%, rgba(59, 145, 243, 0.2), transparent 50%),
-    radial-gradient(circle at 82% 88%, rgba(29, 91, 213, 0.22), transparent 52%),
-    linear-gradient(168deg, rgba(8, 24, 48, 0.62) 0%, rgba(12, 34, 62, 0.5) 45%, rgba(8, 24, 48, 0.68) 100%);
+    radial-gradient(circle at 18% 12%, rgba(59, 145, 243, 0.14), transparent 55%),
+    radial-gradient(circle at 82% 88%, rgba(29, 91, 213, 0.14), transparent 55%),
+    linear-gradient(168deg, rgba(6, 20, 40, 0.3) 0%, rgba(8, 26, 50, 0.16) 45%, rgba(6, 20, 40, 0.34) 100%);
 }
 
 @keyframes fondo-aparece {
@@ -258,17 +267,19 @@ body::after {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.45rem;
+  gap: 0.5rem;
   padding-inline: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(226, 241, 255, 0.95);
-  text-shadow: 0 2px 10px rgba(6, 22, 43, 0.85);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow:
+    0 2px 5px rgba(3, 12, 26, 0.9),
+    0 0 18px rgba(3, 12, 26, 0.65);
 }
 
 .etiqueta-seccion__nombre {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
 }
 
 .etiqueta-seccion__sep {
@@ -291,20 +302,53 @@ body::after {
   color: #eaf3ff;
 }
 
+/*
+ * Al aumentar la visibilidad del wallpaper, la legibilidad se sostiene con
+ * sombra de texto en lugar de con superficies opacas.
+ */
+.panel-cristal p,
+.panel-cristal span,
+.panel-cristal li,
+.panel-cristal td,
+.panel-cristal th,
+.panel-cristal dt,
+.panel-cristal dd,
+.panel-cristal label,
+.panel-cristal a,
+.panel-cristal strong,
+.panel-cristal h1,
+.panel-cristal h2,
+.panel-cristal h3,
+.panel-cristal h4,
+.panel-cristal h5 {
+  text-shadow:
+    0 1px 3px rgba(3, 12, 26, 0.85),
+    0 0 14px rgba(3, 12, 26, 0.55);
+}
+
+/* Los textos dentro de chips y botones ya tienen su propio fondo sólido */
+.panel-cristal .btn-primario,
+.panel-cristal .btn-primario *,
+.panel-cristal .campo,
+.panel-cristal .campo::placeholder {
+  text-shadow: none;
+}
+
 /* --- Superficies --- */
 .panel-cristal .tarjeta,
 .panel-cristal .tarjeta-azul {
-  background: rgba(10, 30, 56, 0.44);
-  border-color: rgba(190, 222, 255, 0.22);
+  /* Cristal muy abierto: se lee el contenido y se sigue viendo la fotografía */
+  background: rgba(8, 26, 50, 0.26);
+  border-color: rgba(200, 228, 255, 0.28);
   box-shadow:
-    0 18px 45px rgba(4, 15, 30, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(16px) saturate(135%);
+    0 18px 45px rgba(4, 15, 30, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(7px) saturate(130%);
 }
 
 .panel-cristal .tarjeta:hover {
-  border-color: rgba(190, 222, 255, 0.4);
-  background: rgba(12, 36, 66, 0.52);
+  border-color: rgba(200, 228, 255, 0.5);
+  background: rgba(10, 32, 60, 0.36);
 }
 
 .panel-cristal .bg-white,
@@ -344,10 +388,10 @@ body::after {
 }
 
 .panel-cristal h1,
-.panel-cristal h2,
-.panel-cristal h3,
-.panel-cristal h4 {
-  text-shadow: 0 2px 12px rgba(5, 18, 36, 0.55);
+.panel-cristal h2 {
+  text-shadow:
+    0 2px 4px rgba(3, 12, 26, 0.9),
+    0 0 22px rgba(3, 12, 26, 0.6);
 }
 
 /* --- Bordes y separadores --- */
