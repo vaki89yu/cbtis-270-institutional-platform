@@ -503,6 +503,62 @@ body::after {
   background-color: rgba(168, 85, 247, 0.2) !important;
 }
 
+/* --- Superficies con opacidad explícita (bg-color/NN) --- */
+/*
+ * Tailwind genera una clase distinta por cada nivel de opacidad, por lo que
+ * los avisos tipo "EPP obligatorio" (bg-amber-50/90) conservaban su fondo
+ * claro. Aquí se llevan todas al mismo lenguaje de cristal del panel.
+ */
+.panel-cristal .bg-amber-50\/90 {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.panel-cristal .bg-blue-50\/70,
+.panel-cristal .bg-blue-50\/80 {
+  background-color: rgba(96, 176, 248, 0.2) !important;
+}
+
+.panel-cristal .bg-sky-50\/50 {
+  background-color: rgba(56, 189, 248, 0.18) !important;
+}
+
+.panel-cristal .bg-inst-50\/40,
+.panel-cristal .bg-inst-50\/50,
+.panel-cristal .bg-inst-200\/40 {
+  background-color: rgba(59, 145, 243, 0.2) !important;
+}
+
+.panel-cristal .bg-slate-50\/70,
+.panel-cristal .bg-slate-50\/90,
+.panel-cristal .bg-white\/70,
+.panel-cristal .bg-white\/80,
+.panel-cristal .bg-white\/90,
+.panel-cristal .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Los avisos translúcidos conservan su lectura con desenfoque propio */
+.panel-cristal .bg-amber-50\/90,
+.panel-cristal .bg-blue-50\/70,
+.panel-cristal .bg-blue-50\/80,
+.panel-cristal .bg-sky-50\/50,
+.panel-cristal .bg-inst-50\/40,
+.panel-cristal .bg-inst-50\/50,
+.panel-cristal .bg-inst-200\/40,
+.panel-cristal .bg-slate-50\/70,
+.panel-cristal .bg-slate-50\/90,
+.panel-cristal .bg-white\/70,
+.panel-cristal .bg-white\/80,
+.panel-cristal .bg-white\/90,
+.panel-cristal .bg-white\/95,
+.panel-cristal .bg-emerald-50,
+.panel-cristal .bg-amber-50,
+.panel-cristal .bg-rose-50,
+.panel-cristal .bg-sky-50,
+.panel-cristal .bg-inst-50 {
+  backdrop-filter: blur(7px) saturate(130%);
+}
+
 /* --- Controles de formulario --- */
 .panel-cristal .campo {
   border-color: rgba(190, 222, 255, 0.28);
