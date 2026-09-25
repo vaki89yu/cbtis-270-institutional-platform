@@ -1,62 +1,45 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { FONDO_PRINCIPAL, wallpaperDeRuta } from "@/lib/panel-wallpapers";
+import { wallpaperDeRuta } from "@/lib/panel-wallpapers";
 
 /**
- * Fondo principal fijo de toda la plataforma interna: fotografía real de un
- * centro de distribución en operación nocturna, atenuada para no competir con
- * el contenido de trabajo.
+ * Wallpaper a pantalla completa de la sección activa.
+ *
+ * La fotografía de logística real cubre todo el viewport (no una banda
+ * recortada): queda fija detrás del contenido y cambia automáticamente según
+ * la ruta del panel. Encima lleva un velo azul institucional tenue, suficiente
+ * para garantizar la legibilidad del contenido sin ocultar la imagen.
  */
-export function FondoPrincipalPanel() {
+export function FondoSeccionPanel() {
+  const pathname = usePathname() ?? "/panel";
+  const wp = wallpaperDeRuta(pathname);
+
   return (
-    <div aria-hidden className="panel-fondo-principal">
+    <div aria-hidden className="panel-fondo">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={FONDO_PRINCIPAL} alt="" className="panel-fondo-principal__img" />
-      <div className="panel-fondo-principal__velo" />
+      <img key={wp.src} src={wp.src} alt="" className="panel-fondo__img" />
+      <div className="panel-fondo__velo" />
     </div>
   );
 }
 
 /**
- * Banda fotográfica de la sección activa. Cambia automáticamente según la ruta
- * del panel (almacén, formatos, expedientes, etc.) y sirve como wallpaper
- * contextual de cada apartado.
+ * Etiqueta de contexto de la sección activa, en texto sobre el wallpaper.
+ * Sustituye a la antigua banda fotográfica recortada.
  */
-export function BandaSeccion() {
+export function EtiquetaSeccion() {
   const pathname = usePathname() ?? "/panel";
   const wp = wallpaperDeRuta(pathname);
 
   return (
-    <div className="banda-seccion" key={wp.src + wp.etiqueta}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={wp.src} alt="" aria-hidden className="banda-seccion__img" />
-      <div className="banda-seccion__velo" />
-      <div className="banda-seccion__contenido">
-        <span className="banda-seccion__icono" aria-hidden>
-          {wp.icono}
-        </span>
-        <div className="min-w-0">
-          <p className="banda-seccion__titulo">{wp.etiqueta}</p>
-          <p className="banda-seccion__contexto">{wp.contexto}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Marca de agua de la sección activa: la misma fotografía a muy baja opacidad
- * detrás del área de trabajo, para dar textura sin restar legibilidad.
- */
-export function MarcaAguaSeccion() {
-  const pathname = usePathname() ?? "/panel";
-  const wp = wallpaperDeRuta(pathname);
-
-  return (
-    <div aria-hidden className="marca-agua-seccion">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={wp.src} alt="" className="marca-agua-seccion__img" />
-    </div>
+    <p className="etiqueta-seccion">
+      <span aria-hidden>{wp.icono}</span>
+      <span className="etiqueta-seccion__nombre">{wp.etiqueta}</span>
+      <span className="etiqueta-seccion__sep" aria-hidden>
+        ·
+      </span>
+      <span className="etiqueta-seccion__contexto">{wp.contexto}</span>
+    </p>
   );
 }

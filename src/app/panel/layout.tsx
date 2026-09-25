@@ -3,9 +3,8 @@ import Link from "next/link";
 import { MarcaInstitucional } from "@/components/marca";
 import { PanelNav } from "@/components/panel-nav";
 import {
-  BandaSeccion,
-  FondoPrincipalPanel,
-  MarcaAguaSeccion,
+  EtiquetaSeccion,
+  FondoSeccionPanel,
 } from "@/components/panel-wallpaper";
 import { SessionSync } from "@/components/session-sync";
 import { requireUser } from "@/lib/guards";
@@ -31,7 +30,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
   return (
     <div className="flex min-h-screen flex-col">
       <SessionSync />
-      <FondoPrincipalPanel />
+      <FondoSeccionPanel />
       <header className="panel-barra sticky top-0 z-40 border-b">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <MarcaInstitucional href="/panel" variante="claro" />
@@ -55,13 +54,10 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-6 sm:px-4 sm:py-8">
-        <div className="panel-lienzo rounded-3xl">
-          <BandaSeccion />
-          <div className="relative p-4 sm:p-6">
-            <MarcaAguaSeccion />
-            {children}
-          </div>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-4 sm:py-7">
+        <EtiquetaSeccion />
+        <div className="panel-lienzo panel-cristal mt-3 rounded-3xl p-4 sm:p-6">
+          {children}
         </div>
       </main>
 
