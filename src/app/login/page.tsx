@@ -7,6 +7,7 @@ import { FormEstado } from "@/components/form-estado";
 import { MarcaInstitucional } from "@/components/marca";
 import { loginAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/auth";
+import { Icono } from "@/components/iconos";
 
 export const metadata: Metadata = { title: "Acceso a la plataforma" };
 export const dynamic = "force-dynamic";
@@ -106,7 +107,7 @@ export default async function LoginPage({ searchParams }: Props) {
                 </p>
               </div>
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl shadow-sm ring-1 ring-slate-200">
-                🔐
+                <Icono nombre="candado" tamano={22} />
               </div>
             </div>
 

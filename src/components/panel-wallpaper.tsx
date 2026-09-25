@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Icono } from "@/components/iconos";
 import { wallpaperDeRuta } from "@/lib/panel-wallpapers";
 
 /**
@@ -34,7 +35,7 @@ export function EtiquetaSeccion() {
 
   return (
     <p className="etiqueta-seccion">
-      <span aria-hidden>{wp.icono}</span>
+      <Icono nombre={wp.icono} tamano={16} className="shrink-0" />
       <span className="etiqueta-seccion__nombre">{wp.etiqueta}</span>
       <span className="etiqueta-seccion__sep" aria-hidden>
         ·

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icono } from "@/components/iconos";
 import { notFound } from "next/navigation";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -156,7 +157,7 @@ export default async function ClaseDetallePage({ params }: Props) {
           {/* SESIONES */}
           <section className="tarjeta p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">🎥 Prácticas y sesiones</h2>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Icono nombre="video" tamano={20} /> Prácticas y sesiones</h2>
             </div>
 
             {esDocente ? (
@@ -252,7 +253,7 @@ export default async function ClaseDetallePage({ params }: Props) {
 
           {/* TAREAS */}
           <section className="tarjeta p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-900">📝 Actividades y evidencias</h2>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900"><Icono nombre="evidencias" tamano={20} /> Actividades y evidencias</h2>
 
             {esDocente ? (
               <details className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -349,7 +350,7 @@ export default async function ClaseDetallePage({ params }: Props) {
                               <input type="hidden" name="courseId" value={courseId} />
                               <input type="hidden" name="tareaId" value={tarea.id} />
                               <BotonEnviar className="text-xs font-semibold text-rose-600" pendienteTexto="...">
-                                ✕
+                                <Icono nombre="cerrar" tamano={14} />
                               </BotonEnviar>
                             </form>
                           ) : null}
@@ -364,7 +365,7 @@ export default async function ClaseDetallePage({ params }: Props) {
 
           {/* MURO */}
           <section className="tarjeta p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-900">💬 Muro operativo del grupo</h2>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900"><Icono nombre="conversacion" tamano={20} /> Muro operativo del grupo</h2>
             {puedePublicar ? (
               <form action={publicarEnMuroAction} className="mb-5 space-y-3">
                 <input type="hidden" name="courseId" value={courseId} />
@@ -411,7 +412,7 @@ export default async function ClaseDetallePage({ params }: Props) {
         <div className="space-y-6">
           {/* MATERIAL */}
           <section className="tarjeta p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-900">📚 Formatos y material logístico</h2>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900"><Icono nombre="formatos" tamano={20} /> Formatos y material logístico</h2>
 
             {esDocente ? (
               <details className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -468,7 +469,7 @@ export default async function ClaseDetallePage({ params }: Props) {
                           <input type="hidden" name="courseId" value={courseId} />
                           <input type="hidden" name="materialId" value={material.id} />
                           <BotonEnviar className="text-xs font-semibold text-rose-600" pendienteTexto="...">
-                            ✕
+                            <Icono nombre="cerrar" tamano={14} />
                           </BotonEnviar>
                         </form>
                       ) : null}
@@ -481,7 +482,7 @@ export default async function ClaseDetallePage({ params }: Props) {
 
           {/* LISTA */}
           <section className="tarjeta p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-900">👥 Lista del grupo</h2>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900"><Icono nombre="usuarios" tamano={20} /> Lista del grupo</h2>
             {alumnos.length === 0 ? (
               <p className="text-sm text-slate-500">Sin alumnos inscritos.</p>
             ) : (

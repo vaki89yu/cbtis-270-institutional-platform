@@ -187,7 +187,7 @@ export async function resolverJustificanteAction(formData: FormData) {
   // Notificar al estudiante
   await crearNotificacion(
     just.just.studentId,
-    `Justificante ${resolucion === "aprobado" ? "Aprobado ✅" : "Rechazado ❌"}`,
+    `Justificante ${resolucion === "aprobado" ? "aprobado" : "rechazado"}`,
     `Tu docente revisó el justificante para ${just.cursoNombre}. Estatus: ${resolucion}. ${nota ? `Nota: ${nota}` : ""}`,
     "justificante_resuelto",
   );

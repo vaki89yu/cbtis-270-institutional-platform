@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icono, type NombreIcono } from "@/components/iconos";
 
 type Props = {
   titulo: string;
@@ -10,20 +11,20 @@ type Props = {
   claveVersion: string;
 };
 
-const estilos: Record<string, { fondo: string; icono: string; borde: string }> = {
+const estilos: Record<string, { fondo: string; icono: NombreIcono; borde: string }> = {
   info: {
     fondo: "from-sky-600/95 to-blue-700/95",
-    icono: "ℹ️",
+    icono: "informacion",
     borde: "border-sky-300/40",
   },
   alerta: {
     fondo: "from-amber-500/95 to-orange-600/95",
-    icono: "⚠️",
+    icono: "alerta",
     borde: "border-amber-200/50",
   },
   urgente: {
     fondo: "from-rose-600/95 to-red-700/95",
-    icono: "🚨",
+    icono: "urgente",
     borde: "border-rose-200/50",
   },
 };
@@ -50,9 +51,7 @@ export function BannerUrgente({ titulo, mensaje, nivel, enlace, claveVersion }: 
       className={`relative z-50 border-b ${estilo.borde} bg-gradient-to-r ${estilo.fondo} text-white shadow-lg backdrop-blur`}
     >
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 text-sm">
-        <span aria-hidden className="text-lg">
-          {estilo.icono}
-        </span>
+        <Icono nombre={estilo.icono} tamano={20} className="shrink-0" />
         <div className="min-w-0 flex-1">
           <span className="font-bold">{titulo}</span>
           <span className="mx-2 hidden text-white/60 sm:inline">·</span>

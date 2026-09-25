@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { registroAction, type ActionState } from "@/lib/actions/auth";
+import { Icono } from "@/components/iconos";
 
 type Docente = {
   id: number;
@@ -178,7 +179,7 @@ export function RegistroProfesional({
         setCodigoDemo(data.codigo);
         setOtpState({
           ok: data.modo === "demo" 
-            ? `✅ Modo demo: tu código es ${data.codigo}. ¡Ya puedes usarlo abajo!`
+            ? `Modo demo: tu código es ${data.codigo}. Ya puedes usarlo abajo.`
             : data.message ?? "Código enviado. Revisa tu correo.",
         });
       } else {
@@ -251,7 +252,7 @@ export function RegistroProfesional({
             {codigoDemo ? (
               <div className="rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-4">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
-                  🎉 Código generado
+                  <span className="inline-flex items-center gap-1.5"><Icono nombre="verificado" tamano={14} /> Código generado</span>
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <span className="text-3xl font-black tracking-[0.3em] text-blue-900">{codigoDemo}</span>
@@ -272,7 +273,14 @@ export function RegistroProfesional({
               disabled={otpLoading || !emailOtp.includes("@")}
               className="btn-primario w-full border-2 border-blue-700 shadow-md shadow-blue-900/15 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {otpLoading ? "⏳ Generando..." : "📧 Enviar código al correo"}
+              {otpLoading ? (
+                "Generando..."
+              ) : (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Icono nombre="correo" tamano={17} />
+                  Enviar código al correo
+                </span>
+              )}
             </button>
             <p className="text-[11px] text-slate-400 text-center">Si el botón no responde, verifica que el correo tenga @ y dominio</p>
           </div>
@@ -308,7 +316,7 @@ export function RegistroProfesional({
               <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Información del Usuario</h2>
               <p className="mt-1.5 text-sm text-slate-600">Elige si eres estudiante o docente para completar los datos correspondientes.</p>
             </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-slate-200">✓</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-inst-700 shadow-sm ring-1 ring-slate-200"><Icono nombre="check" tamano={20} /></div>
           </div>
         </div>
 

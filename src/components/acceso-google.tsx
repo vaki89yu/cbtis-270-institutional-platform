@@ -7,6 +7,7 @@ import {
   guardarCuentaEnDispositivo,
   type CuentaDispositivo,
 } from "@/components/cuentas-dispositivo";
+import { Icono } from "@/components/iconos";
 
 export function AccesoGoogle({
   savedAccountServer,
@@ -25,7 +26,7 @@ export function AccesoGoogle({
   const [estado, action] = useActionState(continuarConGoogleCorreoAction, {} as ActionState);
 
   function autocompletar(valor: string) {
-    setOtpMsg(`✅ Código ${valor} cargado. Ahora presiona "Continuar con esta cuenta".`);
+    setOtpMsg(`Código ${valor} cargado. Ahora presiona "Continuar con esta cuenta".`);
     if (otpRef.current) {
       otpRef.current.value = valor;
       otpRef.current.focus();
@@ -75,7 +76,7 @@ export function AccesoGoogle({
         setCodigoDemo(data.codigo);
         setOtpMsg(
           data.modo === "demo"
-            ? `✅ Código demo: ${data.codigo}. Úsalo abajo para continuar.`
+            ? `Código demo: ${data.codigo}. Úsalo abajo para continuar.`
             : data.message ?? "Código enviado. Revisa tu correo.",
         );
       } else {
@@ -134,14 +135,22 @@ export function AccesoGoogle({
             disabled={loading || !email.includes("@")}
             className="w-full rounded-xl border-2 border-blue-600 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "⏳ Enviando..." : "📧 Enviar código al correo"}
+            {loading ? (
+              "Enviando..."
+            ) : (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Icono nombre="correo" tamano={17} />
+                Enviar código al correo
+              </span>
+            )}
           </button>
           {otpError ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{otpError}</p> : null}
           {otpMsg ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{otpMsg}</p> : null}
           {codigoDemo ? (
             <div className="rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
-                🎉 Código generado
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                <Icono nombre="verificado" tamano={14} />
+                Código generado
               </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="text-3xl font-black tracking-[0.3em] text-blue-900">{codigoDemo}</span>

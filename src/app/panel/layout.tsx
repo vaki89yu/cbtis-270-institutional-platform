@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { MarcaInstitucional } from "@/components/marca";
+import type { NombreIcono } from "@/components/iconos";
 import { PanelNav } from "@/components/panel-nav";
 import {
   EtiquetaSeccion,
@@ -12,16 +13,16 @@ import { logoutAction } from "@/lib/actions/auth";
 
 export const dynamic = "force-dynamic";
 
-const enlaces = [
-  { href: "/panel", label: "Inicio", icono: "🏠" },
-  { href: "/panel/clases", label: "Aulas", icono: "📦" },
-  { href: "/panel/asistencias", label: "Asistencias", icono: "📋" },
-  { href: "/panel/tareas", label: "Evidencias y Calificaciones", icono: "📝" },
-  { href: "/panel/almacen", label: "Almacén Escuela", icono: "🏭" },
-  { href: "/panel/formatos", label: "Biblioteca de Formatos", icono: "📑" },
-  { href: "/panel/expedientes", label: "Expedientes", icono: "🗂️" },
-  { href: "/panel/notificaciones", label: "Notificaciones", icono: "🔔" },
-  { href: "/panel/mensajes", label: "Mensajes", icono: "✉️" },
+const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
+  { href: "/panel", label: "Inicio", icono: "inicio" },
+  { href: "/panel/clases", label: "Aulas", icono: "aulas" },
+  { href: "/panel/asistencias", label: "Asistencias", icono: "asistencias" },
+  { href: "/panel/tareas", label: "Evidencias y Calificaciones", icono: "evidencias" },
+  { href: "/panel/almacen", label: "Almacén Escuela", icono: "almacen" },
+  { href: "/panel/formatos", label: "Biblioteca de Formatos", icono: "formatos" },
+  { href: "/panel/expedientes", label: "Expedientes", icono: "expedientes" },
+  { href: "/panel/notificaciones", label: "Notificaciones", icono: "notificaciones" },
+  { href: "/panel/mensajes", label: "Mensajes", icono: "mensajes" },
 ];
 
 export default async function PanelLayout({ children }: { children: ReactNode }) {

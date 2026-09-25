@@ -18,6 +18,7 @@ import {
   TIEMPOS_ENTREGA,
 } from "@/lib/formatos/opciones";
 import { abrirImprimible } from "@/lib/formatos/imprimible";
+import { Icono } from "@/components/iconos";
 
 type Datos = Record<string, string | string[]>;
 
@@ -502,7 +503,7 @@ export function FormatoLlenable({ formato, perfilUsuario, docentes }: Props) {
             onClick={imprimir}
             className="btn-primario flex-1 sm:flex-none sm:px-6"
           >
-            🖨️ Vista imprimible · Dictamen
+            <Icono nombre="imprimir" tamano={17} /> Vista imprimible · Dictamen
           </button>
           <button
             type="button"

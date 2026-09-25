@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Icono, type NombreIcono } from "@/components/iconos";
 
-type Enlace = { href: string; label: string; icono: string };
+type Enlace = { href: string; label: string; icono: NombreIcono };
 
 export function PanelNav({ enlaces }: { enlaces: Enlace[] }) {
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export function PanelNav({ enlaces }: { enlaces: Enlace[] }) {
                 : "text-sky-100/85 hover:bg-white/15 hover:text-white"
             }`}
           >
-            <span aria-hidden>{enlace.icono}</span>
+            <Icono nombre={enlace.icono} tamano={17} />
             {enlace.label}
           </Link>
         );

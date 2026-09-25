@@ -235,9 +235,7 @@ export default async function HomePage() {
                       key={salida}
                       className="tarjeta-azul rounded-xl px-4 py-3 text-sm font-medium text-white"
                     >
-                      <span aria-hidden className="mr-2 text-sky-200">
-                        ●
-                      </span>
+                      <span aria-hidden className="mr-2.5 inline-block h-1.5 w-1.5 rounded-full bg-sky-300 align-middle" />
                       {salida}
                     </div>
                   ))}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icono } from "@/components/iconos";
 import type { Metadata } from "next";
 import { FormEstado } from "@/components/form-estado";
 import {
@@ -33,17 +34,17 @@ export default async function AlmacenPage() {
       {/* Tarjeta de Seguridad Obligatoria */}
       <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-5 text-slate-900 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">⚠️</span>
+          <Icono nombre="alerta" tamano={26} className="mt-0.5 shrink-0 text-amber-700" />
           <div>
             <h2 className="text-sm font-bold text-amber-900">Equipo de Protección Personal (EPP) Obligatorio</h2>
             <p className="mt-1 text-xs leading-relaxed text-amber-800">
               Conforme a la norma <strong>NOM-006-STPS-2014</strong>, queda estrictamente prohibido ingresar al Almacén Escuela sin:
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-4 text-xs font-semibold text-amber-900">
-              <li className="flex items-center gap-1.5">🦺 Chaleco reflejante reglamentario</li>
-              <li className="flex items-center gap-1.5">🥾 Calzado con casquillo de acero</li>
-              <li className="flex items-center gap-1.5">⛑️ Casco de seguridad en racks altos</li>
-              <li className="flex items-center gap-1.5">🧤 Guantes para manejo de tarimas</li>
+              <li className="flex items-center gap-2"><Icono nombre="chaleco" tamano={17} className="shrink-0" /> Chaleco reflejante reglamentario</li>
+              <li className="flex items-center gap-2"><Icono nombre="calzado" tamano={17} className="shrink-0" /> Calzado con casquillo de acero</li>
+              <li className="flex items-center gap-2"><Icono nombre="casco" tamano={17} className="shrink-0" /> Casco de seguridad en racks altos</li>
+              <li className="flex items-center gap-2"><Icono nombre="guantes" tamano={17} className="shrink-0" /> Guantes para manejo de tarimas</li>
             </ul>
           </div>
         </div>

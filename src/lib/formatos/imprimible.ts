@@ -412,7 +412,7 @@ export function generarHtmlImprimible(formato: FormatoDinamico, datos: Datos): s
 <div class="pagina">
 
   <div class="no-print">
-    <button onclick="window.print()">🖨️ &nbsp;Imprimir / Guardar como PDF</button>
+    <button onclick="window.print()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M6.5 9V3.5h11V9"/><rect x="3" y="9" width="18" height="7.5" rx="2"/><path d="M6.5 14h11v6.5h-11Z"/></svg>Imprimir / Guardar como PDF</button>
     <span>Usa "Guardar como PDF" en el diálogo de impresión para conservar el diseño institucional.</span>
   </div>
 

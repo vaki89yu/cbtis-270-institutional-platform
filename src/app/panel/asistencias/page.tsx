@@ -56,7 +56,7 @@ export default async function AsistenciasPage({ searchParams }: Props) {
               {resumen.porcentaje}%
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              {resumen.porcentaje >= 80 ? "Acreditación vigente (≥ 80%)" : "⚠️ Riesgo de no acreditar"}
+              {resumen.porcentaje >= 80 ? "Acreditación vigente (mínimo 80%)" : "Riesgo de no acreditar"}
             </p>
           </div>
           <div className="tarjeta p-5">
