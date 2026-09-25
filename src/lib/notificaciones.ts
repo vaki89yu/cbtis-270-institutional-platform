@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { notifications, studentProfiles, teacherProfiles, userActivity, users } from "@/db/schema";
+import { demoCreateNotification, demoGetAllDocentes } from "@/lib/demo-store";
 
 export async function registrarActividad(userId: number | null, accion: string, detalle?: string) {
   if (userId === null || userId === 0) return;
@@ -20,7 +21,17 @@ export async function crearNotificacion(
   try {
     await db.insert(notifications).values({ userId, titulo, contenido, tipo });
   } catch (error) {
-    console.warn("No se pudo crear la notificación (no bloqueante):", (error as Error).message?.slice(0, 150));
+    // Sin base de datos la notificación se guarda en el almacén demo, para que
+    // el apartado de Notificaciones siga mostrando información real.
+    console.warn(
+      "[notificaciones] Sin base de datos, guardando en modo demo:",
+      (error as Error).message?.slice(0, 150),
+    );
+    try {
+      demoCreateNotification({ userId, titulo, contenido, tipo });
+    } catch (demoError) {
+      console.warn("No se pudo crear la notificación:", (demoError as Error).message?.slice(0, 150));
+    }
   }
 }
 
@@ -76,8 +87,31 @@ export async function docentesResponsables({
 
     return Array.from(mapa.values());
   } catch (error) {
-    console.warn("[docentesResponsables] DB no disponible:", (error as Error).message?.slice(0, 150));
-    return [];
+    // Respaldo demo: se usan los docentes registrados en el almacén local para
+    // que el aviso llegue aunque no haya base de datos.
+    console.warn("[docentesResponsables] DB no disponible, modo demo:", (error as Error).message?.slice(0, 150));
+    try {
+      const docentesDemo = demoGetAllDocentes().filter((d) => {
+        const turnoOk = !turno || !d.turno || d.turno.split(",").map((t) => t.trim()).includes(turno);
+        const semestreOk = !semestre || !d.semestre || d.semestre === semestre;
+        const grupoOk =
+          !grupo ||
+          !d.grupo ||
+          d.grupo === "Todos" ||
+          d.grupo.split(",").map((g) => g.trim()).includes(grupo);
+        return turnoOk && semestreOk && grupoOk;
+      });
+      const seleccion = tutorDocenteId
+        ? docentesDemo.filter((d) => d.id === tutorDocenteId).concat(docentesDemo)
+        : docentesDemo;
+      const unicos = new Map<number, { id: number; nombre: string }>();
+      for (const d of seleccion) unicos.set(d.id, { id: d.id, nombre: d.nombre });
+      return Array.from(unicos.values()).map((docente) => ({ docente })) as Array<{
+        docente: { id: number; nombre: string };
+      }> as never[];
+    } catch {
+      return [];
+    }
   }
 }
 

@@ -1,96 +1,22 @@
 import type { Metadata } from "next";
-import { and, desc, eq, or } from "drizzle-orm";
-import { db } from "@/db";
-import { internalMessages, studentProfiles, teacherProfiles, users } from "@/db/schema";
 import { BotonEnviar } from "@/components/form-estado";
 import { enviarMensajeAction, marcarMensajeLeidoAction } from "@/lib/actions/comunicacion";
+import {
+  listarDestinatarios,
+  listarMensajesEnviados,
+  listarMensajesRecibidos,
+} from "@/lib/comunicacion-datos";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
 
 export const metadata: Metadata = { title: "Mensajes" };
 export const dynamic = "force-dynamic";
 
-async function destinatariosPara(user: Awaited<ReturnType<typeof requireUser>>) {
-  if (user.rol === "admin") {
-    return db
-      .select({ usuario: users, perfilAlumno: studentProfiles, perfilDocente: teacherProfiles })
-      .from(users)
-      .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
-      .leftJoin(teacherProfiles, eq(teacherProfiles.userId, users.id))
-      .where(or(eq(users.rol, "estudiante"), eq(users.rol, "docente")));
-  }
-
-  if (user.rol === "docente") {
-    const perfiles = await db
-      .select()
-      .from(teacherProfiles)
-      .where(eq(teacherProfiles.userId, user.id))
-      .limit(1);
-    const perfil = perfiles[0];
-    if (!perfil) return [];
-
-    return db
-      .select({ usuario: users, perfilAlumno: studentProfiles, perfilDocente: teacherProfiles })
-      .from(users)
-      .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
-      .leftJoin(teacherProfiles, eq(teacherProfiles.userId, users.id))
-      .where(
-        and(
-          eq(users.rol, "estudiante"),
-          eq(users.turno, perfil.turnoResponsable ?? ""),
-          eq(users.semestre, perfil.semestreResponsable ?? 0),
-          perfil.grupoResponsable && perfil.grupoResponsable !== "Todos"
-            ? eq(studentProfiles.grupo, perfil.grupoResponsable)
-            : undefined,
-        ),
-      );
-  }
-
-  // Alumno: puede escribir a su tutor/docentes y a jefatura.
-  const perfilAlumno = await db
-    .select()
-    .from(studentProfiles)
-    .where(eq(studentProfiles.userId, user.id))
-    .limit(1);
-  const perfil = perfilAlumno[0];
-
-  const docentes = await db
-    .select({ usuario: users, perfilAlumno: studentProfiles, perfilDocente: teacherProfiles })
-    .from(users)
-    .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
-    .leftJoin(teacherProfiles, eq(teacherProfiles.userId, users.id))
-    .where(
-      or(
-        eq(users.rol, "admin"),
-        and(
-          eq(users.rol, "docente"),
-          eq(teacherProfiles.turnoResponsable, user.turno ?? ""),
-          eq(teacherProfiles.semestreResponsable, user.semestre ?? 0),
-          perfil?.grupo ? or(eq(teacherProfiles.grupoResponsable, perfil.grupo), eq(teacherProfiles.grupoResponsable, "Todos")) : undefined,
-        ),
-      ),
-    );
-
-  return docentes;
-}
-
 export default async function MensajesPage() {
   const user = await requireUser();
   const [destinatarios, recibidos, enviados] = await Promise.all([
-    destinatariosPara(user),
-    db
-      .select({ mensaje: internalMessages, de: users.nombre, deRol: users.rol })
-      .from(internalMessages)
-      .innerJoin(users, eq(users.id, internalMessages.fromUserId))
-      .where(eq(internalMessages.toUserId, user.id))
-      .orderBy(desc(internalMessages.createdAt))
-      .limit(50),
-    db
-      .select({ mensaje: internalMessages, para: users.nombre, paraRol: users.rol })
-      .from(internalMessages)
-      .innerJoin(users, eq(users.id, internalMessages.toUserId))
-      .where(eq(internalMessages.fromUserId, user.id))
-      .orderBy(desc(internalMessages.createdAt))
-      .limit(30),
+    listarDestinatarios(user),
+    listarMensajesRecibidos(user.id),
+    listarMensajesEnviados(user.id),
   ]);
 
   return (

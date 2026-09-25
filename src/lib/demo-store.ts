@@ -48,11 +48,33 @@ type DemoOtp = {
   createdAt: number;
 };
 
+type DemoNotification = {
+  id: number;
+  userId: number;
+  titulo: string;
+  contenido: string;
+  tipo: string;
+  leida: boolean;
+  createdAt: string;
+};
+
+type DemoMessage = {
+  id: number;
+  fromUserId: number;
+  toUserId: number;
+  asunto: string;
+  contenido: string;
+  leido: boolean;
+  createdAt: string;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
   teacherProfiles: DemoProfileTeacher[];
   otps: DemoOtp[];
+  notifications: DemoNotification[];
+  messages: DemoMessage[];
   nextId: number;
 };
 
@@ -69,6 +91,8 @@ function loadStore(): DemoStore {
           studentProfiles: parsed.studentProfiles ?? [],
           teacherProfiles: parsed.teacherProfiles ?? [],
           otps: parsed.otps ?? [],
+          notifications: parsed.notifications ?? [],
+          messages: parsed.messages ?? [],
           nextId: parsed.nextId ?? 1,
         };
       }
@@ -76,7 +100,15 @@ function loadStore(): DemoStore {
   } catch (e) {
     console.warn("[demo-store] Error cargando store:", (e as Error).message);
   }
-  return { users: [], studentProfiles: [], teacherProfiles: [], otps: [], nextId: 1 };
+  return {
+    users: [],
+    studentProfiles: [],
+    teacherProfiles: [],
+    otps: [],
+    notifications: [],
+    messages: [],
+    nextId: 1,
+  };
 }
 
 function saveStore(store: DemoStore) {
@@ -100,9 +132,15 @@ function getStore(): DemoStore {
   if (!globalForDemo.__cbtisDemoStore) {
     globalForDemo.__cbtisDemoStore = loadStore();
   }
-  // Asegurar otps existe
+  // Asegurar colecciones existen (stores antiguos en disco no las traen)
   if (!globalForDemo.__cbtisDemoStore.otps) {
     globalForDemo.__cbtisDemoStore.otps = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.notifications) {
+    globalForDemo.__cbtisDemoStore.notifications = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.messages) {
+    globalForDemo.__cbtisDemoStore.messages = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -194,7 +232,15 @@ export function demoListUsers(): DemoUser[] {
 }
 
 export function demoClearStore() {
-  globalForDemo.__cbtisDemoStore = { users: [], studentProfiles: [], teacherProfiles: [], otps: [], nextId: 1 };
+  globalForDemo.__cbtisDemoStore = {
+    users: [],
+    studentProfiles: [],
+    teacherProfiles: [],
+    otps: [],
+    notifications: [],
+    messages: [],
+    nextId: 1,
+  };
   persist();
 }
 
@@ -248,4 +294,212 @@ export function demoListOtps() {
 // Para debug
 export function demoStorePath() {
   return STORE_PATH;
+}
+
+/* ---------------------------------------------------------------
+ * NOTIFICACIONES (modo demo, sin base de datos)
+ * --------------------------------------------------------------- */
+
+export function demoListNotifications(userId: number) {
+  const store = getStore();
+  return store.notifications
+    .filter((n) => n.userId === userId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 80)
+    .map((n) => ({
+      id: n.id,
+      userId: n.userId,
+      titulo: n.titulo,
+      contenido: n.contenido,
+      tipo: n.tipo,
+      leida: n.leida,
+      createdAt: new Date(n.createdAt),
+    }));
+}
+
+export function demoCreateNotification(data: {
+  userId: number;
+  titulo: string;
+  contenido: string;
+  tipo: string;
+}) {
+  const store = getStore();
+  const notificacion: DemoNotification = {
+    id: store.nextId++,
+    userId: data.userId,
+    titulo: data.titulo,
+    contenido: data.contenido,
+    tipo: data.tipo,
+    leida: false,
+    createdAt: new Date().toISOString(),
+  };
+  store.notifications.push(notificacion);
+  persist();
+  return notificacion;
+}
+
+export function demoMarkNotificationRead(id: number, userId: number) {
+  const store = getStore();
+  const notificacion = store.notifications.find((n) => n.id === id && n.userId === userId);
+  if (notificacion) {
+    notificacion.leida = true;
+    persist();
+  }
+}
+
+export function demoMarkAllNotificationsRead(userId: number) {
+  const store = getStore();
+  let cambios = false;
+  for (const n of store.notifications) {
+    if (n.userId === userId && !n.leida) {
+      n.leida = true;
+      cambios = true;
+    }
+  }
+  if (cambios) persist();
+}
+
+/* ---------------------------------------------------------------
+ * MENSAJES INTERNOS (modo demo, sin base de datos)
+ * --------------------------------------------------------------- */
+
+function nombreDemo(userId: number) {
+  return demoFindUserById(userId)?.nombre ?? "Usuario";
+}
+
+function rolDemo(userId: number) {
+  return demoFindUserById(userId)?.rol ?? "estudiante";
+}
+
+export function demoListMessagesReceived(userId: number) {
+  const store = getStore();
+  return store.messages
+    .filter((m) => m.toUserId === userId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 50)
+    .map((m) => ({
+      mensaje: {
+        id: m.id,
+        fromUserId: m.fromUserId,
+        toUserId: m.toUserId,
+        asunto: m.asunto,
+        contenido: m.contenido,
+        leido: m.leido,
+        createdAt: new Date(m.createdAt),
+      },
+      de: nombreDemo(m.fromUserId),
+      deRol: rolDemo(m.fromUserId),
+    }));
+}
+
+export function demoListMessagesSent(userId: number) {
+  const store = getStore();
+  return store.messages
+    .filter((m) => m.fromUserId === userId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 30)
+    .map((m) => ({
+      mensaje: {
+        id: m.id,
+        fromUserId: m.fromUserId,
+        toUserId: m.toUserId,
+        asunto: m.asunto,
+        contenido: m.contenido,
+        leido: m.leido,
+        createdAt: new Date(m.createdAt),
+      },
+      para: nombreDemo(m.toUserId),
+      paraRol: rolDemo(m.toUserId),
+    }));
+}
+
+export function demoCreateMessage(data: {
+  fromUserId: number;
+  toUserId: number;
+  asunto: string;
+  contenido: string;
+}) {
+  const store = getStore();
+  const mensaje: DemoMessage = {
+    id: store.nextId++,
+    fromUserId: data.fromUserId,
+    toUserId: data.toUserId,
+    asunto: data.asunto,
+    contenido: data.contenido,
+    leido: false,
+    createdAt: new Date().toISOString(),
+  };
+  store.messages.push(mensaje);
+  persist();
+  return mensaje;
+}
+
+export function demoMarkMessageRead(id: number, userId: number) {
+  const store = getStore();
+  const mensaje = store.messages.find((m) => m.id === id && m.toUserId === userId);
+  if (mensaje) {
+    mensaje.leido = true;
+    persist();
+  }
+}
+
+/**
+ * Destinatarios disponibles para un usuario en modo demo.
+ * Replica las reglas de visibilidad de la versión con base de datos:
+ * el docente sólo ve a sus alumnos, el alumno ve docentes y jefatura.
+ */
+export function demoListarDestinatarios(user: {
+  id: number;
+  rol: string;
+  turno?: string | null;
+  semestre?: number | null;
+}) {
+  const store = getStore();
+  const armar = (u: DemoUser) => ({
+    usuario: {
+      id: u.id,
+      nombre: u.nombre,
+      rol: u.rol,
+      semestre: u.semestre ?? null,
+      turno: u.turno ?? null,
+    },
+    perfilAlumno: store.studentProfiles.find((p) => p.userId === u.id) ?? null,
+    perfilDocente: store.teacherProfiles.find((p) => p.userId === u.id) ?? null,
+  });
+
+  if (user.rol === "admin") {
+    return store.users.filter((u) => u.rol === "estudiante" || u.rol === "docente").map(armar);
+  }
+
+  if (user.rol === "docente") {
+    const perfil = store.teacherProfiles.find((p) => p.userId === user.id);
+    return store.users
+      .filter((u) => {
+        if (u.rol !== "estudiante") return false;
+        if (!perfil) return true;
+        if (perfil.turnoResponsable && u.turno !== perfil.turnoResponsable) return false;
+        if (perfil.semestreResponsable && u.semestre !== perfil.semestreResponsable) return false;
+        if (perfil.grupoResponsable && perfil.grupoResponsable !== "Todos") {
+          const alumno = store.studentProfiles.find((p) => p.userId === u.id);
+          if (alumno && alumno.grupo !== perfil.grupoResponsable) return false;
+        }
+        return true;
+      })
+      .map(armar);
+  }
+
+  // Alumno: jefatura y los docentes de su turno/semestre
+  return store.users
+    .filter((u) => {
+      if (u.rol === "admin") return true;
+      if (u.rol !== "docente") return false;
+      const perfil = store.teacherProfiles.find((p) => p.userId === u.id);
+      if (!perfil) return true;
+      if (perfil.turnoResponsable && user.turno && perfil.turnoResponsable !== user.turno) return false;
+      if (perfil.semestreResponsable && user.semestre && perfil.semestreResponsable !== user.semestre) {
+        return false;
+      }
+      return true;
+    })
+    .map(armar);
 }

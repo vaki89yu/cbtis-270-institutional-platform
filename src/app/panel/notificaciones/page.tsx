@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { desc, eq } from "drizzle-orm";
-import { db } from "@/db";
-import { notifications } from "@/db/schema";
 import { BotonEnviar } from "@/components/form-estado";
+import { listarNotificaciones } from "@/lib/comunicacion-datos";
 import { marcarNotificacionLeidaAction, marcarTodasLeidasAction } from "@/lib/actions/comunicacion";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
 
@@ -19,12 +17,7 @@ const estilos: Record<string, string> = {
 
 export default async function NotificacionesPage() {
   const user = await requireUser();
-  const lista = await db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, user.id))
-    .orderBy(desc(notifications.createdAt))
-    .limit(80);
+  const lista = await listarNotificaciones(user.id);
 
   const sinLeer = lista.filter((n) => !n.leida).length;
 
