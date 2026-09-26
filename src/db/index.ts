@@ -22,11 +22,20 @@ if (!databaseUrl) {
   pool.on("error", () => {});
   globalForDb.__arenaDbAvailable = false;
 } else {
+  // Neon, Supabase, Render y en general cualquier Postgres administrado exigen
+  // TLS. node-postgres NO lo activa solo, así que lo encendemos salvo que la
+  // conexión sea local.
+  const esLocal = /@(localhost|127\.0\.0\.1)/i.test(databaseUrl);
+  const sslDesactivado = /sslmode=disable/i.test(databaseUrl);
+  const ssl = esLocal || sslDesactivado ? undefined : { rejectUnauthorized: false };
+
   pool =
     globalForDb.__arenaNextJsPostgresqlPool ??
     new Pool({
       connectionString: databaseUrl,
-      connectionTimeoutMillis: 5000,
+      ssl,
+      connectionTimeoutMillis: 10000,
+      max: 5,
     });
   pool.on("error", (err) => {
     console.warn("[DB] Pool error (modo demo activo):", err.message);
