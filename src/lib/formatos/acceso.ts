@@ -12,9 +12,11 @@
  * almacén demo si no hay base de datos.
  */
 
+import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { formatoHabilitaciones, studentProfiles, teacherProfiles } from "@/db/schema";
+import { asegurarEsquemaCore } from "@/lib/ensure-schema";
 import {
   demoDeshabilitarFormato,
   demoHabilitarFormato,
@@ -40,7 +42,9 @@ export type AmbitoDocente = {
   semestre: number | null;
   grupos: string[];
   turno: string | null;
-  /** Falta semestre o grupo: no puede habilitar hasta completar su registro. */
+  /** De dónde salió el ámbito: del registro o confirmado a mano por el docente. */
+  origen: "registro" | "confirmado";
+  /** Falta semestre o grupo: no puede habilitar hasta confirmarlo. */
   incompleto: boolean;
 };
 
@@ -67,6 +71,8 @@ async function conRespaldo<T>(
   etiqueta: string,
 ): Promise<T> {
   try {
+    // Crea la tabla y sus columnas la primera vez que se usa, si hay base de datos.
+    await asegurarEsquemaCore();
     return await consulta();
   } catch (error) {
     console.warn(
@@ -89,6 +95,46 @@ function listaGrupos(valor: string | null | undefined): string[] {
  * Ámbitos declarados en el registro
  * ------------------------------------------------------------------ */
 
+/** Cookie donde el docente confirma su ámbito cuando su perfil no está disponible. */
+export const COOKIE_AMBITO = "cbtis270_ambito_docente";
+
+async function ambitoDeCookie(): Promise<{
+  modulo: number | null;
+  semestre: number | null;
+  grupos: string[];
+  turno: string | null;
+} | null> {
+  try {
+    const crudo = (await cookies()).get(COOKIE_AMBITO)?.value;
+    if (!crudo) return null;
+    const datos = JSON.parse(decodeURIComponent(crudo));
+    const grupos = Array.isArray(datos.grupos)
+      ? datos.grupos.map((g: unknown) => String(g).trim()).filter(Boolean)
+      : [];
+    const semestre = Number(datos.semestre);
+    if (!Number.isFinite(semestre) || grupos.length === 0) return null;
+    return {
+      modulo: Number.isFinite(Number(datos.modulo)) ? Number(datos.modulo) : null,
+      semestre,
+      grupos,
+      turno: datos.turno ? String(datos.turno) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** ¿Hay PostgreSQL disponible para conservar las habilitaciones? */
+export async function persistenciaReal(): Promise<boolean> {
+  try {
+    await asegurarEsquemaCore();
+    await db.select({ codigo: formatoHabilitaciones.codigo }).from(formatoHabilitaciones).limit(1);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Módulo, semestre y grupos que el docente declaró al registrarse. */
 export async function ambitoDocente(user: {
   id: number;
@@ -108,22 +154,42 @@ export async function ambitoDocente(user: {
     "ambitoDocente",
   );
 
-  const semestre = perfil?.semestreResponsable ?? user.semestre ?? null;
-  const grupos =
+  const gruposPerfil =
     listaGrupos(perfil?.gruposResponsables).length > 0
       ? listaGrupos(perfil?.gruposResponsables)
-      : perfil?.grupoResponsable
+      : perfil?.grupoResponsable && perfil.grupoResponsable !== "Todos"
         ? [perfil.grupoResponsable]
         : [];
-  const turno =
+
+  let semestre = perfil?.semestreResponsable ?? null;
+  let grupos = gruposPerfil;
+  let modulo = perfil?.moduloNumero ?? null;
+  let turno =
     listaGrupos(perfil?.turnosResponsables)[0] ?? perfil?.turnoResponsable ?? user.turno ?? null;
+  let origen: AmbitoDocente["origen"] = "registro";
+
+  // Si el perfil no está disponible (modo demo o registro incompleto), se usa
+  // el ámbito que el propio docente confirmó en la Biblioteca de Formatos.
+  if (!semestre || grupos.length === 0) {
+    const guardado = await ambitoDeCookie();
+    if (guardado) {
+      semestre = guardado.semestre;
+      grupos = guardado.grupos;
+      modulo = guardado.modulo ?? modulo;
+      turno = guardado.turno ?? turno;
+      origen = "confirmado";
+    }
+  }
+
+  if (!semestre) semestre = user.semestre ?? null;
 
   return {
     docenteId: user.id,
-    modulo: perfil?.moduloNumero ?? null,
+    modulo,
     semestre,
     grupos,
     turno,
+    origen,
     incompleto: !semestre || grupos.length === 0,
   };
 }

@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { BotonEnviar } from "@/components/form-estado";
 import { Icono } from "@/components/iconos";
-import { alternarAccesoFormatoAction } from "@/lib/actions/formatos-acceso";
+import {
+  alternarAccesoFormatoAction,
+  confirmarAmbitoDocenteAction,
+} from "@/lib/actions/formatos-acceso";
 import {
   alumnoVeFormato,
   ambitoAlumno,
@@ -10,6 +14,7 @@ import {
   etiquetaAmbito,
   habilitadoPorDocente,
   listarHabilitaciones,
+  persistenciaReal,
   veTodoElCatalogo,
   type AmbitoDocente,
   type Habilitacion,
@@ -39,7 +44,7 @@ function ControlAcceso({
     return (
       <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">
         <Icono nombre="alerta" tamano={13} />
-        Sin grupo en tu registro
+        Confirma tu grupo arriba
       </span>
     );
   }
@@ -73,6 +78,16 @@ export default async function FormatosPage() {
 
   const ambitoD = esDocencia ? await ambitoDocente(user) : null;
   const ambitoA = esDocencia ? null : await ambitoAlumno(user);
+  const conBaseDeDatos = esDocencia ? await persistenciaReal() : true;
+
+  // Aviso de la última acción (cookie efímera que escribe la server action)
+  const avisoCrudo = (await cookies()).get("cbtis270_formatos_aviso")?.value;
+  const aviso = avisoCrudo
+    ? (() => {
+        const [tipo, ...resto] = decodeURIComponent(avisoCrudo).split("|");
+        return { tipo, texto: resto.join("|") };
+      })()
+    : null;
 
   /** ¿Este código es visible para quien mira la página? */
   const visible = (codigo: string) =>
@@ -115,18 +130,104 @@ export default async function FormatosPage() {
             <strong>{etiquetaAmbito(ambitoD)}</strong>
             {ambitoD.modulo ? ` · Módulo ${ambitoD.modulo}` : ""}. Sólo lo verán los alumnos de ese
             semestre y grupo que te eligieron como docente.
+            {ambitoD.origen === "confirmado" ? " (Ámbito confirmado por ti.)" : ""}
           </p>
         ) : null}
 
-        {ambitoD?.incompleto ? (
-          <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-amber-700">
-            <Icono nombre="alerta" tamano={14} className="mt-0.5 shrink-0" />
-            Tu registro docente no tiene semestre o grupo asignado, por eso no puedes habilitar
-            formatos todavía. Pide a control escolar que complete tu perfil de módulo, semestre y
-            grupo.
-          </p>
-        ) : null}
       </div>
+
+      {/* Resultado de la última habilitación */}
+      {aviso ? (
+        <p
+          className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
+            aviso.tipo === "ok"
+              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+              : "border-rose-300 bg-rose-50 text-rose-800"
+          }`}
+        >
+          <Icono nombre={aviso.tipo === "ok" ? "verificado" : "alerta"} tamano={16} className="mt-0.5 shrink-0" />
+          {aviso.texto}
+        </p>
+      ) : null}
+
+      {/* Sin base de datos las habilitaciones no se conservan */}
+      {esDocencia && !conBaseDeDatos ? (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <Icono nombre="alerta" tamano={16} className="mt-0.5 shrink-0" />
+          <span>
+            La plataforma está funcionando <strong>sin base de datos</strong>. Puedes habilitar
+            formatos y tus alumnos los verán, pero la lista se reinicia cada vez que el servidor se
+            recicla. Para que las habilitaciones queden guardadas de forma permanente hay que
+            configurar la variable <code className="font-mono">DATABASE_URL</code> en Vercel.
+          </span>
+        </div>
+      ) : null}
+
+      {/* Confirmación del ámbito cuando el registro no está disponible */}
+      {ambitoD?.incompleto ? (
+        <div className="tarjeta tarjeta-estatica p-5">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            <Icono nombre="usuarios" tamano={16} className="text-inst-700" />
+            Confirma a qué grupo le das clase
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            No pudimos leer el semestre y el grupo de tu registro. Confírmalos una vez y todos los
+            formatos que habilites se liberarán a ese semestre y grupo, para los alumnos que te
+            eligieron como docente.
+          </p>
+          <form action={confirmarAmbitoDocenteAction} className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="text-xs font-bold text-slate-600">
+              Semestre
+              <select
+                name="semestre"
+                defaultValue={ambitoD.semestre ?? 3}
+                className="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800"
+              >
+                {[1, 2, 3, 4, 5, 6].map((s) => (
+                  <option key={s} value={s}>
+                    {s}°
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <fieldset className="text-xs font-bold text-slate-600">
+              Grupos
+              <div className="mt-1 flex flex-wrap gap-2">
+                {["A", "B", "C", "D", "E", "F"].map((g) => (
+                  <label
+                    key={g}
+                    className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    <input type="checkbox" name="grupos" value={g} defaultChecked={g === "A"} />
+                    {g}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <label className="text-xs font-bold text-slate-600">
+              Módulo
+              <select
+                name="modulo"
+                defaultValue={ambitoD.modulo ?? 1}
+                className="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800"
+              >
+                {[1, 2, 3, 4, 5].map((m) => (
+                  <option key={m} value={m}>
+                    Módulo {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <input type="hidden" name="turno" value={user.turno ?? ""} />
+            <BotonEnviar className="btn-primario px-4 py-2 text-xs" pendienteTexto="Guardando...">
+              Guardar mi grupo
+            </BotonEnviar>
+          </form>
+        </div>
+      ) : null}
 
       {/* Alumno sin formatos liberados */}
       {sinNada ? (
