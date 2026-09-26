@@ -10,7 +10,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   const crudo = process.env.DATABASE_URL || "";
-  const inicializar = new URL(request.url).searchParams.get("init") === "1";
+  const params = new URL(request.url).searchParams;
+  const inicializar = params.get("init") === "1";
+  const tablaConsultada = (params.get("tabla") ?? "").replace(/[^a-z_]/gi, "").slice(0, 60);
   const url = normalizarCadenaConexion(crudo);
 
   if (!crudo) {
@@ -63,6 +65,15 @@ export async function GET(request: Request) {
       ms: Date.now() - inicio,
       tablasPublicas: (tablas.rows?.[0] as { total?: number } | undefined)?.total ?? null,
       esquemaInicializado: inicializar,
+      columnas: tablaConsultada
+        ? (
+            await db.execute(
+              sql`select column_name from information_schema.columns
+                  where table_schema = 'public' and table_name = ${tablaConsultada}
+                  order by ordinal_position`,
+            )
+          ).rows.map((r) => (r as { column_name: string }).column_name)
+        : undefined,
     });
   } catch (error) {
     const err = error as Error & { cause?: Error; code?: string };
