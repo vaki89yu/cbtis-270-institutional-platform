@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, normalizarCadenaConexion } from "@/db";
 import { sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,32 @@ export const dynamic = "force-dynamic";
  * Nunca revela usuario ni contraseña: sólo el host y el mensaje de error.
  */
 export async function GET() {
-  const url = process.env.DATABASE_URL || "";
+  const crudo = process.env.DATABASE_URL || "";
+  const url = normalizarCadenaConexion(crudo);
+
+  if (!crudo) {
+    return Response.json(
+      { ok: false, configurado: false, motivo: "La variable DATABASE_URL no existe en este despliegue." },
+      { status: 500 },
+    );
+  }
+
+  // Forma de la cadena, sin exponer credenciales
+  const forma = {
+    longitud: crudo.length,
+    esquema: url.split("://")[0]?.slice(0, 20) ?? null,
+    teniaEspacios: /\s/.test(crudo),
+    teniaComillas: /^["']|["']$/.test(crudo.trim()),
+    urlValida: (() => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    })(),
+    final: url.slice(-40),
+  };
 
   let host: string | null = null;
   let baseDeDatos: string | null = null;
@@ -18,17 +43,6 @@ export async function GET() {
     baseDeDatos = parsed.pathname.replace(/^\//, "") || null;
   } catch {
     host = null;
-  }
-
-  if (!url) {
-    return Response.json(
-      {
-        ok: false,
-        configurado: false,
-        motivo: "La variable DATABASE_URL no existe en este despliegue.",
-      },
-      { status: 500 },
-    );
   }
 
   try {
@@ -46,13 +60,17 @@ export async function GET() {
       tablasPublicas: (tablas.rows?.[0] as { total?: number } | undefined)?.total ?? null,
     });
   } catch (error) {
+    const err = error as Error & { cause?: Error; code?: string };
     return Response.json(
       {
         ok: false,
         configurado: true,
         host,
         baseDeDatos,
-        error: (error as Error).message?.slice(0, 300) ?? "desconocido",
+        forma,
+        error: err.message?.slice(0, 200) ?? "desconocido",
+        causa: err.cause?.message?.slice(0, 300) ?? null,
+        codigo: err.code ?? (err.cause as (Error & { code?: string }) | undefined)?.code ?? null,
       },
       { status: 500 },
     );

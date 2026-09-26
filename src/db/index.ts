@@ -1,7 +1,28 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL || "";
+/**
+ * Limpia los errores típicos al pegar la cadena de conexión en Vercel:
+ * comillas alrededor, saltos de línea, el prefijo `DATABASE_URL=`, el comando
+ * `psql` completo o el parámetro `channel_binding` que node-postgres no acepta.
+ */
+export function normalizarCadenaConexion(valor: string): string {
+  let url = (valor || "").trim();
+  if (!url) return "";
+
+  url = url.replace(/^psql\s+/i, "").trim();
+  url = url.replace(/^DATABASE_URL\s*=\s*/i, "").trim();
+  // Comillas simples o dobles envolviendo el valor
+  if ((url.startsWith('"') && url.endsWith('"')) || (url.startsWith("'") && url.endsWith("'"))) {
+    url = url.slice(1, -1).trim();
+  }
+  // Saltos de línea o espacios intermedios que rompen la URL
+  url = url.replace(/\s+/g, "");
+  if (url.startsWith("postgres://")) url = `postgresql://${url.slice("postgres://".length)}`;
+  return url;
+}
+
+const databaseUrl = normalizarCadenaConexion(process.env.DATABASE_URL || "");
 
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
