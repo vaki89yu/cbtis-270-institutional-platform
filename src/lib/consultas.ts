@@ -308,7 +308,15 @@ export async function practicasAlmacen(docenteId?: number) {
 
 /* ---------------- MEJORA 5: EXPEDIENTES DE ESTUDIANTES ---------------- */
 
-export async function listaExpedientesEstudiantes() {
+/**
+ * Expedientes del alumnado.
+ * El docente sólo ve a los alumnos que lo eligieron como tutor en su registro;
+ * la administración ve a todos.
+ */
+export async function listaExpedientesEstudiantes(opciones?: {
+  docenteId?: number | null;
+}) {
+  const docenteId = opciones?.docenteId ?? null;
   return safeQuery(
     () =>
       db
@@ -322,7 +330,11 @@ export async function listaExpedientesEstudiantes() {
         .from(users)
         .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
         .leftJoin(attendances, eq(attendances.studentId, users.id))
-        .where(eq(users.rol, "estudiante"))
+        .where(
+          docenteId
+            ? and(eq(users.rol, "estudiante"), eq(studentProfiles.tutorDocenteId, docenteId))
+            : eq(users.rol, "estudiante"),
+        )
         .groupBy(users.id, studentProfiles.userId)
         .orderBy(asc(users.nombre)),
     [],

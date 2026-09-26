@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FormEstado } from "@/components/form-estado";
 import { crearClaseAction } from "@/lib/actions/plataforma";
-import { ESPECIALIDADES, requireRole } from "@/lib/guards";
+import { requireRole } from "@/lib/guards";
+import { NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 
 export const metadata: Metadata = { title: "Nueva clase" };
 export const dynamic = "force-dynamic";
@@ -18,18 +19,18 @@ export default async function NuevaClasePage() {
         <Link href="/panel/clases" className="text-sm text-slate-500 hover:text-inst-700">
           ← Volver a clases
         </Link>
-        <h1 className="mt-2 text-2xl font-black text-slate-900">Habilitar aula de Logística</h1>
+        <h1 className="mt-2 text-2xl font-black text-slate-900">Abrir un aula</h1>
         <p className="text-sm text-slate-500">
-          Define el submódulo, el grupo y el turno. Los alumnos de la carrera podrán inscribirse
-          desde el catálogo.
+          El aula es tu grupo real: número de aula, semestre, grupo y módulo. Los alumnos que te
+          eligieron como docente y cursan ese semestre y grupo entran solos, sin inscribirse.
         </p>
       </div>
 
       <div className="tarjeta p-6">
         <FormEstado
           action={crearClaseAction}
-          submitLabel="Crear clase"
-          pendienteTexto="Creando clase..."
+          submitLabel="Abrir el aula"
+          pendienteTexto="Abriendo aula..."
           botonClase="btn-primario"
         >
           <div className="grid gap-4 sm:grid-cols-2">
@@ -42,38 +43,42 @@ export default async function NuevaClasePage() {
                 name="nombre"
                 required
                 className="campo"
-                placeholder="Control de inventarios y conteo cíclico"
+                placeholder="Organiza el flujo de mercancías en almacén"
               />
             </div>
             <div>
-              <label htmlFor="clave" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                Clave del aula
+              <label htmlFor="aula" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Aula
               </label>
-              <input id="clave" name="clave" required className="campo" placeholder="LOG-401" />
+              <input id="aula" name="aula" required className="campo" placeholder="Aula 23" />
             </div>
             <div>
-              <label htmlFor="especialidad" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                Módulo profesional
+              <label htmlFor="clave" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Clave de control
               </label>
-              <select
-                id="especialidad"
-                name="especialidad"
-                className="campo"
-                defaultValue="Gestión de Almacenes e Inventarios"
-              >
-                {ESPECIALIDADES.map((e) => (
-                  <option key={e} value={e}>
-                    {e}
+              <input id="clave" name="clave" required className="campo" placeholder="LOG-501" />
+            </div>
+            <div>
+              <label htmlFor="modulo" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Módulo profesional que impartes
+              </label>
+              <select id="modulo" name="modulo" className="campo" defaultValue="2">
+                {[1, 2, 3, 4, 5].map((m) => (
+                  <option key={m} value={m}>
+                    Módulo {m} · {NOMBRE_MODULO[m]}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-slate-500">
+                De aquí salen las actividades y los formatos precargados del aula.
+              </p>
             </div>
             <div>
               <label htmlFor="semestre" className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Semestre
               </label>
               <select id="semestre" name="semestre" className="campo" defaultValue="3">
-                {[3, 4, 5, 6].map((s) => (
+                {[1, 2, 3, 4, 5, 6].map((s) => (
                   <option key={s} value={s}>
                     {s}°
                   </option>
@@ -84,9 +89,12 @@ export default async function NuevaClasePage() {
               <label htmlFor="grupo" className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Grupo
               </label>
-              <select id="grupo" name="grupo" className="campo" defaultValue="E">
-                <option value="E">E</option>
-                <option value="F">F</option>
+              <select id="grupo" name="grupo" className="campo" defaultValue="A">
+                {["A", "B", "C", "D", "E", "F"].map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -97,12 +105,6 @@ export default async function NuevaClasePage() {
                 <option>Matutino</option>
                 <option>Vespertino</option>
               </select>
-            </div>
-            <div>
-              <label htmlFor="aula" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                Aula, almacén o laboratorio
-              </label>
-              <input id="aula" name="aula" className="campo" placeholder="Almacén escuela · Edificio C" />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="descripcion" className="mb-1.5 block text-sm font-semibold text-slate-700">

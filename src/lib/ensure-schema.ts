@@ -295,6 +295,25 @@ ALTER TABLE formato_habilitaciones ADD COLUMN IF NOT EXISTS grupo text NOT NULL 
 ALTER TABLE formato_habilitaciones ADD COLUMN IF NOT EXISTS turno text;
 DROP INDEX IF EXISTS formato_habilitacion_unica;
 
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS modulo integer;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS activa boolean NOT NULL DEFAULT true;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS origen text;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS evidencia text NOT NULL DEFAULT 'documento';
+ALTER TABLE attendances ADD COLUMN IF NOT EXISTS origen text NOT NULL DEFAULT 'docente';
+ALTER TABLE attendances ADD COLUMN IF NOT EXISTS session_id integer;
+
+CREATE TABLE IF NOT EXISTS attendance_sessions (
+  id serial PRIMARY KEY,
+  course_id integer NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  fecha timestamptz NOT NULL,
+  tema text,
+  abierta boolean NOT NULL DEFAULT true,
+  tolerancia_min integer NOT NULL DEFAULT 10,
+  abierta_por_id integer REFERENCES users(id) ON DELETE SET NULL,
+  cerrada_en timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS formato_habilitacion_ambito
   ON formato_habilitaciones (codigo, docente_id, semestre, grupo);
 `;

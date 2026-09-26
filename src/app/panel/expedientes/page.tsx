@@ -18,8 +18,10 @@ export default async function ExpedientesPage() {
     redirect(`/panel/expedientes/${user.id}`);
   }
 
-  // Vista para docentes y administración
-  const lista = await listaExpedientesEstudiantes();
+  // El docente sólo ve a sus alumnos; la administración ve a todos
+  const lista = await listaExpedientesEstudiantes({
+    docenteId: user.rol === "docente" ? user.id : null,
+  });
 
   return (
     <div className="space-y-6">
@@ -30,7 +32,9 @@ export default async function ExpedientesPage() {
           </span>
           <h1 className="mt-2 text-2xl font-black text-slate-900">Expedientes de Alumnos</h1>
           <p className="text-sm text-slate-500">
-            Ficha técnica, registro de matrícula, tutor asignado y desempeño del alumnado de Logística.
+            {user.rol === "docente"
+              ? "Alumnos que te eligieron como docente en su registro: matrícula, grupo, asistencia y desempeño."
+              : "Ficha técnica, registro de matrícula, tutor asignado y desempeño del alumnado de Logística."}
           </p>
         </div>
       </div>

@@ -230,6 +230,23 @@ export default async function AsistenciasPage({ searchParams }: Props) {
 
   const justificantesPendientes = await justificantesParaDocente(user.id);
 
+  // Registros que los propios alumnos hicieron desde el aula
+  const desdeElAula = await db
+    .select({
+      asistencia: attendances,
+      alumno: users.nombre,
+      matricula: users.matricula,
+      curso: courses.nombre,
+      aula: courses.aula,
+      cursoId: courses.id,
+    })
+    .from(attendances)
+    .innerJoin(users, eq(users.id, attendances.studentId))
+    .innerJoin(courses, eq(courses.id, attendances.courseId))
+    .where(and(eq(courses.docenteId, user.id), eq(attendances.origen, "alumno")))
+    .orderBy(desc(attendances.createdAt))
+    .limit(12);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -240,6 +257,48 @@ export default async function AsistenciasPage({ searchParams }: Props) {
           </p>
         </div>
       </div>
+
+      {/* Lo que los alumnos registraron desde el aula */}
+      {desdeElAula.length > 0 ? (
+        <div className="tarjeta p-5">
+          <h2 className="text-sm font-bold text-slate-900">
+            Asistencias registradas por los alumnos ({desdeElAula.length})
+          </h2>
+          <p className="text-xs text-slate-500">
+            Llegan solas cuando abres el pase de lista dentro del aula. Puedes corregirlas ahí
+            mismo.
+          </p>
+          <div className="mt-3 divide-y divide-slate-100">
+            {desdeElAula.map(({ asistencia, alumno, matricula, curso, aula, cursoId }) => (
+              <div key={asistencia.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-800">
+                    {alumno} <span className="text-xs text-slate-400">{matricula ?? ""}</span>
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {aula ? `${aula} · ` : ""}
+                    {curso} · {formatoFecha(asistencia.fecha)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      asistencia.estado === "presente"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {asistencia.estado}
+                  </span>
+                  <Link href={`/panel/clases/${cursoId}`} className="btn-mini">
+                    Ir al aula
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* Selector de clase y fecha */}
       <div className="tarjeta p-5">

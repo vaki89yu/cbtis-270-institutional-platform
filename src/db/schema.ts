@@ -137,6 +137,8 @@ export const courses = pgTable("courses", {
   grupo: text("grupo").notNull().default("E"),
   turno: text("turno").notNull().default("Matutino"),
   aula: text("aula"),
+  /** Módulo profesional que se imparte en el aula (1..5) */
+  modulo: integer("modulo"),
   color: text("color").notNull().default("#1D5BD5"),
   docenteId: integer("docente_id")
     .notNull()
@@ -199,6 +201,12 @@ export const assignments = pgTable("assignments", {
   instrucciones: text("instrucciones"),
   puntos: integer("puntos").notNull().default(100),
   parcial: integer("parcial").notNull().default(1),
+  /** El docente la activa o la oculta al grupo sin borrarla */
+  activa: boolean("activa").notNull().default(true),
+  /** Clave de la actividad precargada del plan de estudios, si viene del catálogo */
+  origen: text("origen"),
+  /** Tipo de evidencia esperada: documento | formato | practica | examen */
+  evidencia: text("evidencia").notNull().default("documento"),
   fechaEntrega: timestamp("fecha_entrega", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -298,10 +306,28 @@ export const attendances = pgTable(
     fecha: timestamp("fecha", { withTimezone: true }).notNull(),
     estado: text("estado").notNull().default("presente"), // presente | retardo | falta | justificado
     observacion: text("observacion"),
+    /** "alumno" cuando el propio alumno se registró, "docente" cuando lo pasó el profesor */
+    origen: text("origen").notNull().default("docente"),
+    sessionId: integer("session_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("asistencia_dia_alumno").on(table.courseId, table.studentId, table.fecha)],
 );
+
+/** Pase de lista abierto por el docente: mientras está abierto el alumno puede registrarse */
+export const attendanceSessions = pgTable("attendance_sessions", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  fecha: timestamp("fecha", { withTimezone: true }).notNull(),
+  tema: text("tema"),
+  abierta: boolean("abierta").notNull().default(true),
+  toleranciaMin: integer("tolerancia_min").notNull().default(10),
+  abiertaPorId: integer("abierta_por_id").references(() => users.id, { onDelete: "set null" }),
+  cerradaEn: timestamp("cerrada_en", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** MEJORA 4: Buzón de Justificantes Escolares y Médicos */
 export const attendanceJustifications = pgTable("attendance_justifications", {

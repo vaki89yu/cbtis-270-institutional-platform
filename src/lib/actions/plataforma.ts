@@ -61,6 +61,7 @@ export async function crearClaseAction(
   const aula = texto(formData, "aula");
   const color = texto(formData, "color") || "#1D5BD5";
   const semestre = Number(formData.get("semestre") ?? 2);
+  const modulo = Number(formData.get("modulo"));
 
   if (nombre.length < 3) return { error: "El nombre de la asignatura es muy corto." };
   if (clave.length < 3) return { error: "Escribe una clave para la clase (ej. LOG-201)." };
@@ -82,11 +83,21 @@ export async function crearClaseAction(
         grupo,
         turno,
         aula: aula || null,
+        modulo: Number.isFinite(modulo) && modulo > 0 ? modulo : null,
         color,
         docenteId: user.id,
-      }),
+      }).returning({ id: courses.id }),
     null,
   );
+
+  // Inscribir de una vez a los alumnos cuyo registro coincide con el aula
+  const nuevoId = Array.isArray(result) ? result[0]?.id : null;
+  if (nuevoId) {
+    try {
+      const { sincronizarGrupoDelAula } = await import("@/lib/academico/aula");
+      await sincronizarGrupoDelAula(nuevoId);
+    } catch {}
+  }
 
   if (!result) {
     return { error: "No se pudo crear la clase sin base de datos. Configura DATABASE_URL para modo completo." };
