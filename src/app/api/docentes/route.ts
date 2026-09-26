@@ -1,9 +1,16 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { teacherProfiles, users } from "@/db/schema";
 import { demoGetAllDocentes } from "@/lib/demo-store";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const SIN_CACHE = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+};
 
 export async function GET() {
   try {
@@ -11,7 +18,7 @@ export async function GET() {
       .select({ docente: users, perfil: teacherProfiles })
       .from(users)
       .leftJoin(teacherProfiles, eq(teacherProfiles.userId, users.id))
-      .where(eq(users.rol, "docente"))
+      .where(and(eq(users.rol, "docente"), eq(users.activo, true)))
       .orderBy(asc(users.nombre));
 
     const docentes = rows.map(({ docente, perfil }) => {
@@ -44,16 +51,16 @@ export async function GET() {
     if (docentes.length === 0) {
       const demo = demoGetAllDocentes();
       if (demo.length > 0) {
-        return Response.json({ ok: true, docentes: demo });
+        return Response.json({ ok: true, docentes: demo }, { headers: SIN_CACHE });
       }
     }
 
-    return Response.json({ ok: true, docentes });
+    return Response.json({ ok: true, docentes }, { headers: SIN_CACHE });
   } catch (error) {
     console.warn("[api/docentes] DB falló, usando demo:", (error as Error).message?.slice(0, 200));
     try {
       const demo = demoGetAllDocentes();
-      return Response.json({ ok: true, docentes: demo });
+      return Response.json({ ok: true, docentes: demo }, { headers: SIN_CACHE });
     } catch {
       return Response.json({ ok: true, docentes: [] });
     }

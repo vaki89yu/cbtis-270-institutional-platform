@@ -87,7 +87,7 @@ export function RegistroProfesional({
 
   const cargarDocentes = useCallback(async () => {
     try {
-      const res = await fetch("/api/docentes");
+      const res = await fetch(`/api/docentes?t=${Date.now()}`, { cache: "no-store" });
       const data = (await res.json()) as { ok?: boolean; docentes?: Docente[] };
       if (data.ok && data.docentes) setDocentesLive(data.docentes);
     } catch { /* silencioso */ }
@@ -95,8 +95,13 @@ export function RegistroProfesional({
 
   useEffect(() => {
     cargarDocentes();
-    const intervalo = setInterval(cargarDocentes, 8000);
-    return () => clearInterval(intervalo);
+    const intervalo = setInterval(cargarDocentes, 5000);
+    const alVolver = () => cargarDocentes();
+    window.addEventListener("focus", alVolver);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener("focus", alVolver);
+    };
   }, [cargarDocentes]);
 
   useEffect(() => {
@@ -411,8 +416,11 @@ export function RegistroProfesional({
               {tipo === "estudiante" ? (
                 <Campo label="Grupo">
                   <select name="grupo" className="campo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
-                    <option value="E">E</option>
-                    <option value="F">F</option>
+                    {["A", "B", "C", "D", "E", "F"].map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
                   </select>
                 </Campo>
               ) : (
@@ -455,12 +463,12 @@ export function RegistroProfesional({
                   <Campo
                     label="Tutor / docente a cargo"
                     helper={
-                      docentes.length === 0
-                        ? "Aún no hay docentes registrados en la plataforma."
-                        : "Elige al docente registrado que llevará tu seguimiento."
+                      docentesLive.length === 0
+                        ? "Aún no hay docentes registrados. Tu docente debe crear su cuenta primero; esta lista se actualiza sola."
+                        : `Elige al docente registrado que llevará tu seguimiento (${docentesLive.length} disponibles, lista en vivo).`
                     }
                   >
-                    <select name="tutorDocenteId" className="campo" defaultValue="">
+                    <select name="tutorDocenteId" required className="campo" defaultValue="">
                       <option value="">Selecciona tu docente</option>
                       {docentesLive.map((docente) => (
                         <option key={docente.id} value={docente.id}>
@@ -500,7 +508,7 @@ export function RegistroProfesional({
                     <p className="mb-2 text-sm font-semibold text-slate-800">Grupos que atiende</p>
                     <p className="mb-2 text-xs text-slate-500">Puedes marcar uno o los dos.</p>
                     <div className="flex gap-4">
-                      {["E", "F"].map((g) => (
+                      {["A", "B", "C", "D", "E", "F"].map((g) => (
                         <label key={g} className="flex items-center gap-2 text-sm font-medium text-slate-700">
                           <input
                             type="checkbox"

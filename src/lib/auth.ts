@@ -366,6 +366,25 @@ export async function sesionRecienCerrada(): Promise<boolean> {
   }
 }
 
+/**
+ * Relee al usuario en PostgreSQL. La base es la fuente de verdad del rol:
+ * la cookie sólo dice quién dice ser, no qué es.
+ *  - SessionUser  -> existe y está activo
+ *  - null         -> la base respondió y ese usuario ya no existe o está dado de baja
+ *  - "sin-db"     -> no hay base disponible, hay que confiar en la cookie
+ */
+async function usuarioFrescoDeDb(id: number): Promise<SessionUser | null | "sin-db"> {
+  try {
+    const filas = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const fila = filas[0];
+    if (!fila) return null;
+    if (fila.activo === false) return null;
+    return toSessionUser(fila);
+  } catch {
+    return "sin-db";
+  }
+}
+
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const jar = await cookies();
   let token = jar.get(SESSION_COOKIE)?.value || jar.get(`${SESSION_COOKIE}_client`)?.value;
@@ -424,17 +443,27 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
           try {
             const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
             if (parsed?.id && parsed?.email && parsed?.rol) {
-              console.log(`[auth] Usuario via hint verificado: ${parsed.email}`);
-              return {
-                id: Number(parsed.id),
-                nombre: String(parsed.nombre ?? ""),
-                email: String(parsed.email ?? ""),
-                rol: parsed.rol as Rol,
-                matricula: parsed.matricula ?? null,
-                especialidad: parsed.especialidad ?? null,
-                semestre: parsed.semestre ?? null,
-                turno: parsed.turno ?? null,
-              };
+              // La cookie identifica; la base manda sobre el rol y los datos.
+              const fresco = await usuarioFrescoDeDb(Number(parsed.id));
+              if (fresco === "sin-db") {
+                console.log(`[auth] Usuario via hint (sin base): ${parsed.email}`);
+                return {
+                  id: Number(parsed.id),
+                  nombre: String(parsed.nombre ?? ""),
+                  email: String(parsed.email ?? ""),
+                  rol: parsed.rol as Rol,
+                  matricula: parsed.matricula ?? null,
+                  especialidad: parsed.especialidad ?? null,
+                  semestre: parsed.semestre ?? null,
+                  turno: parsed.turno ?? null,
+                };
+              }
+              if (!fresco) {
+                console.warn(`[auth] Sesión de una cuenta inexistente o dada de baja: ${parsed.email}`);
+                return null;
+              }
+              console.log(`[auth] Usuario verificado contra la base: ${fresco.email} (${fresco.rol})`);
+              return fresco;
             }
           } catch (e) {
             console.warn("[auth] Error parseando payload hint:", (e as Error).message);

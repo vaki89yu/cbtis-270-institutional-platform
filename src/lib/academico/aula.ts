@@ -130,6 +130,42 @@ export async function aulasDelAlumno(studentId: number) {
     .orderBy(asc(courses.nombre));
 }
 
+/**
+ * Inscribe a un alumno recién registrado en las aulas que ya abrió su docente
+ * para su semestre y su grupo. Se llama al terminar el registro.
+ */
+export async function sincronizarAulasDelAlumno(studentId: number): Promise<number> {
+  const [perfil] = await db
+    .select({ grupo: studentProfiles.grupo, tutorDocenteId: studentProfiles.tutorDocenteId })
+    .from(studentProfiles)
+    .where(eq(studentProfiles.userId, studentId))
+    .limit(1);
+  const [alumno] = await db
+    .select({ semestre: users.semestre })
+    .from(users)
+    .where(eq(users.id, studentId))
+    .limit(1);
+  if (!perfil?.tutorDocenteId || !perfil.grupo || !alumno?.semestre) return 0;
+
+  const aulas = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(
+      and(
+        eq(courses.docenteId, perfil.tutorDocenteId),
+        eq(courses.semestre, alumno.semestre),
+        eq(courses.grupo, perfil.grupo),
+      ),
+    );
+  if (aulas.length === 0) return 0;
+
+  await db
+    .insert(enrollments)
+    .values(aulas.map((a) => ({ courseId: a.id, studentId })))
+    .onConflictDoNothing();
+  return aulas.length;
+}
+
 /** Pase de lista abierto en este momento, si lo hay. */
 export async function paseDeListaAbierto(courseId: number) {
   const [sesion] = await db

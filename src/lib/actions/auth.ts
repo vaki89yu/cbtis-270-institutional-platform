@@ -269,10 +269,12 @@ export async function loginAction(
   // Intentar DB primero
   let user: any = null;
   let isDemoUser = false;
+  let baseRespondio = false;
 
   try {
     const found = await db.select().from(users).where(eq(users.email, email)).limit(1);
     user = found[0] ?? null;
+    baseRespondio = true;
   } catch (error) {
     console.warn("[login] DB falló, intentando demo store:", (error as Error).message?.slice(0, 150));
     const demo = demoFindUserByEmail(email);
@@ -294,8 +296,9 @@ export async function loginAction(
     }
   }
 
-  // Si no se encontró en DB, intentar demo store
-  if (!user) {
+  // Sólo si la base NO respondió tiene sentido el modo demo. Si respondió y el
+  // correo no está ahí, la cuenta simplemente no existe.
+  if (!user && !baseRespondio) {
     const demo = demoFindUserByEmail(email);
     if (demo) {
       user = {
@@ -333,6 +336,12 @@ export async function loginAction(
 
   if (user.rol === "estudiante" && !isDemoUser) {
     try {
+      const { sincronizarAulasDelAlumno } = await import("@/lib/academico/aula");
+      await sincronizarAulasDelAlumno(user.id);
+    } catch (error) {
+      console.warn("No se pudieron sincronizar aulas:", (error as Error).message?.slice(0, 150));
+    }
+    try {
       await notificarDocentesInicioSesion(user.id);
     } catch (error) {
       console.warn("No se pudieron notificar docentes:", (error as Error).message?.slice(0, 150));
@@ -364,17 +373,46 @@ export async function registroAction(
   const semestre = numero(formData, "semestre", tipoCuenta === "docente" ? 2 : 2);
   const grupo = valor(formData, "grupo") || "E";
   const modulo = valor(formData, "especialidad") || "Cadena de Suministro";
-  const gruposPermitidos = ["E", "F"];
+  const gruposPermitidos = ["A", "B", "C", "D", "E", "F"];
 
   if (!["estudiante", "docente"].includes(tipoCuenta)) return { error: "Tipo de cuenta no válido." };
   if (nombre.length < 5) return { error: "Escribe el nombre completo con apellidos." };
   if (!esCorreoInstitucional(email)) return { error: "Escribe un correo válido." };
   if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
-  if (!gruposPermitidos.includes(grupo)) return { error: "El grupo permitido para esta etapa nacional es E o F." };
+  if (!gruposPermitidos.includes(grupo)) return { error: "Selecciona un grupo válido (A a F)." };
   if (!semestre || semestre < 2 || semestre > 6) return { error: "Selecciona un semestre válido de 2° a 6°." };
+
+  const tutorDocenteIdElegido = numero(formData, "tutorDocenteId", null);
+  if (tipoCuenta === "estudiante" && !tutorDocenteIdElegido) {
+    return {
+      error:
+        "Elige al docente que llevará tu seguimiento. Si la lista está vacía, tu docente todavía no se registra en la plataforma: él debe registrarse primero.",
+    };
+  }
 
   const jar = await cookies();
   const verificado = await correoEstaVerificado(email);
+
+  // ¿Hay base de datos? De eso depende si el modo demo es legítimo o un error.
+  let hayBase = false;
+  try {
+    await db.select({ id: users.id }).from(users).limit(1);
+    hayBase = true;
+  } catch {
+    hayBase = false;
+  }
+
+  // El docente elegido debe existir y ser docente de verdad
+  if (tipoCuenta === "estudiante" && hayBase && tutorDocenteIdElegido) {
+    const [tutor] = await db
+      .select({ id: users.id, rol: users.rol, activo: users.activo })
+      .from(users)
+      .where(eq(users.id, tutorDocenteIdElegido))
+      .limit(1);
+    if (!tutor || tutor.rol !== "docente" || tutor.activo === false) {
+      return { error: "El docente que elegiste ya no está disponible. Vuelve a elegirlo de la lista." };
+    }
+  }
 
   // Verificar si ya existe (DB + demo)
   try {
@@ -438,8 +476,19 @@ export async function registroAction(
     };
 
     if (tipoCuenta === "estudiante") {
-      const tutorDocenteId = numero(formData, "tutorDocenteId", null);
-      const tutorDocenteNombre = valor(formData, "tutorDocenteNombre");
+      const tutorDocenteId = tutorDocenteIdElegido;
+      // El nombre del tutor se resuelve contra la base, no contra el formulario
+      let tutorDocenteNombre = valor(formData, "tutorDocenteNombre");
+      if (tutorDocenteId) {
+        try {
+          const [t] = await db
+            .select({ nombre: users.nombre })
+            .from(users)
+            .where(eq(users.id, tutorDocenteId))
+            .limit(1);
+          if (t?.nombre) tutorDocenteNombre = t.nombre;
+        } catch {}
+      }
 
       try {
         await db.insert(studentProfiles).values({
@@ -459,6 +508,15 @@ export async function registroAction(
         });
       } catch (e) {
         console.warn("No se pudo crear perfil estudiante:", (e as Error).message?.slice(0, 150));
+      }
+
+      // Vinculación inmediata: si su docente ya tiene aulas de ese semestre y
+      // grupo, el alumno queda dentro sin hacer nada más.
+      try {
+        const { sincronizarAulasDelAlumno } = await import("@/lib/academico/aula");
+        await sincronizarAulasDelAlumno(userId);
+      } catch (e) {
+        console.warn("No se pudo vincular el alumno a sus aulas:", (e as Error).message?.slice(0, 120));
       }
 
       try {
@@ -561,7 +619,24 @@ export async function registroAction(
       causeMsg.includes("connect") ||
       causeMsg.includes("timeout");
 
-    if (isDbError || true) { // Siempre intentar demo como fallback
+    // Si la base respondió pero el alta falló, es un error real: NO crear una
+    // cuenta fantasma en modo demo, porque quedaría fuera de la base y el rol,
+    // el aula y el expediente nunca se vincularían.
+    if (hayBase) {
+      const duplicado =
+        errMsg.includes("users_email_unique") ||
+        errMsg.includes("duplicate key") ||
+        causeMsg.includes("users_email_unique") ||
+        causeMsg.includes("duplicate key");
+      if (duplicado) {
+        return { error: "Ese correo ya tiene cuenta. Inicia sesión con tu contraseña o con OTP." };
+      }
+      return {
+        error: "No se pudo completar el registro en este momento. Intenta de nuevo en unos segundos.",
+      };
+    }
+
+    if (isDbError || true) { // Sin base de datos: modo demo como último recurso
       try {
         const demoUser = demoCreateUser({
           nombre,
