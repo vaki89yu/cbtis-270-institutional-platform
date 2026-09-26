@@ -334,6 +334,32 @@ export const logisticsTemplates = pgTable("logistics_templates", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Control de acceso de la Biblioteca de Formatos.
+ *
+ * Los docentes ven siempre todo el catálogo. Los alumnos sólo ven un formato
+ * cuando el docente lo habilita para su semestre, dentro del módulo al que
+ * pertenece. Cada registro es una habilitación vigente.
+ */
+export const formatoHabilitaciones = pgTable(
+  "formato_habilitaciones",
+  {
+    id: serial("id").primaryKey(),
+    /** Código del formato llenable o de la plantilla Excel */
+    codigo: text("codigo").notNull(),
+    /** "llenable" | "plantilla" */
+    tipo: text("tipo").notNull().default("llenable"),
+    /** Módulo profesional al que pertenece el formato (1..5) */
+    modulo: integer("modulo").notNull(),
+    /** Semestre al que se le concede el acceso (2..6) */
+    semestre: integer("semestre").notNull(),
+    /** Docente que concedió el acceso */
+    docenteId: integer("docente_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("formato_habilitacion_unica").on(table.codigo, table.semestre)],
+);
+
 /** MEJORA 6: Módulo de Prácticas en el Almacén Escuela (Edificio C) */
 export const warehousePractices = pgTable("warehouse_practices", {
   id: serial("id").primaryKey(),

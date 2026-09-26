@@ -68,6 +68,15 @@ type DemoMessage = {
   createdAt: string;
 };
 
+type DemoHabilitacion = {
+  codigo: string;
+  tipo: string;
+  modulo: number;
+  semestre: number;
+  docenteId: number;
+  createdAt: string;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
@@ -75,6 +84,7 @@ type DemoStore = {
   otps: DemoOtp[];
   notifications: DemoNotification[];
   messages: DemoMessage[];
+  habilitaciones: DemoHabilitacion[];
   nextId: number;
 };
 
@@ -93,6 +103,7 @@ function loadStore(): DemoStore {
           otps: parsed.otps ?? [],
           notifications: parsed.notifications ?? [],
           messages: parsed.messages ?? [],
+          habilitaciones: parsed.habilitaciones ?? [],
           nextId: parsed.nextId ?? 1,
         };
       }
@@ -107,6 +118,7 @@ function loadStore(): DemoStore {
     otps: [],
     notifications: [],
     messages: [],
+    habilitaciones: [],
     nextId: 1,
   };
 }
@@ -141,6 +153,9 @@ function getStore(): DemoStore {
   }
   if (!globalForDemo.__cbtisDemoStore.messages) {
     globalForDemo.__cbtisDemoStore.messages = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.habilitaciones) {
+    globalForDemo.__cbtisDemoStore.habilitaciones = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -239,6 +254,7 @@ export function demoClearStore() {
     otps: [],
     notifications: [],
     messages: [],
+    habilitaciones: [],
     nextId: 1,
   };
   persist();
@@ -502,4 +518,42 @@ export function demoListarDestinatarios(user: {
       return true;
     })
     .map(armar);
+}
+
+/* ---------------------------------------------------------------
+ * HABILITACIONES DE FORMATOS (modo demo, sin base de datos)
+ * --------------------------------------------------------------- */
+
+export function demoListarHabilitaciones() {
+  return getStore().habilitaciones.map((h) => ({
+    codigo: h.codigo,
+    tipo: h.tipo,
+    modulo: h.modulo,
+    semestre: h.semestre,
+  }));
+}
+
+export function demoHabilitarFormato(datos: {
+  codigo: string;
+  tipo: string;
+  modulo: number;
+  semestre: number;
+  docenteId: number;
+}) {
+  const store = getStore();
+  const yaExiste = store.habilitaciones.some(
+    (h) => h.codigo === datos.codigo && h.semestre === datos.semestre,
+  );
+  if (yaExiste) return;
+  store.habilitaciones.push({ ...datos, createdAt: new Date().toISOString() });
+  persist();
+}
+
+export function demoDeshabilitarFormato(codigo: string, semestre: number) {
+  const store = getStore();
+  const antes = store.habilitaciones.length;
+  store.habilitaciones = store.habilitaciones.filter(
+    (h) => !(h.codigo === codigo && h.semestre === semestre),
+  );
+  if (store.habilitaciones.length !== antes) persist();
 }

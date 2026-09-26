@@ -278,6 +278,19 @@ CREATE TABLE IF NOT EXISTS warehouse_practices (
   estado text NOT NULL DEFAULT 'programada',
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS formato_habilitaciones (
+  id serial PRIMARY KEY,
+  codigo text NOT NULL,
+  tipo text NOT NULL DEFAULT 'llenable',
+  modulo integer NOT NULL,
+  semestre integer NOT NULL,
+  docente_id integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS formato_habilitacion_unica
+  ON formato_habilitaciones (codigo, semestre);
 `;
 
 export async function asegurarEsquemaCore(): Promise<void> {

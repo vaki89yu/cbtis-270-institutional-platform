@@ -5,6 +5,8 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { FormatoLlenable } from "@/components/formatos/formato-llenable";
+import { Icono } from "@/components/iconos";
+import { clavesHabilitadas, puedeVerFormato } from "@/lib/formatos/acceso";
 import { NOMBRE_MODULO, obtenerFormato } from "@/lib/formatos/catalogo";
 import { requireUser } from "@/lib/guards";
 
@@ -23,6 +25,30 @@ export default async function FormatoLlenablePage({ params }: Props) {
   const { codigo } = await params;
   const formato = obtenerFormato(decodeURIComponent(codigo));
   if (!formato) notFound();
+
+  // El alumno sólo entra si su docente liberó el formato para su semestre.
+  const habilitadas = await clavesHabilitadas();
+  if (!puedeVerFormato(user, formato.codigo, habilitadas)) {
+    return (
+      <div className="space-y-6">
+        <Link href="/panel/formatos" className="btn-mini">
+          ← Biblioteca de formatos
+        </Link>
+        <div className="tarjeta tarjeta-estatica p-10 text-center">
+          <Icono nombre="candado" tamano={36} className="mx-auto text-slate-400" />
+          <h1 className="mt-3 text-lg font-black text-slate-900">Formato no disponible todavía</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            El formato <strong>{formato.codigo} · {formato.titulo}</strong> pertenece al{" "}
+            {NOMBRE_MODULO[formato.modulo]} y aún no ha sido liberado por tu docente para el
+            semestre que cursas.
+          </p>
+          <Link href="/panel/formatos" className="btn-secundario mt-5 inline-flex">
+            Ver los formatos disponibles para mí
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   let docentes: Array<{ id: number; nombre: string }> = [];
   try {
