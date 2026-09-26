@@ -353,11 +353,20 @@ export const formatoHabilitaciones = pgTable(
     modulo: integer("modulo").notNull(),
     /** Semestre al que se le concede el acceso (2..6) */
     semestre: integer("semestre").notNull(),
+    /** Grupo al que se le concede el acceso ("A", "B", ... o "Todos") */
+    grupo: text("grupo").notNull().default("Todos"),
+    /** Turno del grupo, informativo */
+    turno: text("turno"),
     /** Docente que concedió el acceso */
     docenteId: integer("docente_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex("formato_habilitacion_unica").on(table.codigo, table.semestre)],
+  (table) => [uniqueIndex("formato_habilitacion_ambito").on(
+      table.codigo,
+      table.docenteId,
+      table.semestre,
+      table.grupo,
+    )],
 );
 
 /** MEJORA 6: Módulo de Prácticas en el Almacén Escuela (Edificio C) */

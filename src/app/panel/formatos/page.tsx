@@ -2,15 +2,17 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BotonEnviar } from "@/components/form-estado";
 import { Icono } from "@/components/iconos";
+import { alternarAccesoFormatoAction } from "@/lib/actions/formatos-acceso";
 import {
-  alternarAccesoFormatoAction,
-  alternarModuloCompletoAction,
-} from "@/lib/actions/formatos-acceso";
-import {
-  SEMESTRE_DE_MODULO,
-  claveHabilitacion,
-  clavesHabilitadas,
+  alumnoVeFormato,
+  ambitoAlumno,
+  ambitoDocente,
+  etiquetaAmbito,
+  habilitadoPorDocente,
+  listarHabilitaciones,
   veTodoElCatalogo,
+  type AmbitoDocente,
+  type Habilitacion,
 } from "@/lib/formatos/acceso";
 import { FORMATOS_DINAMICOS, NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 import { PLANTILLAS_EXCEL } from "@/lib/formatos/plantillas";
@@ -24,21 +26,30 @@ function ControlAcceso({
   codigo,
   tipo,
   modulo,
-  semestre,
+  ambito,
   habilitado,
 }: {
   codigo: string;
   tipo: "llenable" | "plantilla";
   modulo: number;
-  semestre: number;
+  ambito: AmbitoDocente;
   habilitado: boolean;
 }) {
+  if (ambito.incompleto) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+        <Icono nombre="alerta" tamano={13} />
+        Sin grupo en tu registro
+      </span>
+    );
+  }
+
+  const destino = `${ambito.semestre}° ${ambito.grupos.join(" y ")}`;
   return (
     <form action={alternarAccesoFormatoAction} className="flex items-center">
       <input type="hidden" name="codigo" value={codigo} />
       <input type="hidden" name="tipo" value={tipo} />
       <input type="hidden" name="modulo" value={modulo} />
-      <input type="hidden" name="semestre" value={semestre} />
       <input type="hidden" name="habilitar" value={habilitado ? "0" : "1"} />
       <BotonEnviar
         className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
@@ -49,7 +60,7 @@ function ControlAcceso({
         pendienteTexto="..."
       >
         <Icono nombre={habilitado ? "verificado" : "candado"} tamano={13} />
-        {habilitado ? `Visible para ${semestre}°` : `Habilitar a ${semestre}°`}
+        {habilitado ? `Visible para ${destino}` : `Habilitar a ${destino}`}
       </BotonEnviar>
     </form>
   );
@@ -58,39 +69,27 @@ function ControlAcceso({
 export default async function FormatosPage() {
   const user = await requireUser();
   const esDocencia = veTodoElCatalogo(user.rol);
-  const habilitadas = await clavesHabilitadas();
-  const semestreAlumno = user.semestre ?? null;
+  const habilitaciones: Habilitacion[] = await listarHabilitaciones();
+
+  const ambitoD = esDocencia ? await ambitoDocente(user) : null;
+  const ambitoA = esDocencia ? null : await ambitoAlumno(user);
 
   /** ¿Este código es visible para quien mira la página? */
   const visible = (codigo: string) =>
-    esDocencia
-      ? true
-      : semestreAlumno
-        ? habilitadas.has(claveHabilitacion(codigo, semestreAlumno))
-        : false;
+    esDocencia ? true : alumnoVeFormato(codigo, ambitoA!, habilitaciones);
+
+  /** ¿Ya está liberado al grupo del docente? */
+  const liberado = (codigo: string) =>
+    ambitoD ? habilitadoPorDocente(codigo, ambitoD, habilitaciones) : false;
 
   // Agrupar los formatos llenables por módulo
   const porModulo = [1, 2, 3, 4, 5]
-    .map((m) => {
-      const semestre = SEMESTRE_DE_MODULO[m];
-      const formatos = FORMATOS_DINAMICOS.filter((f) => f.modulo === m);
-      const plantillas = PLANTILLAS_EXCEL.filter((p) => p.modulo === m);
-      const codigosModulo = [...formatos.map((f) => f.codigo), ...plantillas.map((p) => p.codigo)];
-      const tiposModulo = [...formatos.map(() => "llenable"), ...plantillas.map(() => "plantilla")];
-      return {
-        modulo: m,
-        semestre,
-        nombre: NOMBRE_MODULO[m],
-        formatos: formatos.filter((f) => visible(f.codigo)),
-        codigosModulo,
-        tiposModulo,
-        habilitadosModulo: codigosModulo.filter((c) =>
-          habilitadas.has(claveHabilitacion(c, semestre)),
-        ).length,
-        totalModulo: codigosModulo.length,
-      };
-    })
-    .filter((g) => esDocencia || g.formatos.length > 0);
+    .map((m) => ({
+      modulo: m,
+      nombre: NOMBRE_MODULO[m],
+      formatos: FORMATOS_DINAMICOS.filter((f) => f.modulo === m && visible(f.codigo)),
+    }))
+    .filter((g) => g.formatos.length > 0);
 
   const llenablesVisibles = porModulo.reduce((a, g) => a + g.formatos.length, 0);
   const descargables = PLANTILLAS_EXCEL.filter((p) => visible(p.codigo));
@@ -107,11 +106,24 @@ export default async function FormatosPage() {
           Dos modos de trabajo: <strong>llenar en línea</strong> y descargar en PDF con membrete
           institucional, o descargar la plantilla Excel completa de cada formato.
         </p>
-        {esDocencia ? (
+
+        {/* Ámbito del docente, tomado de su propio registro */}
+        {ambitoD && !ambitoD.incompleto ? (
           <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-sky-700">
             <Icono nombre="informacion" tamano={14} className="mt-0.5 shrink-0" />
-            Docencia ve siempre el catálogo completo. Los alumnos sólo ven los formatos que habilitas
-            para su semestre (Módulo I a 2°, II a 3°, III a 4°, IV a 5° y V a 6°).
+            Al habilitar un formato lo liberas a tu grupo registrado:{" "}
+            <strong>{etiquetaAmbito(ambitoD)}</strong>
+            {ambitoD.modulo ? ` · Módulo ${ambitoD.modulo}` : ""}. Sólo lo verán los alumnos de ese
+            semestre y grupo que te eligieron como docente.
+          </p>
+        ) : null}
+
+        {ambitoD?.incompleto ? (
+          <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-amber-700">
+            <Icono nombre="alerta" tamano={14} className="mt-0.5 shrink-0" />
+            Tu registro docente no tiene semestre o grupo asignado, por eso no puedes habilitar
+            formatos todavía. Pide a control escolar que complete tu perfil de módulo, semestre y
+            grupo.
           </p>
         ) : null}
       </div>
@@ -124,9 +136,9 @@ export default async function FormatosPage() {
             Aún no hay formatos liberados para ti
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-            {semestreAlumno
-              ? `Tu docente todavía no habilita formatos para ${semestreAlumno}° semestre. Aparecerán aquí en cuanto lo haga.`
-              : "Tu expediente no tiene semestre registrado. Solicita a control escolar que lo capture para poder recibir formatos."}
+            {ambitoA?.incompleto
+              ? "Tu registro no tiene semestre, grupo o docente tutor completo. Solicita a control escolar que lo capture para poder recibir formatos."
+              : `Tu docente todavía no habilita formatos para ${ambitoA?.semestre}° ${ambitoA?.grupo}. Aparecerán aquí en cuanto lo haga.`}
           </p>
         </div>
       ) : null}
@@ -145,43 +157,22 @@ export default async function FormatosPage() {
             </div>
           </div>
 
-          {porModulo.map(({ modulo, semestre, nombre, formatos, codigosModulo, tiposModulo, habilitadosModulo, totalModulo }) => (
+          {porModulo.map(({ modulo, nombre, formatos }) => (
             <div key={modulo} className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                  <span className="rounded-lg bg-inst-700 px-2 py-1 text-[11px] font-black text-white">
-                    M{modulo}
+              <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <span className="rounded-lg bg-inst-700 px-2 py-1 text-[11px] font-black text-white">
+                  M{modulo}
+                </span>
+                {nombre}
+                {ambitoD?.modulo === modulo ? (
+                  <span className="rounded-full bg-inst-50 px-2 py-0.5 text-[10px] font-bold text-inst-700">
+                    Tu módulo
                   </span>
-                  {nombre}
-                </h3>
-
-                {/* Atajo del docente: liberar o cerrar el módulo completo */}
-                {esDocencia && totalModulo > 0 ? (
-                  <form action={alternarModuloCompletoAction} className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      {habilitadosModulo} de {totalModulo} liberados a {semestre}°
-                    </span>
-                    <input type="hidden" name="semestre" value={semestre} />
-                    <input type="hidden" name="modulo" value={modulo} />
-                    <input type="hidden" name="codigos" value={codigosModulo.join(",")} />
-                    <input type="hidden" name="tipos" value={tiposModulo.join(",")} />
-                    <input
-                      type="hidden"
-                      name="habilitar"
-                      value={habilitadosModulo === totalModulo ? "0" : "1"}
-                    />
-                    <BotonEnviar className="btn-mini" pendienteTexto="Aplicando...">
-                      {habilitadosModulo === totalModulo
-                        ? `Cerrar módulo a ${semestre}°`
-                        : `Liberar módulo a ${semestre}°`}
-                    </BotonEnviar>
-                  </form>
                 ) : null}
-              </div>
+              </h3>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {formatos.map((f) => {
-                  const habilitado = habilitadas.has(claveHabilitacion(f.codigo, semestre));
                   const contenido = (
                     <>
                       <div>
@@ -211,7 +202,7 @@ export default async function FormatosPage() {
                     </>
                   );
 
-                  if (!esDocencia) {
+                  if (!esDocencia || !ambitoD) {
                     return (
                       <Link
                         key={f.codigo}
@@ -239,8 +230,8 @@ export default async function FormatosPage() {
                           codigo={f.codigo}
                           tipo="llenable"
                           modulo={modulo}
-                          semestre={semestre}
-                          habilitado={habilitado}
+                          ambito={ambitoD}
+                          habilitado={liberado(f.codigo)}
                         />
                       </div>
                     </div>
@@ -268,40 +259,36 @@ export default async function FormatosPage() {
           </div>
 
           <div className="tarjeta tarjeta-estatica divide-y divide-slate-100">
-            {descargables.map((f) => {
-              const semestre = SEMESTRE_DE_MODULO[f.modulo];
-              const habilitado = habilitadas.has(claveHabilitacion(f.codigo, semestre));
-              return (
-                <div key={f.codigo} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
-                      {f.codigo}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-900">{f.titulo}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {f.categoria}
-                        {esDocencia ? ` · Módulo ${f.modulo}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {esDocencia ? (
-                      <ControlAcceso
-                        codigo={f.codigo}
-                        tipo="plantilla"
-                        modulo={f.modulo}
-                        semestre={semestre}
-                        habilitado={habilitado}
-                      />
-                    ) : null}
-                    <a href={f.url} download className="btn-secundario px-4 py-2 text-xs">
-                      Descargar .{f.ext}
-                    </a>
+            {descargables.map((f) => (
+              <div key={f.codigo} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
+                    {f.codigo}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-slate-900">{f.titulo}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {f.categoria}
+                      {esDocencia ? ` · Módulo ${f.modulo}` : ""}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
+                <div className="flex flex-wrap items-center gap-2">
+                  {ambitoD ? (
+                    <ControlAcceso
+                      codigo={f.codigo}
+                      tipo="plantilla"
+                      modulo={f.modulo}
+                      ambito={ambitoD}
+                      habilitado={liberado(f.codigo)}
+                    />
+                  ) : null}
+                  <a href={f.url} download className="btn-secundario px-4 py-2 text-xs">
+                    Descargar .{f.ext}
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       ) : null}

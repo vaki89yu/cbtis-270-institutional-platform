@@ -73,6 +73,8 @@ type DemoHabilitacion = {
   tipo: string;
   modulo: number;
   semestre: number;
+  grupo: string;
+  turno?: string | null;
   docenteId: number;
   createdAt: string;
 };
@@ -530,6 +532,9 @@ export function demoListarHabilitaciones() {
     tipo: h.tipo,
     modulo: h.modulo,
     semestre: h.semestre,
+    grupo: h.grupo ?? "Todos",
+    turno: h.turno ?? null,
+    docenteId: h.docenteId,
   }));
 }
 
@@ -538,22 +543,53 @@ export function demoHabilitarFormato(datos: {
   tipo: string;
   modulo: number;
   semestre: number;
+  grupo: string;
+  turno?: string | null;
   docenteId: number;
 }) {
   const store = getStore();
   const yaExiste = store.habilitaciones.some(
-    (h) => h.codigo === datos.codigo && h.semestre === datos.semestre,
+    (h) =>
+      h.codigo === datos.codigo &&
+      h.docenteId === datos.docenteId &&
+      h.semestre === datos.semestre &&
+      (h.grupo ?? "Todos") === datos.grupo,
   );
   if (yaExiste) return;
   store.habilitaciones.push({ ...datos, createdAt: new Date().toISOString() });
   persist();
 }
 
-export function demoDeshabilitarFormato(codigo: string, semestre: number) {
+export function demoDeshabilitarFormato(
+  codigo: string,
+  docenteId: number,
+  semestre: number,
+  grupo: string,
+) {
   const store = getStore();
   const antes = store.habilitaciones.length;
   store.habilitaciones = store.habilitaciones.filter(
-    (h) => !(h.codigo === codigo && h.semestre === semestre),
+    (h) =>
+      !(
+        h.codigo === codigo &&
+        h.docenteId === docenteId &&
+        h.semestre === semestre &&
+        (h.grupo ?? "Todos") === grupo
+      ),
   );
   if (store.habilitaciones.length !== antes) persist();
+}
+
+/* ---------------------------------------------------------------
+ * PERFILES (modo demo): alcance del docente y datos del alumno
+ * --------------------------------------------------------------- */
+
+export function demoPerfilDocente(userId: number) {
+  const store = getStore();
+  return store.teacherProfiles.find((p) => p.userId === userId) ?? null;
+}
+
+export function demoPerfilAlumno(userId: number) {
+  const store = getStore();
+  return store.studentProfiles.find((p) => p.userId === userId) ?? null;
 }

@@ -285,12 +285,18 @@ CREATE TABLE IF NOT EXISTS formato_habilitaciones (
   tipo text NOT NULL DEFAULT 'llenable',
   modulo integer NOT NULL,
   semestre integer NOT NULL,
+  grupo text NOT NULL DEFAULT 'Todos',
+  turno text,
   docente_id integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS formato_habilitacion_unica
-  ON formato_habilitaciones (codigo, semestre);
+ALTER TABLE formato_habilitaciones ADD COLUMN IF NOT EXISTS grupo text NOT NULL DEFAULT 'Todos';
+ALTER TABLE formato_habilitaciones ADD COLUMN IF NOT EXISTS turno text;
+DROP INDEX IF EXISTS formato_habilitacion_unica;
+
+CREATE UNIQUE INDEX IF NOT EXISTS formato_habilitacion_ambito
+  ON formato_habilitaciones (codigo, docente_id, semestre, grupo);
 `;
 
 export async function asegurarEsquemaCore(): Promise<void> {

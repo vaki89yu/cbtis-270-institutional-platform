@@ -6,7 +6,12 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { FormatoLlenable } from "@/components/formatos/formato-llenable";
 import { Icono } from "@/components/iconos";
-import { clavesHabilitadas, puedeVerFormato } from "@/lib/formatos/acceso";
+import {
+  alumnoVeFormato,
+  ambitoAlumno,
+  listarHabilitaciones,
+  veTodoElCatalogo,
+} from "@/lib/formatos/acceso";
 import { NOMBRE_MODULO, obtenerFormato } from "@/lib/formatos/catalogo";
 import { requireUser } from "@/lib/guards";
 
@@ -26,9 +31,11 @@ export default async function FormatoLlenablePage({ params }: Props) {
   const formato = obtenerFormato(decodeURIComponent(codigo));
   if (!formato) notFound();
 
-  // El alumno sólo entra si su docente liberó el formato para su semestre.
-  const habilitadas = await clavesHabilitadas();
-  if (!puedeVerFormato(user, formato.codigo, habilitadas)) {
+  // El alumno sólo entra si su docente tutor liberó el formato a su grupo.
+  const permitido = veTodoElCatalogo(user.rol)
+    ? true
+    : alumnoVeFormato(formato.codigo, await ambitoAlumno(user), await listarHabilitaciones());
+  if (!permitido) {
     return (
       <div className="space-y-6">
         <Link href="/panel/formatos" className="btn-mini">
@@ -39,8 +46,8 @@ export default async function FormatoLlenablePage({ params }: Props) {
           <h1 className="mt-3 text-lg font-black text-slate-900">Formato no disponible todavía</h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
             El formato <strong>{formato.codigo} · {formato.titulo}</strong> pertenece al{" "}
-            {NOMBRE_MODULO[formato.modulo]} y aún no ha sido liberado por tu docente para el
-            semestre que cursas.
+            {NOMBRE_MODULO[formato.modulo]} y tu docente tutor aún no lo libera para tu
+            semestre y grupo.
           </p>
           <Link href="/panel/formatos" className="btn-secundario mt-5 inline-flex">
             Ver los formatos disponibles para mí
