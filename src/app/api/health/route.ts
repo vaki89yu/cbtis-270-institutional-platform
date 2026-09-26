@@ -1,5 +1,6 @@
 import { db, normalizarCadenaConexion } from "@/db";
 import { sql } from "drizzle-orm";
+import { asegurarEsquemaCore } from "@/lib/ensure-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +8,9 @@ export const dynamic = "force-dynamic";
  * Diagnóstico de la conexión a PostgreSQL.
  * Nunca revela usuario ni contraseña: sólo el host y el mensaje de error.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const crudo = process.env.DATABASE_URL || "";
+  const inicializar = new URL(request.url).searchParams.get("init") === "1";
   const url = normalizarCadenaConexion(crudo);
 
   if (!crudo) {
@@ -48,6 +50,8 @@ export async function GET() {
   try {
     const inicio = Date.now();
     await db.execute(sql`select 1`);
+    // ?init=1 crea las tablas que falten (todo el DDL es idempotente)
+    if (inicializar) await asegurarEsquemaCore();
     const tablas = await db.execute(
       sql`select count(*)::int as total from information_schema.tables where table_schema = 'public'`,
     );
@@ -58,6 +62,7 @@ export async function GET() {
       baseDeDatos,
       ms: Date.now() - inicio,
       tablasPublicas: (tablas.rows?.[0] as { total?: number } | undefined)?.total ?? null,
+      esquemaInicializado: inicializar,
     });
   } catch (error) {
     const err = error as Error & { cause?: Error; code?: string };
