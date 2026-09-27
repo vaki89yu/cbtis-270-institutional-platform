@@ -16,6 +16,7 @@ import {
   users,
 } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
+import { calificacionPorRubrica, retroalimentacionPorRubrica } from "@/lib/academico/rubrica";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { requireRole, requireUser } from "@/lib/guards";
 
@@ -64,6 +65,9 @@ export async function crearClaseAction(
   const color = texto(formData, "color") || "#1D5BD5";
   const semestre = Number(formData.get("semestre") ?? 2);
   const modulo = Number(formData.get("modulo"));
+  const dias = formData.getAll("dias").map((d) => String(d)).join(",");
+  const horaInicio = texto(formData, "horaInicio");
+  const horaFin = texto(formData, "horaFin");
 
   if (nombre.length < 3) return { error: "El nombre de la asignatura es muy corto." };
   if (clave.length < 3) return { error: "Escribe una clave para la clase (ej. LOG-201)." };
@@ -86,6 +90,9 @@ export async function crearClaseAction(
         turno,
         aula: aula || null,
         modulo: Number.isFinite(modulo) && modulo > 0 ? modulo : null,
+        dias: dias || null,
+        horaInicio: horaInicio || null,
+        horaFin: horaFin || null,
         color,
         docenteId: user.id,
       }).returning({ id: courses.id }),
@@ -328,6 +335,7 @@ export async function entregarTareaAction(formData: FormData) {
   }, undefined);
 
   revalidatePath(`/panel/tareas/${assignmentId}`);
+  revalidatePath("/panel/calificaciones");
   revalidatePath("/panel");
 }
 
@@ -335,7 +343,17 @@ export async function calificarEntregaAction(formData: FormData) {
   const user = await requireRole("docente", "admin");
   const submissionId = Number(formData.get("submissionId"));
   const assignmentId = Number(formData.get("assignmentId"));
-  const calificacion = Number(formData.get("calificacion"));
+
+  // Si el docente marcó criterios de la rúbrica, la calificación y la
+  // retroalimentación se arman solas; si escribió un número, ese manda.
+  const criterios = formData.getAll("rubrica").map((c) => String(c));
+  const capturada = Number(formData.get("calificacion"));
+  const usaRubrica = criterios.length > 0 && !Number.isFinite(capturada);
+  const calificacion = usaRubrica ? calificacionPorRubrica(criterios) : capturada;
+  const retroCapturada = texto(formData, "retroalimentacion");
+  const retro =
+    retroCapturada ||
+    (criterios.length > 0 ? retroalimentacionPorRubrica(criterios) : "");
 
   const rows = await safeDb(
     () =>
@@ -357,12 +375,23 @@ export async function calificarEntregaAction(formData: FormData) {
         .update(submissions)
         .set({
           calificacion: Number.isFinite(calificacion) ? calificacion : null,
-          retroalimentacion: texto(formData, "retroalimentacion") || null,
+          retroalimentacion: retro || null,
           calificadoEn: new Date(),
         })
         .where(eq(submissions.id, submissionId)),
     undefined,
   );
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "evidencia_calificada",
+    entidad: "submission",
+    entidadId: submissionId,
+    detalle: `Calificación ${Number.isFinite(calificacion) ? calificacion : "—"}${
+      usaRubrica ? " (por rúbrica)" : ""
+    }`,
+  });
 
   revalidatePath(`/panel/tareas/${assignmentId}`);
   revalidatePath("/panel");

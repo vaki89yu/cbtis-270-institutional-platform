@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Icono } from "@/components/iconos";
 import { aulasDelAlumno } from "@/lib/academico/aula";
 import { clasesDelDocente } from "@/lib/consultas";
+import { estadoDeClase, textoHorario } from "@/lib/academico/horario";
 import { NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 import { requireUser } from "@/lib/guards";
 
@@ -54,6 +55,30 @@ export default async function ClasesPage() {
                     {curso.semestre}° {curso.grupo}
                     {curso.modulo ? ` · Módulo ${curso.modulo}` : ""} · Prof. {docente}
                   </p>
+                  {(() => {
+                    const estado = estadoDeClase(curso);
+                    const horario = textoHorario(curso);
+                    return (
+                      <>
+                        {estado ? (
+                          <span
+                            className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-black ${
+                              estado === "En clase ahora"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : estado.startsWith("Empieza")
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {estado}
+                          </span>
+                        ) : null}
+                        {horario ? (
+                          <p className="mt-1 text-[11px] font-semibold text-slate-400">{horario}</p>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                   <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-inst-700">
                     Entrar al aula →
                   </span>
@@ -115,6 +140,30 @@ export default async function ClasesPage() {
                 <p className="mt-1 text-xs text-slate-500">
                   {curso.semestre}° {curso.grupo} · {curso.turno}
                 </p>
+                {(() => {
+                    const estado = estadoDeClase(curso);
+                    const horario = textoHorario(curso);
+                    return (
+                      <>
+                        {estado ? (
+                          <span
+                            className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-black ${
+                              estado === "En clase ahora"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : estado.startsWith("Empieza")
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {estado}
+                          </span>
+                        ) : null}
+                        {horario ? (
+                          <p className="mt-1 text-[11px] font-semibold text-slate-400">{horario}</p>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 {curso.modulo ? (
                   <p className="mt-2 text-[11px] font-semibold text-slate-400">
                     Módulo {curso.modulo}: {NOMBRE_MODULO[curso.modulo]}

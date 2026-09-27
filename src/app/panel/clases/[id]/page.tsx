@@ -35,6 +35,7 @@ import {
   borrarDelMuroAction,
   cargarListaGrupoAction,
   desactivarMaterialAction,
+  empezarClaseAction,
   publicarEnMuroAction,
   ajustarAsistenciaAction,
   calificarEvidenciaAction,
@@ -288,7 +289,62 @@ export default async function AulaPage({ params }: Props) {
               </div>
             </div>
           ) : (
-            <form action={abrirPaseDeListaAction} className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="mt-4 space-y-4">
+              <div className="rounded-2xl border-2 border-inst-200 bg-inst-50/60 p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-inst-700">
+                  Tablero del día
+                </p>
+                <p className="mt-0.5 text-sm text-slate-600">
+                  Un solo botón: abre el pase de lista con código, activa la actividad de hoy y la
+                  publica en el muro del grupo.
+                </p>
+                <form action={empezarClaseAction} className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="courseId" value={courseId} />
+                  <label className="text-xs font-bold text-slate-600">
+                    Tema de hoy
+                    <input
+                      name="tema"
+                      className="campo mt-1"
+                      placeholder="Control de inventarios: conteo cíclico"
+                    />
+                  </label>
+                  <label className="text-xs font-bold text-slate-600">
+                    Actividad del día
+                    <select name="clave" defaultValue="" className="campo mt-1">
+                      <option value="">Sin actividad nueva</option>
+                      {precargadas.map((a) => (
+                        <option key={a.clave} value={a.clave}>
+                          P{a.parcial} · {a.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-xs font-bold text-slate-600">
+                    Tolerancia
+                    <select name="tolerancia" defaultValue="10" className="campo mt-1">
+                      {[5, 10, 15, 20].map((t) => (
+                        <option key={t} value={t}>
+                          {t} min
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end">
+                    <BotonEnviar
+                      className="btn-primario w-full px-5 py-2.5 text-sm"
+                      pendienteTexto="Empezando..."
+                    >
+                      Empezar clase
+                    </BotonEnviar>
+                  </div>
+                </form>
+              </div>
+
+              <details className="rounded-xl border border-slate-200 p-4">
+                <summary className="cursor-pointer text-xs font-bold text-slate-600">
+                  Sólo abrir el pase de lista
+                </summary>
+            <form action={abrirPaseDeListaAction} className="mt-3 flex flex-wrap items-end gap-3">
               <input type="hidden" name="courseId" value={courseId} />
               <label className="text-xs font-bold text-slate-600">
                 Tema de la clase de hoy
@@ -312,10 +368,12 @@ export default async function AulaPage({ params }: Props) {
                 <input type="checkbox" name="conCodigo" value="1" defaultChecked className="h-4 w-4" />
                 Pedir código proyectado
               </label>
-              <BotonEnviar className="btn-primario px-5 py-2.5 text-sm" pendienteTexto="Abriendo...">
+              <BotonEnviar className="btn-secundario px-5 py-2.5 text-sm" pendienteTexto="Abriendo...">
                 Abrir pase de lista
               </BotonEnviar>
             </form>
+              </details>
+            </div>
           )
         ) : sesionAbierta ? (
           miRegistro ? (

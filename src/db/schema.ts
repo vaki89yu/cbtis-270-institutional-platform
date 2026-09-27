@@ -139,6 +139,11 @@ export const courses = pgTable("courses", {
   aula: text("aula"),
   /** Módulo profesional que se imparte en el aula (1..5) */
   modulo: integer("modulo"),
+  /** Días de clase: "1,3,5" (1=lunes … 5=viernes) */
+  dias: text("dias"),
+  /** Hora de inicio en formato 24h "07:00" */
+  horaInicio: text("hora_inicio"),
+  horaFin: text("hora_fin"),
   color: text("color").notNull().default("#1D5BD5"),
   docenteId: integer("docente_id")
     .notNull()

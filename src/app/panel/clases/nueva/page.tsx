@@ -107,6 +107,41 @@ export default async function NuevaClasePage() {
               </select>
             </div>
             <div className="sm:col-span-2">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Horario de la clase
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["1", "Lun"],
+                  ["2", "Mar"],
+                  ["3", "Mié"],
+                  ["4", "Jue"],
+                  ["5", "Vie"],
+                ].map(([valor, etiqueta]) => (
+                  <label
+                    key={valor}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600"
+                  >
+                    <input type="checkbox" name="dias" value={valor} className="h-4 w-4" />
+                    {etiqueta}
+                  </label>
+                ))}
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                  de
+                  <input type="time" name="horaInicio" defaultValue="07:00" className="campo w-32" />
+                </label>
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                  a
+                  <input type="time" name="horaFin" defaultValue="08:40" className="campo w-32" />
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Con el horario, la plataforma avisa "tu próxima clase" y marca cuando el pase de
+                lista se abre fuera de hora.
+              </p>
+            </div>
+
+            <div className="sm:col-span-2">
               <label htmlFor="descripcion" className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Descripción del submódulo
               </label>

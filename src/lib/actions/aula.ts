@@ -624,3 +624,66 @@ export async function cargarListaGrupoAction(formData: FormData) {
 
   refrescar(courseId);
 }
+
+/* ------------------------------ EMPEZAR CLASE ------------------------------ */
+
+/**
+ * Un solo botón para iniciar la sesión del día: abre el pase de lista con
+ * código, activa la actividad elegida y publica el tema en el muro.
+ */
+export async function empezarClaseAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso) return;
+
+  const tema = String(formData.get("tema") ?? "").trim();
+  const clave = String(formData.get("clave") ?? "").trim();
+  const tolerancia = Number(formData.get("tolerancia") ?? 10);
+
+  // 1. Pase de lista
+  await db
+    .update(attendanceSessions)
+    .set({ abierta: false, cerradaEn: new Date() })
+    .where(and(eq(attendanceSessions.courseId, courseId), eq(attendanceSessions.abierta, true)));
+
+  await db.insert(attendanceSessions).values({
+    courseId,
+    fecha: new Date(),
+    tema: tema || null,
+    abierta: true,
+    toleranciaMin: Number.isFinite(tolerancia) ? tolerancia : 10,
+    abiertaPorId: user.id,
+    codigo: String(Math.floor(100000 + Math.random() * 900000)),
+  });
+
+  await sincronizarGrupoDelAula(courseId);
+
+  // 2. Actividad del día
+  if (clave) {
+    const datos = new FormData();
+    datos.set("courseId", String(courseId));
+    datos.set("clave", clave);
+    await activarActividadAction(datos);
+  }
+
+  // 3. Tema en el muro
+  if (tema) {
+    await db.insert(classPosts).values({
+      courseId,
+      autorId: user.id,
+      contenido: `Clase de hoy: ${tema}`,
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "clase_iniciada",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: tema || "Sin tema capturado",
+  });
+
+  refrescar(courseId);
+}

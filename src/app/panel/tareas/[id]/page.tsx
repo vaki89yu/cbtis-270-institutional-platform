@@ -4,6 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assignments, courses, enrollments, submissions, users } from "@/db/schema";
 import { BotonEnviar } from "@/components/form-estado";
+import { RUBRICA } from "@/lib/academico/rubrica";
 import { calificarEntregaAction, entregarTareaAction } from "@/lib/actions/plataforma";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
 
@@ -129,6 +130,32 @@ export default async function TareaDetallePage({ params }: Props) {
                     >
                       <input type="hidden" name="submissionId" value={entrega.id} />
                       <input type="hidden" name="assignmentId" value={tarea.id} />
+                      <div className="sm:col-span-3">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                          Rúbrica · marca lo que cumplió y la calificación se arma sola
+                        </p>
+                        <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                          {RUBRICA.map((c) => (
+                            <label
+                              key={c.clave}
+                              className="flex items-start gap-2 rounded-lg border border-slate-200 p-2 text-xs"
+                            >
+                              <input
+                                type="checkbox"
+                                name="rubrica"
+                                value={c.clave}
+                                className="mt-0.5 h-4 w-4"
+                              />
+                              <span>
+                                <span className="font-bold text-slate-800">
+                                  {c.titulo} ({c.puntos} pts)
+                                </span>
+                                <span className="block text-slate-500">{c.descripcion}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                       <input
                         type="number"
                         name="calificacion"

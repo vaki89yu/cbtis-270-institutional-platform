@@ -256,6 +256,19 @@ export default async function AsistenciasPage({ searchParams }: Props) {
             Control de asistencia para aulas de Logística y prácticas en el Almacén Escuela.
           </p>
         </div>
+        {misClases.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {misClases.map(({ curso }) => (
+              <Link
+                key={curso.id}
+                href={`/panel/asistencias/imprimir?aula=${curso.id}`}
+                className="btn-mini"
+              >
+                Lista mensual · {curso.aula ?? curso.clave}
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {/* Lo que los alumnos registraron desde el aula */}

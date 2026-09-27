@@ -316,6 +316,10 @@ CREATE TABLE IF NOT EXISTS attendance_sessions (
 
 ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS codigo text;
 
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS dias text;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS hora_inicio text;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS hora_fin text;
+
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS origen text;
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS submodulo text;
