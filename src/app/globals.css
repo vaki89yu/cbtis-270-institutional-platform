@@ -224,10 +224,16 @@ body::after {
 .panel-lienzo {
   position: relative;
   isolation: isolate;
-  border: 1px solid rgba(15, 42, 80, 0.12);
-  /* Lienzo claro y sólido: el contenido se lee sin esfuerzo */
-  background: #f6f9fe;
-  box-shadow: 0 18px 44px rgba(4, 15, 30, 0.18);
+  border: 1px solid rgba(200, 228, 255, 0.28);
+  /*
+   * Cristal abierto: el wallpaper de logística se cuela entre las tarjetas y
+   * el lienzo no tapa la fotografía. La legibilidad se sostiene con sombra de
+   * texto (tema .panel-cristal), sin superficies sólidas ni desenfoque.
+   */
+  background: rgba(8, 26, 50, 0.18);
+  box-shadow:
+    0 18px 44px rgba(4, 15, 30, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 /* ---------- WALLPAPERS DE LOGÍSTICA REAL DEL PANEL INTERNO ---------- */
@@ -526,9 +532,17 @@ body::after {
   background-color: rgba(96, 176, 248, 0.24) !important;
 }
 
+.panel-cristal .text-blue-700,
 .panel-cristal .text-blue-800,
-.panel-cristal .text-indigo-700 {
+.panel-cristal .text-blue-900,
+.panel-cristal .text-indigo-700,
+.panel-cristal .text-inst-900 {
   color: #aacdff !important;
+}
+
+.panel-cristal .text-violet-700,
+.panel-cristal .text-violet-800 {
+  color: #d8b4fe !important;
 }
 
 .panel-cristal .bg-purple-50 {
@@ -560,13 +574,43 @@ body::after {
   background-color: rgba(59, 145, 243, 0.2) !important;
 }
 
+.panel-cristal .bg-slate-50\/60,
 .panel-cristal .bg-slate-50\/70,
 .panel-cristal .bg-slate-50\/90,
+.panel-cristal .bg-white\/60,
 .panel-cristal .bg-white\/70,
 .panel-cristal .bg-white\/80,
 .panel-cristal .bg-white\/90,
 .panel-cristal .bg-white\/95 {
   background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Superficies adicionales que usan lector de material, expedientes y
+   seguimiento: se llevan al mismo lenguaje de cristal */
+.panel-cristal .bg-slate-300 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.panel-cristal .bg-inst-100 {
+  background-color: rgba(59, 145, 243, 0.24) !important;
+}
+
+.panel-cristal .bg-inst-50\/60 {
+  background-color: rgba(59, 145, 243, 0.2) !important;
+}
+
+.panel-cristal .bg-blue-50 {
+  background-color: rgba(96, 176, 248, 0.2) !important;
+}
+
+.panel-cristal .bg-violet-50,
+.panel-cristal .bg-violet-100 {
+  background-color: rgba(168, 85, 247, 0.2) !important;
+}
+
+.panel-cristal .bg-emerald-50\/50,
+.panel-cristal .bg-emerald-50\/60 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
 }
 
 /* Los avisos translúcidos conservan su lectura con desenfoque propio */
@@ -606,6 +650,12 @@ body::after {
   background-color: rgba(8, 28, 54, 0.75);
 }
 
+/* Campos de formato llenable: al enfocarlos siguen en cristal oscuro, si no el
+   foco blanco los dejaría con texto blanco sobre blanco */
+.panel-cristal .focus\:bg-white:focus {
+  background-color: rgba(8, 28, 54, 0.75) !important;
+}
+
 .panel-cristal select.campo option {
   background-color: #0d2340;
   color: #f2f8ff;
@@ -633,6 +683,65 @@ body::after {
 
 .panel-cristal table tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* --- Hoja de documento oficial (imprimir): siempre papel blanco --- */
+/*
+ * Las boletas y los concentrados son documentos oficiales: se ven y se
+ * imprimen como papel blanco con tinta oscura, así que se excluyen por
+ * completo del tema cristal.
+ */
+.panel-cristal .hoja-oficial,
+.panel-cristal .hoja-oficial.bg-white {
+  background-color: #ffffff !important;
+}
+
+.panel-cristal .hoja-oficial .bg-white {
+  background-color: #ffffff !important;
+}
+
+.panel-cristal .hoja-oficial .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+}
+
+.panel-cristal .hoja-oficial,
+.panel-cristal .hoja-oficial.text-slate-900 {
+  color: #0f172a !important;
+}
+
+.panel-cristal .hoja-oficial .text-slate-900 {
+  color: #0f172a !important;
+}
+
+.panel-cristal .hoja-oficial .text-slate-600 {
+  color: #475569 !important;
+}
+
+.panel-cristal .hoja-oficial .text-slate-500 {
+  color: #64748b !important;
+}
+
+.panel-cristal .hoja-oficial.border-slate-200,
+.panel-cristal .hoja-oficial .border-slate-200 {
+  border-color: #e2e8f0 !important;
+}
+
+.panel-cristal .hoja-oficial .border-slate-400 {
+  border-color: #94a3b8 !important;
+}
+
+.panel-cristal .hoja-oficial .border-slate-800 {
+  border-color: #1e293b !important;
+}
+
+.panel-cristal .hoja-oficial p,
+.panel-cristal .hoja-oficial span,
+.panel-cristal .hoja-oficial h1,
+.panel-cristal .hoja-oficial h2,
+.panel-cristal .hoja-oficial h3,
+.panel-cristal .hoja-oficial td,
+.panel-cristal .hoja-oficial th {
+  text-shadow: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -759,7 +868,11 @@ body::after {
   }
   aside,
   header.panel-encabezado,
+  header.panel-barra,
+  footer,
   nav,
+  .panel-fondo,
+  .etiqueta-seccion,
   .print\:hidden {
     display: none !important;
   }
@@ -767,6 +880,11 @@ body::after {
     padding: 0 !important;
     margin: 0 !important;
     max-width: none !important;
+  }
+  .panel-lienzo {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
   @page {
     size: letter portrait;
@@ -789,6 +907,11 @@ body::after {
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
+.modo-clase .panel-lienzo {
+  background: #ffffff !important;
+  border: 2px solid #17295a !important;
+  box-shadow: none !important;
+}
 .modo-clase .panel-cristal,
 .modo-clase [class*="backdrop-blur"] {
   backdrop-filter: none !important;
@@ -797,6 +920,67 @@ body::after {
 .modo-clase .text-slate-400,
 .modo-clase .text-slate-500 {
   color: #334155 !important;
+}
+/* El tema cristal aclara el texto con !important: aquí se devuelve a tinta
+   oscura para que la proyección en el salón sea legible sobre fondo blanco */
+.modo-clase .panel-cristal .text-slate-400,
+.modo-clase .panel-cristal .text-slate-500,
+.modo-clase .panel-cristal .text-slate-600,
+.modo-clase .panel-cristal .text-slate-700,
+.modo-clase .panel-cristal .text-slate-800,
+.modo-clase .panel-cristal .text-slate-900,
+.modo-clase .panel-cristal .text-inst-700,
+.modo-clase .panel-cristal .text-inst-800,
+.modo-clase .panel-cristal .text-inst-900,
+.modo-clase .panel-cristal .text-blue-700,
+.modo-clase .panel-cristal .text-blue-800,
+.modo-clase .panel-cristal .text-blue-900,
+.modo-clase .panel-cristal .text-indigo-700,
+.modo-clase .panel-cristal .text-violet-700,
+.modo-clase .panel-cristal .text-violet-800,
+.modo-clase .panel-cristal .text-emerald-600,
+.modo-clase .panel-cristal .text-emerald-700,
+.modo-clase .panel-cristal .text-emerald-800,
+.modo-clase .panel-cristal .text-amber-600,
+.modo-clase .panel-cristal .text-amber-700,
+.modo-clase .panel-cristal .text-amber-800,
+.modo-clase .panel-cristal .text-amber-900,
+.modo-clase .panel-cristal .text-rose-600,
+.modo-clase .panel-cristal .text-rose-700,
+.modo-clase .panel-cristal .text-rose-800,
+.modo-clase .panel-cristal .text-sky-700,
+.modo-clase .panel-cristal .text-sky-800 {
+  color: #17295a !important;
+}
+.modo-clase .panel-cristal p,
+.modo-clase .panel-cristal span,
+.modo-clase .panel-cristal li,
+.modo-clase .panel-cristal td,
+.modo-clase .panel-cristal th,
+.modo-clase .panel-cristal label,
+.modo-clase .panel-cristal a,
+.modo-clase .panel-cristal strong,
+.modo-clase .panel-cristal h1,
+.modo-clase .panel-cristal h2,
+.modo-clase .panel-cristal h3,
+.modo-clase .panel-cristal h4,
+.modo-clase .panel-cristal h5 {
+  text-shadow: none !important;
+}
+.modo-clase .panel-cristal .campo {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #64748b !important;
+}
+.modo-clase .panel-cristal .campo::placeholder {
+  color: #64748b !important;
+}
+.modo-clase .panel-cristal .btn-mini,
+.modo-clase .panel-cristal .btn-secundario,
+.modo-clase .panel-cristal .btn-oro {
+  background-color: #ffffff !important;
+  color: #17295a !important;
+  border-color: #94a3b8 !important;
 }
 .modo-clase h1 {
   font-size: 2.25rem !important;
