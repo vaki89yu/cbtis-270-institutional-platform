@@ -33,6 +33,7 @@ import {
   activarActividadAction,
   activarMaterialAction,
   borrarDelMuroAction,
+  cargarListaGrupoAction,
   desactivarMaterialAction,
   publicarEnMuroAction,
   ajustarAsistenciaAction,
@@ -131,6 +132,7 @@ export default async function AulaPage({ params }: Props) {
   );
   const avisoAsistencia = (await cookies()).get("cbtis270_asistencia_aviso")?.value ?? null;
   const muro = await muroDelAula(courseId);
+  const avisoCarga = (await cookies()).get("cbtis270_carga_aviso")?.value ?? null;
 
   return (
     <div className="space-y-6">
@@ -643,6 +645,38 @@ export default async function AulaPage({ params }: Props) {
             Se llena sola con los alumnos que te eligieron como docente y cursan {curso.semestre}°{" "}
             {curso.grupo}.
           </p>
+
+          {avisoCarga ? (
+            <p className="mt-3 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800">
+              {avisoCarga}
+            </p>
+          ) : null}
+
+          <details className="mt-3 rounded-xl border border-slate-200 p-4">
+            <summary className="cursor-pointer text-sm font-bold text-slate-700">
+              Cargar la lista del grupo desde Excel
+            </summary>
+            <p className="mt-2 text-xs text-slate-500">
+              Copia de tu lista de Excel tres columnas —matrícula, nombre completo y correo— y
+              pégalas aquí. Se crean las cuentas ya vinculadas a ti, a {curso.semestre}°{" "}
+              {curso.grupo}. La contraseña inicial de cada alumno es su matrícula.
+            </p>
+            <form action={cargarListaGrupoAction} className="mt-3 space-y-2">
+              <input type="hidden" name="courseId" value={courseId} />
+              <textarea
+                name="lista"
+                required
+                rows={6}
+                className="campo font-mono text-xs"
+                placeholder={"20250001, PÉREZ LÓPEZ JUAN, juan.perez@cbtis270.edu.mx\n20250002, RAMOS DÍAZ ANA, ana.ramos@cbtis270.edu.mx"}
+              />
+              <div className="flex justify-end">
+                <BotonEnviar className="btn-secundario px-4 py-2 text-xs" pendienteTexto="Cargando...">
+                  Crear y vincular alumnos
+                </BotonEnviar>
+              </div>
+            </form>
+          </details>
           <div className="mt-4 divide-y divide-slate-100">
             {alumnos.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3 py-2.5">

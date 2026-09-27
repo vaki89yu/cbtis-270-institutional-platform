@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { auditLog, studentProfiles, users } from "@/db/schema";
 import { BotonEnviar, FormEstado } from "@/components/form-estado";
 import {
   alternarActivoAction,
   cambiarRolAction,
   crearUsuarioAction,
+  reasignarTutorAction,
+  restablecerPasswordAction,
 } from "@/lib/actions/plataforma";
-import { ESPECIALIDADES, formatoFecha, requireRole } from "@/lib/guards";
+import { ESPECIALIDADES, formatoFecha, formatoFechaHora, requireRole } from "@/lib/guards";
 
 export const metadata: Metadata = { title: "Usuarios" };
 export const dynamic = "force-dynamic";
@@ -17,6 +19,17 @@ export default async function UsuariosPage() {
   const admin = await requireRole("admin");
 
   const lista = await db.select().from(users).orderBy(desc(users.createdAt));
+  const docentes = lista.filter((u) => u.rol === "docente" && u.activo);
+  const perfiles = await db
+    .select({ userId: studentProfiles.userId, tutorDocenteId: studentProfiles.tutorDocenteId })
+    .from(studentProfiles);
+  const tutorPorAlumno = new Map(perfiles.map((p) => [p.userId, p.tutorDocenteId]));
+  const bitacora = await db
+    .select()
+    .from(auditLog)
+    .orderBy(desc(auditLog.createdAt))
+    .limit(25)
+    .catch(() => []);
   const conteo = {
     admin: lista.filter((u) => u.rol === "admin").length,
     docente: lista.filter((u) => u.rol === "docente").length,
@@ -83,6 +96,8 @@ export default async function UsuariosPage() {
                 <tr>
                   <th className="px-4 py-3">Usuario</th>
                   <th className="px-4 py-3">Rol</th>
+                  <th className="px-4 py-3">Docente encargado</th>
+                  <th className="px-4 py-3">Acceso</th>
                   <th className="px-4 py-3">Alta</th>
                   <th className="px-4 py-3">Estado</th>
                 </tr>
@@ -110,6 +125,45 @@ export default async function UsuariosPage() {
                         </BotonEnviar>
                       </form>
                     </td>
+                    <td className="px-4 py-3">
+                      {u.rol === "estudiante" ? (
+                        <form action={reasignarTutorAction} className="flex items-center gap-1.5">
+                          <input type="hidden" name="studentId" value={u.id} />
+                          <select
+                            name="tutorDocenteId"
+                            defaultValue={String(tutorPorAlumno.get(u.id) ?? "")}
+                            className="rounded-lg border border-slate-300 px-2 py-1 text-xs"
+                          >
+                            <option value="">Sin asignar</option>
+                            {docentes.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.nombre}
+                              </option>
+                            ))}
+                          </select>
+                          <BotonEnviar className="btn-mini" pendienteTexto="...">
+                            Mover
+                          </BotonEnviar>
+                        </form>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={restablecerPasswordAction} className="flex items-center gap-1.5">
+                        <input type="hidden" name="userId" value={u.id} />
+                        <input
+                          name="temporal"
+                          minLength={6}
+                          required
+                          placeholder="temporal"
+                          className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-xs"
+                        />
+                        <BotonEnviar className="btn-mini" pendienteTexto="...">
+                          Reset
+                        </BotonEnviar>
+                      </form>
+                    </td>
                     <td className="px-4 py-3 text-xs text-slate-500">{formatoFecha(u.createdAt)}</td>
                     <td className="px-4 py-3">
                       {u.id === admin.id ? (
@@ -134,6 +188,32 @@ export default async function UsuariosPage() {
           </div>
         </section>
       </div>
+
+      <section className="tarjeta p-6">
+        <h2 className="text-lg font-bold text-slate-900">Bitácora de auditoría</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Quién habilitó, activó, calificó o movió algo, y cuándo. Últimos 25 movimientos.
+        </p>
+        <div className="mt-4 divide-y divide-slate-100">
+          {bitacora.map((b) => (
+            <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
+              <div className="min-w-0">
+                <p className="font-bold text-slate-800">
+                  {b.accion.replace(/_/g, " ")}
+                  {b.actor ? <span className="font-semibold text-slate-500"> · {b.actor}</span> : null}
+                </p>
+                {b.detalle ? <p className="truncate text-slate-500">{b.detalle}</p> : null}
+              </div>
+              <span className="shrink-0 text-slate-400">{formatoFechaHora(b.createdAt)}</span>
+            </div>
+          ))}
+          {bitacora.length === 0 ? (
+            <p className="py-6 text-center text-xs text-slate-400">
+              Todavía no hay movimientos registrados.
+            </p>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }

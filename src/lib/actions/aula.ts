@@ -10,6 +10,9 @@ import {
   attendances,
   classPosts,
   courses,
+  enrollments,
+  studentProfiles,
+  users,
   materials,
   submissions,
 } from "@/db/schema";
@@ -18,6 +21,7 @@ import { materialPorClave } from "@/lib/academico/materiales";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { sincronizarGrupoDelAula } from "@/lib/academico/aula";
 import { crearNotificacionSegura } from "@/lib/comunicacion-datos";
+import { hashPassword } from "@/lib/auth";
 import { requireUser } from "@/lib/guards";
 
 async function aulaDelDocente(courseId: number, userId: number, rol: string) {
@@ -513,5 +517,110 @@ export async function borrarDelMuroAction(formData: FormData) {
   if (!puede) return;
 
   await db.delete(classPosts).where(eq(classPosts.id, postId));
+  refrescar(courseId);
+}
+
+/* ---------------------------- CARGA MASIVA DE LISTA ---------------------------- */
+
+/**
+ * El docente pega la lista del grupo (matrícula, nombre, correo) y la
+ * plataforma pre-crea las cuentas ya vinculadas a él, a su semestre y a su
+ * grupo. El alumno sólo entra con su matrícula como contraseña y la cambia.
+ *
+ * Acepta separadores coma, punto y coma o tabulador: pegar desde Excel funciona.
+ */
+export async function cargarListaGrupoAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso) return;
+
+  const crudo = String(formData.get("lista") ?? "");
+  const lineas = crudo
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  let creados = 0;
+  let vinculados = 0;
+  const errores: string[] = [];
+
+  for (const linea of lineas) {
+    const partes = linea.split(/[\t;,]/).map((p) => p.trim());
+    if (partes.length < 3) {
+      errores.push(linea.slice(0, 40));
+      continue;
+    }
+    const [matricula, nombre, emailCrudo] = partes;
+    const email = emailCrudo.toLowerCase();
+    if (!email.includes("@") || nombre.length < 4) {
+      errores.push(linea.slice(0, 40));
+      continue;
+    }
+    // Encabezado de Excel
+    if (/matr[ií]cula/i.test(matricula) || /correo|email/i.test(email)) continue;
+
+    const [existente] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    let studentId: number;
+    if (existente) {
+      studentId = existente.id;
+    } else {
+      const [nuevo] = await db
+        .insert(users)
+        .values({
+          nombre,
+          email,
+          passwordHash: hashPassword(matricula),
+          rol: "estudiante",
+          matricula,
+          especialidad: "Logística",
+          semestre: curso.semestre,
+          turno: curso.turno,
+          emailVerificado: false,
+        })
+        .returning({ id: users.id });
+      studentId = nuevo.id;
+      creados += 1;
+    }
+
+    await db
+      .insert(studentProfiles)
+      .values({
+        userId: studentId,
+        numeroControl: matricula,
+        grupo: curso.grupo,
+        tutorDocenteId: curso.docenteId,
+      })
+      .onConflictDoUpdate({
+        target: studentProfiles.userId,
+        set: { grupo: curso.grupo, tutorDocenteId: curso.docenteId },
+      });
+
+    await db.insert(enrollments).values({ courseId, studentId }).onConflictDoNothing();
+    vinculados += 1;
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "carga_masiva_lista",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `${creados} cuentas creadas, ${vinculados} alumnos vinculados`,
+  });
+
+  const jar = await cookies();
+  jar.set(
+    "cbtis270_carga_aviso",
+    `${creados} cuentas nuevas y ${vinculados} alumnos vinculados al aula.` +
+      (errores.length > 0 ? ` No se pudieron leer ${errores.length} renglones.` : ""),
+    { path: "/", maxAge: 20 },
+  );
+
   refrescar(courseId);
 }

@@ -251,6 +251,53 @@ export async function solicitarOtpAction(
   return { ok: envio.message };
 }
 
+/**
+ * Recuperación de contraseña: el usuario pide un código a su correo y con ese
+ * código define una contraseña nueva. Sólo funciona con cuentas que existen.
+ */
+export async function recuperarPasswordAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await asegurarEsquemaCore();
+  } catch {}
+
+  const email = valor(formData, "email").toLowerCase();
+  const codigo = valor(formData, "codigo");
+  const password = String(formData.get("password") ?? "");
+  const confirmar = String(formData.get("confirmar") ?? "");
+
+  if (!email.includes("@")) return { error: "Escribe el correo de tu cuenta." };
+  if (!codigo) return { error: "Escribe el código que te llegó por correo." };
+  if (password.length < 6) return { error: "La contraseña nueva debe tener al menos 6 caracteres." };
+  if (password !== confirmar) return { error: "Las dos contraseñas no coinciden." };
+
+  const ok = await verificarOtp(email, codigo);
+  if (!ok) return { error: "El código no es válido o ya expiró. Pide uno nuevo." };
+
+  try {
+    const [cuenta] = await db
+      .select({ id: users.id, nombre: users.nombre })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    if (!cuenta) {
+      return { error: "No hay ninguna cuenta con ese correo." };
+    }
+    await db
+      .update(users)
+      .set({ passwordHash: hashPassword(password), emailVerificado: true })
+      .where(eq(users.id, cuenta.id));
+
+    await registrarActividad(cuenta.id, "password_restablecida", "Cambió su contraseña con código de correo.");
+
+    return { ok: `Listo, ${cuenta.nombre}. Ya puedes entrar con tu contraseña nueva.` };
+  } catch {
+    return { error: "No se pudo cambiar la contraseña en este momento. Intenta más tarde." };
+  }
+}
+
 export async function loginAction(
   _prev: ActionState,
   formData: FormData,

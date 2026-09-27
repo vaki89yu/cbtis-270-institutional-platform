@@ -176,7 +176,13 @@ export default async function LoginPage({ searchParams }: Props) {
               </div>
             </FormEstado>
 
-            <div className="mt-6 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm text-slate-600 ring-1 ring-slate-200">
+            <p className="mt-4 text-center text-sm">
+              <Link href="/recuperar" className="font-semibold text-slate-500 hover:text-inst-700 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </p>
+
+            <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm text-slate-600 ring-1 ring-slate-200">
               ¿Aún no tienes cuenta?{" "}
               <Link href="/registro" className="font-bold text-blue-700 hover:underline">
                 Crear una cuenta verificada

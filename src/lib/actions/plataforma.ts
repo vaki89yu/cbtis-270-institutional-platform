@@ -11,10 +11,12 @@ import {
   courses,
   enrollments,
   materials,
+  studentProfiles,
   submissions,
   users,
 } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
+import { registrarAuditoria } from "@/lib/auditoria";
 import { requireRole, requireUser } from "@/lib/guards";
 
 export type ActionState = { error?: string; ok?: string };
@@ -460,11 +462,19 @@ export async function crearUsuarioAction(
 }
 
 export async function cambiarRolAction(formData: FormData) {
-  await requireRole("admin");
+  const admin = await requireRole("admin");
   const userId = Number(formData.get("userId"));
   const rol = texto(formData, "rol");
   if (!["admin", "docente", "estudiante"].includes(rol)) return;
   await safeDb(() => db.update(users).set({ rol }).where(eq(users.id, userId)), undefined);
+  await registrarAuditoria({
+    userId: admin.id,
+    actor: admin.nombre,
+    accion: "cambio_de_rol",
+    entidad: "user",
+    entidadId: userId,
+    detalle: `Nuevo rol: ${rol}`,
+  });
   revalidatePath("/panel/usuarios");
 }
 
@@ -474,5 +484,71 @@ export async function alternarActivoAction(formData: FormData) {
   const activo = formData.get("activo") === "true";
   if (userId === admin.id) return;
   await safeDb(() => db.update(users).set({ activo: !activo }).where(eq(users.id, userId)), undefined);
+  revalidatePath("/panel/usuarios");
+}
+
+/** Reasigna el docente encargado de un alumno (mueve expediente, mensajes y aulas). */
+export async function reasignarTutorAction(formData: FormData) {
+  const admin = await requireRole("admin");
+  const studentId = Number(formData.get("studentId"));
+  const tutorDocenteId = Number(formData.get("tutorDocenteId"));
+  if (!Number.isFinite(studentId) || !Number.isFinite(tutorDocenteId)) return;
+
+  const [tutor] = await db
+    .select({ id: users.id, nombre: users.nombre, rol: users.rol })
+    .from(users)
+    .where(eq(users.id, tutorDocenteId))
+    .limit(1);
+  if (!tutor || tutor.rol !== "docente") return;
+
+  await safeDb(
+    () =>
+      db
+        .update(studentProfiles)
+        .set({ tutorDocenteId: tutor.id, tutorDocenteNombre: tutor.nombre })
+        .where(eq(studentProfiles.userId, studentId)),
+    undefined,
+  );
+
+  // Que las aulas se acomoden solas al docente nuevo
+  try {
+    const { sincronizarAulasDelAlumno } = await import("@/lib/academico/aula");
+    await sincronizarAulasDelAlumno(studentId);
+  } catch {}
+
+  await registrarAuditoria({
+    userId: admin.id,
+    actor: admin.nombre,
+    accion: "reasignacion_de_tutor",
+    entidad: "user",
+    entidadId: studentId,
+    detalle: `Nuevo docente encargado: ${tutor.nombre}`,
+  });
+
+  revalidatePath("/panel/usuarios");
+  revalidatePath("/panel/expedientes");
+}
+
+/** Restablece la contraseña de un usuario a un valor temporal. */
+export async function restablecerPasswordAction(formData: FormData) {
+  const admin = await requireRole("admin");
+  const userId = Number(formData.get("userId"));
+  const temporal = String(formData.get("temporal") ?? "").trim();
+  if (!Number.isFinite(userId) || temporal.length < 6) return;
+
+  await safeDb(
+    () => db.update(users).set({ passwordHash: hashPassword(temporal) }).where(eq(users.id, userId)),
+    undefined,
+  );
+
+  await registrarAuditoria({
+    userId: admin.id,
+    actor: admin.nombre,
+    accion: "password_restablecida_por_admin",
+    entidad: "user",
+    entidadId: userId,
+    detalle: "Se asignó una contraseña temporal",
+  });
+
   revalidatePath("/panel/usuarios");
 }
