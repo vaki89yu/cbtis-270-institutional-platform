@@ -18,6 +18,7 @@ import {
   studentProfiles,
   submissions,
   users,
+  materials,
 } from "@/db/schema";
 
 export type AlumnoDelGrupo = {
@@ -266,6 +267,15 @@ export async function alumnosDelAula(courseId: number): Promise<AlumnoDelGrupo[]
     .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
     .where(eq(enrollments.courseId, courseId))
     .orderBy(asc(users.nombre));
+}
+
+/** Material del aula. El alumno sólo ve el activo. */
+export async function materialesDelAula(courseId: number, soloActivos = false) {
+  const base = db.select().from(materials);
+  const filas = soloActivos
+    ? await base.where(and(eq(materials.courseId, courseId), eq(materials.activo, true)))
+    : await base.where(eq(materials.courseId, courseId));
+  return filas.sort((a, b) => a.titulo.localeCompare(b.titulo, "es"));
 }
 
 /** Concentrado de calificaciones del aula: alumno × actividad. */

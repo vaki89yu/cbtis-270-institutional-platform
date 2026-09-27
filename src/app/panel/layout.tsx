@@ -19,6 +19,7 @@ const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
   { href: "/panel/clases", label: "Aulas", icono: "aulas" },
   { href: "/panel/asistencias", label: "Asistencias", icono: "asistencias" },
   { href: "/panel/tareas", label: "Evidencias y Calificaciones", icono: "evidencias" },
+  { href: "/panel/calificaciones", label: "Boleta y Concentrado", icono: "insignia" },
   { href: "/panel/almacen", label: "Almacén Escuela", icono: "almacen" },
   { href: "/panel/formatos", label: "Biblioteca de Formatos", icono: "formatos" },
   { href: "/panel/expedientes", label: "Expedientes", icono: "expedientes" },

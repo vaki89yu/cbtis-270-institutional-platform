@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -8,9 +9,12 @@ import {
   attendanceSessions,
   attendances,
   courses,
+  materials,
   submissions,
 } from "@/db/schema";
 import { actividadPorClave } from "@/lib/academico/actividades";
+import { materialPorClave } from "@/lib/academico/materiales";
+import { registrarAuditoria } from "@/lib/auditoria";
 import { sincronizarGrupoDelAula } from "@/lib/academico/aula";
 import { crearNotificacionSegura } from "@/lib/comunicacion-datos";
 import { requireUser } from "@/lib/guards";
@@ -47,6 +51,10 @@ export async function abrirPaseDeListaAction(formData: FormData) {
 
   const tema = String(formData.get("tema") ?? "").trim();
   const tolerancia = Number(formData.get("tolerancia") ?? 10);
+  const conCodigo = String(formData.get("conCodigo") ?? "") === "1";
+  // Código de 6 dígitos que el docente proyecta en el salón: sin él, nadie se
+  // registra desde su casa.
+  const codigo = conCodigo ? String(Math.floor(100000 + Math.random() * 900000)) : null;
 
   await db.insert(attendanceSessions).values({
     courseId,
@@ -55,6 +63,7 @@ export async function abrirPaseDeListaAction(formData: FormData) {
     abierta: true,
     toleranciaMin: Number.isFinite(tolerancia) ? tolerancia : 10,
     abiertaPorId: user.id,
+    codigo,
   });
 
   await sincronizarGrupoDelAula(courseId);
@@ -122,6 +131,20 @@ export async function marcarMiAsistenciaAction(formData: FormData) {
     .where(eq(attendanceSessions.id, sessionId))
     .limit(1);
   if (!sesion || !sesion.abierta || sesion.courseId !== courseId) return;
+
+  // Si el docente abrió con código, hay que teclear el que está proyectado
+  if (sesion.codigo) {
+    const tecleado = String(formData.get("codigo") ?? "").replace(/\D/g, "");
+    if (tecleado !== sesion.codigo) {
+      const jar = await cookies();
+      jar.set("cbtis270_asistencia_aviso", "Ese código no coincide con el que proyectó tu docente.", {
+        path: "/",
+        maxAge: 15,
+      });
+      refrescar(courseId);
+      return;
+    }
+  }
 
   // Debe estar inscrito al aula
   const { alumnosDelAula } = await import("@/lib/academico/aula");
@@ -231,6 +254,15 @@ export async function activarActividadAction(formData: FormData) {
       fechaEntrega: entrega,
     });
   }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "actividad_activada",
+    entidad: "assignment",
+    entidadId: clave,
+    detalle: `${curso.nombre}: ${plantilla.titulo}`,
+  });
 
   // Avisar al grupo
   const { alumnosDelAula } = await import("@/lib/academico/aula");
@@ -353,5 +385,65 @@ export async function sincronizarGrupoAction(formData: FormData) {
   const curso = await aulaDelDocente(courseId, user.id, user.rol);
   if (!curso) return;
   await sincronizarGrupoDelAula(courseId);
+  refrescar(courseId);
+}
+
+/* -------------------------------- MATERIAL -------------------------------- */
+
+/** El docente activa una lectura o guía precargada; el grupo la ve al instante. */
+export async function activarMaterialAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const clave = String(formData.get("clave") ?? "");
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  const plantilla = materialPorClave(clave);
+  if (!curso || !plantilla) return;
+
+  const [yaExiste] = await db
+    .select({ id: materials.id })
+    .from(materials)
+    .where(and(eq(materials.courseId, courseId), eq(materials.origen, clave)))
+    .limit(1);
+
+  if (yaExiste) {
+    await db.update(materials).set({ activo: true }).where(eq(materials.id, yaExiste.id));
+  } else {
+    await db.insert(materials).values({
+      courseId,
+      titulo: plantilla.titulo,
+      descripcion: plantilla.descripcion,
+      tipo: plantilla.tipo,
+      url: plantilla.url ?? null,
+      submodulo: plantilla.submodulo,
+      duracion: plantilla.duracion,
+      origen: clave,
+      activo: true,
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "material_activado",
+    entidad: "material",
+    entidadId: clave,
+    detalle: `${curso.nombre}: ${plantilla.titulo}`,
+  });
+
+  refrescar(courseId);
+}
+
+/** Lo quita de la vista del grupo sin borrarlo. */
+export async function desactivarMaterialAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const materialId = Number(formData.get("materialId"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso) return;
+
+  await db
+    .update(materials)
+    .set({ activo: false })
+    .where(and(eq(materials.id, materialId), eq(materials.courseId, courseId)));
   refrescar(courseId);
 }

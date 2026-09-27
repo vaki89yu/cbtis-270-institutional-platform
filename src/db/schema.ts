@@ -173,6 +173,24 @@ export const materials = pgTable("materials", {
   descripcion: text("descripcion"),
   tipo: text("tipo").notNull().default("apunte"),
   url: text("url"),
+  /** El docente lo activa/desactiva; el alumno sólo ve los activos */
+  activo: boolean("activo").notNull().default(true),
+  /** Clave del catálogo precargado (idempotencia) */
+  origen: text("origen"),
+  submodulo: text("submodulo"),
+  duracion: text("duracion"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Bitácora de auditoría: quién hizo qué y cuándo */
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  actor: text("actor"),
+  accion: text("accion").notNull(),
+  entidad: text("entidad"),
+  entidadId: text("entidad_id"),
+  detalle: text("detalle"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -326,6 +344,8 @@ export const attendanceSessions = pgTable("attendance_sessions", {
   toleranciaMin: integer("tolerancia_min").notNull().default(10),
   abiertaPorId: integer("abierta_por_id").references(() => users.id, { onDelete: "set null" }),
   cerradaEn: timestamp("cerrada_en", { withTimezone: true }),
+  /** Código que el docente proyecta en el salón para que el alumno se registre */
+  codigo: text("codigo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -344,6 +364,7 @@ export const attendanceJustifications = pgTable("attendance_justifications", {
   estado: text("estado").notNull().default("pendiente"), // pendiente | aprobado | rechazado
   notaRevision: text("nota_revision"),
   revisadoPorId: integer("revisado_por_id").references(() => users.id, { onDelete: "set null" }),
+  revisadoEn: timestamp("revisado_en", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

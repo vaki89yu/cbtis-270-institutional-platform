@@ -314,6 +314,33 @@ CREATE TABLE IF NOT EXISTS attendance_sessions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS codigo text;
+
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS origen text;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS submodulo text;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS duracion text;
+
+ALTER TABLE attendance_justifications ADD COLUMN IF NOT EXISTS revisado_por_id integer REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE attendance_justifications ADD COLUMN IF NOT EXISTS revisado_en timestamptz;
+ALTER TABLE attendance_justifications ADD COLUMN IF NOT EXISTS nota_revision text;
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id serial PRIMARY KEY,
+  user_id integer REFERENCES users(id) ON DELETE SET NULL,
+  actor text,
+  accion text NOT NULL,
+  entidad text,
+  entidad_id text,
+  detalle text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS audit_log_fecha ON audit_log (created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS material_origen_curso
+  ON materials (course_id, origen) WHERE origen IS NOT NULL;
+
 CREATE UNIQUE INDEX IF NOT EXISTS formato_habilitacion_ambito
   ON formato_habilitaciones (codigo, docente_id, semestre, grupo);
 `;

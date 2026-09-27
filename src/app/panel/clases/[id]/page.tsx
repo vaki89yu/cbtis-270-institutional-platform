@@ -5,6 +5,11 @@ import { db } from "@/db";
 import { courses, users } from "@/db/schema";
 import { BotonEnviar } from "@/components/form-estado";
 import { Icono } from "@/components/iconos";
+import { RefrescoVivo } from "@/components/refresco-vivo";
+import {
+  ETIQUETA_MATERIAL,
+  materialesDelModulo,
+} from "@/lib/academico/materiales";
 import {
   ETIQUETA_EVIDENCIA,
   actividadPorClave,
@@ -13,6 +18,7 @@ import {
 } from "@/lib/academico/actividades";
 import {
   actividadesDelAlumnoEnAula,
+  materialesDelAula,
   actividadesDelAula,
   alumnosDelAula,
   asistenciasDeSesion,
@@ -24,6 +30,8 @@ import {
 import {
   abrirPaseDeListaAction,
   activarActividadAction,
+  activarMaterialAction,
+  desactivarMaterialAction,
   ajustarAsistenciaAction,
   calificarEvidenciaAction,
   cerrarPaseDeListaAction,
@@ -36,6 +44,7 @@ import { alternarAccesoFormatoAction } from "@/lib/actions/formatos-acceso";
 import { listarHabilitaciones } from "@/lib/formatos/acceso";
 import { FORMATOS_DINAMICOS, NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 import { PLANTILLAS_EXCEL } from "@/lib/formatos/plantillas";
+import { cookies } from "next/headers";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
 
 export const dynamic = "force-dynamic";
@@ -112,6 +121,12 @@ export default async function AulaPage({ params }: Props) {
     : PLANTILLAS_EXCEL;
 
   const precargadas = actividadesDelModulo(moduloAula);
+  const materialesPrecargados = materialesDelModulo(moduloAula);
+  const materialesActivos = await materialesDelAula(courseId, !esDocente);
+  const materialPorOrigen = new Map(
+    materialesActivos.filter((m) => m.origen).map((m) => [m.origen as string, m]),
+  );
+  const avisoAsistencia = (await cookies()).get("cbtis270_asistencia_aviso")?.value ?? null;
 
   return (
     <div className="space-y-6">
@@ -142,10 +157,16 @@ export default async function AulaPage({ params }: Props) {
               {alumnos.length} alumnos en lista
             </span>
             {sesionAbierta ? (
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-                Pase de lista abierto
-              </span>
+              <>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                  Pase de lista abierto
+                </span>
+                <RefrescoVivo segundos={7} etiqueta="En vivo" />
+              </>
             ) : null}
+            <Link href={`/panel/calificaciones?aula=${courseId}`} className="btn-mini">
+              Calificaciones
+            </Link>
           </div>
         </div>
       </header>
@@ -160,6 +181,21 @@ export default async function AulaPage({ params }: Props) {
         {esDocente ? (
           sesionAbierta ? (
             <div className="mt-4 space-y-4">
+              {sesionAbierta.codigo ? (
+                <div className="rounded-2xl border-2 border-dashed border-inst-300 bg-inst-50 p-5 text-center">
+                  <p className="text-xs font-bold uppercase tracking-widest text-inst-700">
+                    Código de la clase · proyéctalo en el salón
+                  </p>
+                  <p className="mt-1 font-mono text-5xl font-black tracking-[0.35em] text-inst-900">
+                    {sesionAbierta.codigo}
+                  </p>
+                  <p className="mt-1 text-xs text-inst-700">
+                    Sólo quien esté aquí y vea la pantalla puede registrarse. Nadie marca asistencia
+                    desde su casa.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 px-4 py-3">
                 <p className="text-sm font-semibold text-emerald-800">
                   Abierto desde {formatoFechaHora(sesionAbierta.fecha)}
@@ -173,6 +209,30 @@ export default async function AulaPage({ params }: Props) {
                     Cerrar lista y marcar faltas
                   </BotonEnviar>
                 </form>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {(() => {
+                  const presentes = registros.filter((r) => r.asistencia.estado === "presente").length;
+                  const retardos = registros.filter((r) => r.asistencia.estado === "retardo").length;
+                  const faltan = alumnos.length - registros.length;
+                  return (
+                    <>
+                      <div className="rounded-xl bg-emerald-50 p-3">
+                        <p className="text-2xl font-black text-emerald-800">{presentes}</p>
+                        <p className="text-[11px] font-bold uppercase text-emerald-700">Presentes</p>
+                      </div>
+                      <div className="rounded-xl bg-amber-50 p-3">
+                        <p className="text-2xl font-black text-amber-800">{retardos}</p>
+                        <p className="text-[11px] font-bold uppercase text-amber-700">Retardos</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-100 p-3">
+                        <p className="text-2xl font-black text-slate-700">{faltan < 0 ? 0 : faltan}</p>
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Sin registrar</p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">
@@ -242,6 +302,10 @@ export default async function AulaPage({ params }: Props) {
                   ))}
                 </select>
               </label>
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
+                <input type="checkbox" name="conCodigo" value="1" defaultChecked className="h-4 w-4" />
+                Pedir código proyectado
+              </label>
               <BotonEnviar className="btn-primario px-5 py-2.5 text-sm" pendienteTexto="Abriendo...">
                 Abrir pase de lista
               </BotonEnviar>
@@ -267,15 +331,42 @@ export default async function AulaPage({ params }: Props) {
                 {sesionAbierta.tema ? ` · ${sesionAbierta.tema}` : ""}. Tienes{" "}
                 {sesionAbierta.toleranciaMin} minutos de tolerancia.
               </p>
+              {avisoAsistencia ? (
+                <p className="mx-auto mt-3 max-w-sm rounded-xl bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
+                  {avisoAsistencia}
+                </p>
+              ) : null}
+              {sesionAbierta.codigo ? (
+                <div className="mx-auto mt-3 max-w-xs">
+                  <label className="text-xs font-bold text-slate-600">
+                    Escribe el código que tu docente proyectó
+                    <input
+                      name="codigo"
+                      inputMode="numeric"
+                      maxLength={6}
+                      required
+                      autoComplete="off"
+                      placeholder="000000"
+                      className="campo mt-1 text-center font-mono text-2xl tracking-[0.3em]"
+                    />
+                  </label>
+                </div>
+              ) : null}
               <BotonEnviar className="btn-primario mt-3 px-6 py-3 text-base" pendienteTexto="Registrando...">
                 Registrar mi asistencia
               </BotonEnviar>
             </form>
           )
         ) : (
-          <p className="mt-3 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-            El pase de lista está cerrado. Aparecerá aquí cuando tu docente lo abra en clase.
-          </p>
+          <div className="mt-3 rounded-xl border border-dashed border-slate-300 p-6 text-center">
+            <p className="text-sm text-slate-500">
+              El pase de lista está cerrado. Aparecerá aquí solo, en cuanto tu docente lo abra en
+              clase.
+            </p>
+            <div className="mt-3 flex justify-center">
+              <RefrescoVivo segundos={10} etiqueta="Esperando a tu docente" />
+            </div>
+          </div>
         )}
 
         {esDocente ? <HistorialAsistencia courseId={courseId} /> : null}
@@ -287,6 +378,109 @@ export default async function AulaPage({ params }: Props) {
       ) : (
         <ActividadesAlumno courseId={courseId} studentId={user.id} />
       )}
+
+      {/* --------------------------- MATERIAL DE CLASE --------------------------- */}
+      <section className="tarjeta p-6">
+        <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+          <Icono nombre="formatos" tamano={20} className="text-inst-700" />
+          Material de la clase
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          {esDocente
+            ? "Lecturas, guías y casos ya cargados del módulo. Sólo activa el que vas a usar hoy."
+            : "Lecturas y guías que tu docente activó para esta clase."}
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {esDocente
+            ? materialesPrecargados.map((m) => {
+                const fila = materialPorOrigen.get(m.clave);
+                const activo = Boolean(fila?.activo);
+                return (
+                  <div
+                    key={m.clave}
+                    className={`rounded-xl border p-4 ${
+                      activo ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-slate-900/5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                            {ETIQUETA_MATERIAL[m.tipo]}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            {m.submodulo} · {m.duracion}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-bold text-slate-900">{m.titulo}</p>
+                        <p className="mt-0.5 text-xs text-slate-600">{m.descripcion}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {m.url ? (
+                          <Link href={m.url} className="btn-mini">
+                            Ver
+                          </Link>
+                        ) : null}
+                        {activo && fila ? (
+                          <form action={desactivarMaterialAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="materialId" value={fila.id} />
+                            <BotonEnviar
+                              className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800"
+                              pendienteTexto="..."
+                            >
+                              Activo · quitar
+                            </BotonEnviar>
+                          </form>
+                        ) : (
+                          <form action={activarMaterialAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="clave" value={m.clave} />
+                            <BotonEnviar
+                              className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600"
+                              pendienteTexto="..."
+                            >
+                              Activar
+                            </BotonEnviar>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            : materialesActivos.map((m) => (
+                <div key={m.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md bg-slate-900/5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                          {ETIQUETA_MATERIAL[(m.tipo as keyof typeof ETIQUETA_MATERIAL) ?? "apunte"] ??
+                            m.tipo}
+                        </span>
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          {m.submodulo ?? ""} {m.duracion ? `· ${m.duracion}` : ""}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-bold text-slate-900">{m.titulo}</p>
+                      <p className="mt-0.5 text-xs text-slate-600">{m.descripcion}</p>
+                    </div>
+                    {m.url ? (
+                      <Link href={m.url} className="btn-mini">
+                        Abrir
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+          {!esDocente && materialesActivos.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              Tu docente aún no activa material de lectura para esta clase.
+            </p>
+          ) : null}
+        </div>
+      </section>
 
       {/* ----------------------------- FORMATOS ----------------------------- */}
       <section className="tarjeta p-6">

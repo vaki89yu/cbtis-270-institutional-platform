@@ -765,3 +765,29 @@ body::after {
     background-size: 48px 48px;
   }
 }
+
+/* ---------------------- Impresión de documentos oficiales ---------------------- */
+@media print {
+  body::before,
+  body::after {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  aside,
+  header.panel-encabezado,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  @page {
+    size: letter portrait;
+    margin: 12mm;
+  }
+}

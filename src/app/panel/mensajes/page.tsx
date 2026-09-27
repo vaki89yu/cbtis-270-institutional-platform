@@ -24,8 +24,9 @@ export default async function MensajesPage() {
       <div>
         <h1 className="text-2xl font-black text-slate-900">Mensajes internos</h1>
         <p className="text-sm text-slate-500">
-          Comunicación personal entre docente y alumno. Los docentes solo ven a los alumnos del
-          semestre, grupo y turno que tienen asignado.
+          Comunicación personal entre docente y alumno. El docente sólo ve a los alumnos que lo
+          eligieron como su docente encargado, y el alumno sólo puede escribirle a ese docente o a
+          la jefatura.
         </p>
       </div>
 

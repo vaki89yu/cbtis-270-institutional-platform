@@ -212,49 +212,28 @@ export async function listarDestinatarios(user: UsuarioSesion): Promise<Destinat
       }
 
       if (user.rol === "docente") {
-        const perfiles = await db
-          .select()
-          .from(teacherProfiles)
-          .where(eq(teacherProfiles.userId, user.id))
-          .limit(1);
-        const perfil = perfiles[0];
-        if (!perfil) return [] as Destinatario[];
-
+        // Regla de pertenencia: el docente escribe a SUS alumnos, los que lo
+        // eligieron como docente encargado en su registro. Más la jefatura.
         return (await seleccionDestinatarios().where(
-          and(
-            eq(users.rol, "estudiante"),
-            perfil.turnoResponsable ? eq(users.turno, perfil.turnoResponsable) : undefined,
-            perfil.semestreResponsable ? eq(users.semestre, perfil.semestreResponsable) : undefined,
-            perfil.grupoResponsable && perfil.grupoResponsable !== "Todos"
-              ? eq(studentProfiles.grupo, perfil.grupoResponsable)
-              : undefined,
+          or(
+            eq(users.rol, "admin"),
+            and(eq(users.rol, "estudiante"), eq(studentProfiles.tutorDocenteId, user.id)),
           ),
         )) as unknown as Destinatario[];
       }
 
-      // Alumno: jefatura y docentes de su turno/semestre
+      // Alumno: su docente encargado y la jefatura. A nadie más.
       const perfilAlumno = await db
         .select()
         .from(studentProfiles)
         .where(eq(studentProfiles.userId, user.id))
         .limit(1);
-      const perfil = perfilAlumno[0];
+      const tutorId = perfilAlumno[0]?.tutorDocenteId ?? null;
 
       return (await seleccionDestinatarios().where(
-        or(
-          eq(users.rol, "admin"),
-          and(
-            eq(users.rol, "docente"),
-            user.turno ? eq(teacherProfiles.turnoResponsable, user.turno) : undefined,
-            user.semestre ? eq(teacherProfiles.semestreResponsable, user.semestre) : undefined,
-            perfil?.grupo
-              ? or(
-                  eq(teacherProfiles.grupoResponsable, perfil.grupo),
-                  eq(teacherProfiles.grupoResponsable, "Todos"),
-                )
-              : undefined,
-          ),
-        ),
+        tutorId
+          ? or(eq(users.rol, "admin"), eq(users.id, tutorId))
+          : eq(users.rol, "admin"),
       )) as unknown as Destinatario[];
     },
     () => demoListarDestinatarios(user) as unknown as Destinatario[],
