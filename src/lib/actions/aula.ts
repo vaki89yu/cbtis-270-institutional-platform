@@ -418,7 +418,7 @@ export async function activarMaterialAction(formData: FormData) {
       titulo: plantilla.titulo,
       descripcion: plantilla.descripcion,
       tipo: plantilla.tipo,
-      url: plantilla.url ?? null,
+      url: plantilla.descargaUrl ?? plantilla.enlaceExterno ?? null,
       submodulo: plantilla.submodulo,
       duracion: plantilla.duracion,
       origen: clave,

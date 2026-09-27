@@ -19,6 +19,16 @@ type Props = { searchParams: Promise<{ aula?: string }> };
 
 const PARCIALES = [1, 2, 3];
 
+/** Nunca tumbar la pantalla por un tropiezo de la base. */
+async function intentar<T>(fn: () => Promise<T>, respaldo: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.warn("[calificaciones] consulta sin base:", (error as Error).message?.slice(0, 120));
+    return respaldo;
+  }
+}
+
 function colorNota(nota: number | null) {
   if (nota === null) return "bg-slate-100 text-slate-400";
   if (nota >= 9) return "bg-emerald-100 text-emerald-800";
@@ -39,7 +49,7 @@ export default async function CalificacionesPage({ searchParams }: Props) {
 
   /* ------------------------------ ALUMNO: boleta ------------------------------ */
   if (user.rol === "estudiante") {
-    const misAulas = await aulasDelAlumno(user.id);
+    const misAulas = await intentar(() => aulasDelAlumno(user.id), []);
 
     const boleta = await Promise.all(
       misAulas.map(async ({ curso, docente }) => {
@@ -185,19 +195,29 @@ export default async function CalificacionesPage({ searchParams }: Props) {
   }
 
   /* --------------------------- DOCENTE: concentrado --------------------------- */
-  const misAulas = await db
-    .select({ curso: courses })
-    .from(courses)
-    .where(
-      user.rol === "admin" ? eq(courses.activo, true) : and(eq(courses.docenteId, user.id), eq(courses.activo, true)),
-    )
-    .orderBy(asc(courses.nombre));
+  const misAulas = await intentar(
+    () =>
+      db
+        .select({ curso: courses })
+        .from(courses)
+        .where(
+          user.rol === "admin"
+            ? eq(courses.activo, true)
+            : and(eq(courses.docenteId, user.id), eq(courses.activo, true)),
+        )
+        .orderBy(asc(courses.nombre)),
+    [] as { curso: typeof courses.$inferSelect }[],
+  );
 
   const aulaId = Number(aula ?? misAulas[0]?.curso.id ?? 0);
   const aulaActual = misAulas.find((a) => a.curso.id === aulaId)?.curso ?? null;
 
   const datos = aulaActual
-    ? await concentradoCalificaciones(aulaActual.id)
+    ? await intentar(() => concentradoCalificaciones(aulaActual.id), {
+        alumnos: [] as Awaited<ReturnType<typeof alumnosDelAula>>,
+        actividades: [] as never[],
+        notas: new Map<string, number>(),
+      })
     : { alumnos: [] as Awaited<ReturnType<typeof alumnosDelAula>>, actividades: [], notas: new Map<string, number>() };
 
   const actividades = datos.actividades as { id: number; titulo: string; parcial: number | null }[];

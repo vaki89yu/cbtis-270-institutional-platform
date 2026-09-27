@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { and, eq, gt } from "drizzle-orm";
@@ -385,7 +386,12 @@ async function usuarioFrescoDeDb(id: number): Promise<SessionUser | null | "sin-
   }
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+/**
+ * Sesión del usuario. Envuelta en cache() de React: aunque el layout y la
+ * página la pidan varias veces, la base sólo se consulta una vez por petición.
+ * Esto es lo que quita el "arrastre" al navegar entre secciones.
+ */
+export const getCurrentUser = cache(async function getCurrentUserSinCache(): Promise<SessionUser | null> {
   const jar = await cookies();
   let token = jar.get(SESSION_COOKIE)?.value || jar.get(`${SESSION_COOKIE}_client`)?.value;
   let hint = jar.get(SESSION_HINT_COOKIE)?.value || jar.get(`${SESSION_HINT_COOKIE}_client`)?.value;
@@ -543,4 +549,4 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
   console.log("[auth] No se pudo obtener usuario, retornando null");
   return null;
-}
+});

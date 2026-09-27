@@ -105,12 +105,16 @@ export default async function AulaPage({ params }: Props) {
     );
   }
 
-  const sesionAbierta = await paseDeListaAbierto(courseId);
+  const [sesionAbierta, habilitaciones, materialesActivos, muro] = await Promise.all([
+    paseDeListaAbierto(courseId),
+    listarHabilitaciones(),
+    materialesDelAula(courseId, !esDocente),
+    muroDelAula(courseId),
+  ]);
   const registros = sesionAbierta ? await asistenciasDeSesion(sesionAbierta.id) : [];
   const mapaRegistros = new Map(registros.map((r) => [r.asistencia.studentId, r.asistencia]));
   const miRegistro = sesionAbierta ? mapaRegistros.get(user.id) ?? null : null;
 
-  const habilitaciones = await listarHabilitaciones();
   const clavesDelAula = new Set(
     habilitaciones
       .filter((h) => h.docenteId === curso.docenteId && h.semestre === curso.semestre && h.grupo === curso.grupo)
@@ -127,13 +131,12 @@ export default async function AulaPage({ params }: Props) {
 
   const precargadas = actividadesDelModulo(moduloAula);
   const materialesPrecargados = materialesDelModulo(moduloAula);
-  const materialesActivos = await materialesDelAula(courseId, !esDocente);
   const materialPorOrigen = new Map(
     materialesActivos.filter((m) => m.origen).map((m) => [m.origen as string, m]),
   );
-  const avisoAsistencia = (await cookies()).get("cbtis270_asistencia_aviso")?.value ?? null;
-  const muro = await muroDelAula(courseId);
-  const avisoCarga = (await cookies()).get("cbtis270_carga_aviso")?.value ?? null;
+  const galletas = await cookies();
+  const avisoAsistencia = galletas.get("cbtis270_asistencia_aviso")?.value ?? null;
+  const avisoCarga = galletas.get("cbtis270_carga_aviso")?.value ?? null;
 
   return (
     <div className="space-y-6">
@@ -556,11 +559,9 @@ export default async function AulaPage({ params }: Props) {
                         <p className="mt-0.5 text-xs text-slate-600">{m.descripcion}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {m.url ? (
-                          <Link href={m.url} className="btn-mini">
-                            Ver
-                          </Link>
-                        ) : null}
+                        <Link href={`/panel/material/${m.clave}`} className="btn-mini">
+                          Leer
+                        </Link>
                         {activo && fila ? (
                           <form action={desactivarMaterialAction}>
                             <input type="hidden" name="courseId" value={courseId} />
@@ -605,9 +606,9 @@ export default async function AulaPage({ params }: Props) {
                       <p className="mt-1 text-sm font-bold text-slate-900">{m.titulo}</p>
                       <p className="mt-0.5 text-xs text-slate-600">{m.descripcion}</p>
                     </div>
-                    {m.url ? (
-                      <Link href={m.url} className="btn-mini">
-                        Abrir
+                    {m.origen ? (
+                      <Link href={`/panel/material/${m.origen}`} className="btn-mini">
+                        Leer
                       </Link>
                     ) : null}
                   </div>
@@ -887,8 +888,10 @@ async function ActividadesDocente({
 }
 
 async function ActividadesAlumno({ courseId, studentId }: { courseId: number; studentId: number }) {
-  const actividades = await actividadesDelAlumnoEnAula(courseId, studentId);
-  const promedio = await promedioDelAlumno(courseId, studentId);
+  const [actividades, promedio] = await Promise.all([
+    actividadesDelAlumnoEnAula(courseId, studentId),
+    promedioDelAlumno(courseId, studentId),
+  ]);
 
   return (
     <section className="tarjeta p-6">
