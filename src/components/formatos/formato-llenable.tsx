@@ -373,7 +373,7 @@ export function FormatoLlenable({ formato, perfilUsuario, docentes }: Props) {
   return (
     <div className="space-y-5">
       {/* Barra de progreso */}
-      <div className="rounded-2xl border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-slate-900">Progreso del llenado</p>
@@ -478,7 +478,7 @@ export function FormatoLlenable({ formato, perfilUsuario, docentes }: Props) {
       </section>
 
       {/* Acciones */}
-      <div className="sticky bottom-3 z-20 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-xl backdrop-blur-md">
+      <div className="sticky bottom-3 z-20 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
         {mensaje ? (
           <p
             className={`mb-3 rounded-xl px-3 py-2 text-sm font-semibold ${
