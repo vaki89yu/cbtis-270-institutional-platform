@@ -36,7 +36,10 @@ export default async function SeguimientoPage() {
   }
 
   const esAdmin = user.rol === "admin";
-  const enRiesgo = await alumnosEnRiesgo(esAdmin ? {} : { docenteId: user.id });
+  const enRiesgo = await alumnosEnRiesgo(esAdmin ? {} : { docenteId: user.id }).catch((error) => {
+    console.warn("[seguimiento] sin base:", (error as Error).message?.slice(0, 120));
+    return [];
+  });
   const altos = enRiesgo.filter((a) => a.nivel === "alto");
   const medios = enRiesgo.filter((a) => a.nivel === "medio");
 
@@ -44,35 +47,44 @@ export default async function SeguimientoPage() {
   const hace30 = new Date();
   hace30.setDate(hace30.getDate() - 30);
 
-  const [alumnosTotal] = await db
-    .select({ n: count() })
-    .from(users)
-    .where(and(eq(users.rol, "estudiante"), eq(users.activo, true)));
-  const [docentesTotal] = await db
-    .select({ n: count() })
-    .from(users)
-    .where(and(eq(users.rol, "docente"), eq(users.activo, true)));
-  const [aulasTotal] = await db.select({ n: count() }).from(courses).where(eq(courses.activo, true));
-
-  const asistenciaMes = await db
-    .select({
-      estado: attendances.estado,
-      n: count(),
-    })
-    .from(attendances)
-    .where(gte(attendances.fecha, hace30))
-    .groupBy(attendances.estado);
+  const [alumnosTotal, docentesTotal, aulasTotal, asistenciaMes, porCalificar] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(users)
+      .where(and(eq(users.rol, "estudiante"), eq(users.activo, true)))
+      .then((r) => r[0])
+      .catch(() => ({ n: 0 })),
+    db
+      .select({ n: count() })
+      .from(users)
+      .where(and(eq(users.rol, "docente"), eq(users.activo, true)))
+      .then((r) => r[0])
+      .catch(() => ({ n: 0 })),
+    db
+      .select({ n: count() })
+      .from(courses)
+      .where(eq(courses.activo, true))
+      .then((r) => r[0])
+      .catch(() => ({ n: 0 })),
+    db
+      .select({ estado: attendances.estado, n: count() })
+      .from(attendances)
+      .where(gte(attendances.fecha, hace30))
+      .groupBy(attendances.estado)
+      .catch(() => [] as { estado: string; n: number }[]),
+    db
+      .select({ n: count() })
+      .from(submissions)
+      .where(sql`${submissions.calificacion} is null`)
+      .then((r) => r[0])
+      .catch(() => ({ n: 0 })),
+  ]);
 
   const totalAsistencias = asistenciaMes.reduce((a, b) => a + Number(b.n), 0);
   const presentes = asistenciaMes
     .filter((a) => a.estado === "presente" || a.estado === "justificado")
     .reduce((a, b) => a + Number(b.n), 0);
   const tasaAsistencia = totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : null;
-
-  const [porCalificar] = await db
-    .select({ n: count() })
-    .from(submissions)
-    .where(sql`${submissions.calificacion} is null`);
 
   const indicadores: Array<[string, string, string]> = [
     ["Alumnos activos", String(alumnosTotal?.n ?? 0), "bg-inst-50 text-inst-800"],

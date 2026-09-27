@@ -60,7 +60,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-4 sm:py-7">
         <EtiquetaSeccion />
-        <div className="panel-lienzo panel-cristal mt-3 rounded-3xl p-4 sm:p-6">
+        <div className="panel-lienzo mt-3 rounded-3xl p-4 sm:p-6">
           {children}
         </div>
       </main>
