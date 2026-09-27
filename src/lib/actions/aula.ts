@@ -8,6 +8,7 @@ import {
   assignments,
   attendanceSessions,
   attendances,
+  classPosts,
   courses,
   materials,
   submissions,
@@ -445,5 +446,72 @@ export async function desactivarMaterialAction(formData: FormData) {
     .update(materials)
     .set({ activo: false })
     .where(and(eq(materials.id, materialId), eq(materials.courseId, courseId)));
+  refrescar(courseId);
+}
+
+/* -------------------------------- MURO DEL AULA -------------------------------- */
+
+/** Publica en el muro. El docente avisa, el alumno pregunta. */
+export async function publicarEnMuroAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const contenido = String(formData.get("contenido") ?? "").trim();
+  if (!Number.isFinite(courseId) || contenido.length < 2) return;
+
+  const [curso] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
+  if (!curso) return;
+
+  const esDocente = user.rol === "admin" || curso.docenteId === user.id;
+  if (!esDocente) {
+    // El alumno sólo publica en el aula a la que pertenece
+    const { alumnosDelAula } = await import("@/lib/academico/aula");
+    const alumnos = await alumnosDelAula(courseId);
+    if (!alumnos.some((a) => a.id === user.id)) return;
+  }
+
+  await db.insert(classPosts).values({
+    courseId,
+    autorId: user.id,
+    contenido: contenido.slice(0, 1500),
+  });
+
+  // Avisar al otro lado
+  if (esDocente) {
+    const { alumnosDelAula } = await import("@/lib/academico/aula");
+    for (const alumno of await alumnosDelAula(courseId)) {
+      await crearNotificacionSegura({
+        userId: alumno.id,
+        titulo: "Aviso en el aula",
+        contenido: `${curso.aula ?? curso.nombre}: ${contenido.slice(0, 120)}`,
+        tipo: "aula",
+      });
+    }
+  } else {
+    await crearNotificacionSegura({
+      userId: curso.docenteId,
+      titulo: "Pregunta en el muro del aula",
+      contenido: `${user.nombre} preguntó en ${curso.aula ?? curso.nombre}: ${contenido.slice(0, 120)}`,
+      tipo: "aula",
+    });
+  }
+
+  refrescar(courseId);
+}
+
+/** El docente (o el autor) borra una publicación del muro. */
+export async function borrarDelMuroAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const postId = Number(formData.get("postId"));
+  const [curso] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
+  if (!curso) return;
+
+  const [post] = await db.select().from(classPosts).where(eq(classPosts.id, postId)).limit(1);
+  if (!post || post.courseId !== courseId) return;
+
+  const puede = user.rol === "admin" || curso.docenteId === user.id || post.autorId === user.id;
+  if (!puede) return;
+
+  await db.delete(classPosts).where(eq(classPosts.id, postId));
   refrescar(courseId);
 }

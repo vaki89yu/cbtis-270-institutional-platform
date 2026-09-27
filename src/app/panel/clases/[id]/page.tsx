@@ -19,6 +19,7 @@ import {
 import {
   actividadesDelAlumnoEnAula,
   materialesDelAula,
+  muroDelAula,
   actividadesDelAula,
   alumnosDelAula,
   asistenciasDeSesion,
@@ -31,7 +32,9 @@ import {
   abrirPaseDeListaAction,
   activarActividadAction,
   activarMaterialAction,
+  borrarDelMuroAction,
   desactivarMaterialAction,
+  publicarEnMuroAction,
   ajustarAsistenciaAction,
   calificarEvidenciaAction,
   cerrarPaseDeListaAction,
@@ -127,6 +130,7 @@ export default async function AulaPage({ params }: Props) {
     materialesActivos.filter((m) => m.origen).map((m) => [m.origen as string, m]),
   );
   const avisoAsistencia = (await cookies()).get("cbtis270_asistencia_aviso")?.value ?? null;
+  const muro = await muroDelAula(courseId);
 
   return (
     <div className="space-y-6">
@@ -378,6 +382,81 @@ export default async function AulaPage({ params }: Props) {
       ) : (
         <ActividadesAlumno courseId={courseId} studentId={user.id} />
       )}
+
+      {/* ------------------------------ MURO DEL AULA ------------------------------ */}
+      <section className="tarjeta p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+            <Icono nombre="conversacion" tamano={20} className="text-inst-700" />
+            Muro del aula
+          </h2>
+          <RefrescoVivo segundos={15} etiqueta="En vivo" />
+        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          {esDocente
+            ? "Publica el tema del día, un recordatorio o una indicación; le llega a todo el grupo."
+            : "Avisos de tu docente y dudas del grupo. Puedes preguntar aquí."}
+        </p>
+
+        <form action={publicarEnMuroAction} className="mt-4 space-y-2">
+          <input type="hidden" name="courseId" value={courseId} />
+          <textarea
+            name="contenido"
+            required
+            rows={3}
+            maxLength={1500}
+            className="campo"
+            placeholder={
+              esDocente
+                ? "Hoy vemos conteo cíclico. Traigan su Kardex impreso."
+                : "Profe, ¿la evidencia se entrega impresa o aquí en la plataforma?"
+            }
+          />
+          <div className="flex justify-end">
+            <BotonEnviar className="btn-primario px-5 py-2 text-sm" pendienteTexto="Publicando...">
+              Publicar
+            </BotonEnviar>
+          </div>
+        </form>
+
+        <div className="mt-4 space-y-3">
+          {muro.map(({ post, autor, rol }) => (
+            <div
+              key={post.id}
+              className={`rounded-xl border p-4 ${
+                rol === "estudiante" ? "border-slate-200" : "border-inst-200 bg-inst-50/60"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-black text-slate-800">
+                  {rol === "estudiante" ? autor : `Prof. ${autor}`}
+                  <span className="ml-2 font-semibold text-slate-400">
+                    {formatoFechaHora(post.createdAt)}
+                  </span>
+                </p>
+                {esDocente || post.autorId === user.id ? (
+                  <form action={borrarDelMuroAction}>
+                    <input type="hidden" name="courseId" value={courseId} />
+                    <input type="hidden" name="postId" value={post.id} />
+                    <BotonEnviar
+                      className="text-[11px] font-bold text-slate-400 hover:text-rose-600"
+                      pendienteTexto="..."
+                    >
+                      Borrar
+                    </BotonEnviar>
+                  </form>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{post.contenido}</p>
+            </div>
+          ))}
+          {muro.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              El muro está vacío. {esDocente ? "Escribe el primer aviso del día." : "Aquí aparecerán los avisos de tu docente."}
+            </p>
+          ) : null}
+        </div>
+      </section>
 
       {/* --------------------------- MATERIAL DE CLASE --------------------------- */}
       <section className="tarjeta p-6">

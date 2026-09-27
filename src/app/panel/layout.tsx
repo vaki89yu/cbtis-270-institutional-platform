@@ -23,6 +23,7 @@ const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
   { href: "/panel/almacen", label: "Almacén Escuela", icono: "almacen" },
   { href: "/panel/formatos", label: "Biblioteca de Formatos", icono: "formatos" },
   { href: "/panel/expedientes", label: "Expedientes", icono: "expedientes" },
+  { href: "/panel/seguimiento", label: "Seguimiento y Riesgo", icono: "alerta" },
   { href: "/panel/notificaciones", label: "Notificaciones", icono: "notificaciones" },
   { href: "/panel/mensajes", label: "Mensajes", icono: "mensajes" },
 ];

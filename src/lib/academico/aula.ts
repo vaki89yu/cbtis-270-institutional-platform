@@ -12,6 +12,7 @@ import { db } from "@/db";
 import {
   assignments,
   attendanceSessions,
+  classPosts,
   attendances,
   courses,
   enrollments,
@@ -276,6 +277,21 @@ export async function materialesDelAula(courseId: number, soloActivos = false) {
     ? await base.where(and(eq(materials.courseId, courseId), eq(materials.activo, true)))
     : await base.where(eq(materials.courseId, courseId));
   return filas.sort((a, b) => a.titulo.localeCompare(b.titulo, "es"));
+}
+
+/** Muro del aula: avisos del docente y dudas del grupo. */
+export async function muroDelAula(courseId: number, limite = 20) {
+  return db
+    .select({
+      post: classPosts,
+      autor: users.nombre,
+      rol: users.rol,
+    })
+    .from(classPosts)
+    .innerJoin(users, eq(users.id, classPosts.autorId))
+    .where(eq(classPosts.courseId, courseId))
+    .orderBy(desc(classPosts.createdAt))
+    .limit(limite);
 }
 
 /** Concentrado de calificaciones del aula: alumno × actividad. */
