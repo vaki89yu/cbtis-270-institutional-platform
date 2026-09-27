@@ -4,6 +4,14 @@
  * El docente no captura nada: entra al aula, ve las actividades que
  * corresponden al módulo que imparte y sólo las activa. Al activarlas, el
  * grupo las ve y puede entregar su evidencia.
+ *
+ * Cobertura completa del Plan de Estudios DGETI de la carrera técnica en
+ * Logística: 40 partidas por cada uno de los 5 módulos (200 en total),
+ * distribuidas en los tres parciales del semestre y alineadas a los
+ * submódulos oficiales de 272 horas por módulo. La mezcla incluye
+ * actividades documentales, formatos institucionales llenables, prácticas en
+ * almacén, proyectos integradores y evaluaciones parciales, de modo que el
+ * docente sólo elige qué activar en su aula.
  */
 
 export type TipoEvidencia = "documento" | "formato" | "practica" | "examen";
@@ -18,184 +26,306 @@ export type ActividadPrecargada = {
   puntos: number;
   parcial: number;
   evidencia: TipoEvidencia;
-  /** Formato de la biblioteca que acompaña a la actividad, si aplica */
+  /** Formato llenable de la biblioteca (FOR-LOG-Mx-yy) que acompaña a la actividad, si aplica */
   formatoCodigo?: string;
   /** Días sugeridos desde hoy para la fecha de entrega */
   diasEntrega: number;
 };
 
+/** Submódulos oficiales del Plan de Estudios DGETI · carrera técnica en Logística. */
+export const SUBMODULOS_DGETI: Record<number, string[]> = {
+  1: [
+    "Adquiere mercancías y servicios en la cadena de suministros",
+    "Documenta la adquisición de mercancías y servicios",
+  ],
+  2: [
+    "Recibe mercancías en almacén",
+    "Organiza mercancías en almacén",
+    "Controla mercancías en almacén",
+  ],
+  3: [
+    "Gestiona la documentación para el tráfico de mercancías de importación y exportación",
+    "Gestiona la transportación de mercancías de importación y exportación",
+  ],
+  4: [
+    "Organiza la distribución de mercancías al cliente",
+    "Brinda servicio al cliente sobre el envío de mercancías",
+  ],
+  5: [
+    "Calcula costos directos e indirectos en la cadena de suministro",
+    "Gestiona el presupuesto de la cadena de suministro",
+  ],
+};
+
+const M1S1 = SUBMODULOS_DGETI[1][0];
+const M1S2 = SUBMODULOS_DGETI[1][1];
+const M2S1 = SUBMODULOS_DGETI[2][0];
+const M2S2 = SUBMODULOS_DGETI[2][1];
+const M2S3 = SUBMODULOS_DGETI[2][2];
+const M3S1 = SUBMODULOS_DGETI[3][0];
+const M3S2 = SUBMODULOS_DGETI[3][1];
+const M4S1 = SUBMODULOS_DGETI[4][0];
+const M4S2 = SUBMODULOS_DGETI[4][1];
+const M5S1 = SUBMODULOS_DGETI[5][0];
+const M5S2 = SUBMODULOS_DGETI[5][1];
+
+/** Constructor: todas las partidas valen 100 puntos por defecto. */
+function A(e: Omit<ActividadPrecargada, "puntos"> & { puntos?: number }): ActividadPrecargada {
+  return { puntos: 100, ...e };
+}
+
+/* =====================================================================
+   MÓDULO I · 2° semestre · Gestiona la adquisición de mercancías y servicios
+   ===================================================================== */
+const MOD1: ActividadPrecargada[] = [
+  /* ----------------------------- 1er parcial ----------------------------- */
+  A({ clave: "M1-01", modulo: 1, submodulo: M1S1, titulo: "Mapa de la cadena de suministro de una empresa juarense", instrucciones: "Elige una maquiladora o distribuidora de Ciudad Juárez. Dibuja su cadena de suministro completa: proveedores, entrada de insumos, transformación, almacén, distribución y cliente final; señala el punto donde ocurre el cruce fronterizo.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M1-02", modulo: 1, submodulo: M1S1, titulo: "Cuadro de materiales directos e indirectos de un producto", instrucciones: "Elige un producto que se fabrique en la región y clasifica en un cuadro sus materiales directos e indirectos con unidad de medida, consumo por pieza y proveedor potencial.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M1-03", modulo: 1, submodulo: M1S1, titulo: "Eslabones y flujos: materiales, información, dinero y retornos", instrucciones: "Diagrama los cinco flujos de la cadena de suministro de una empresa local e identifica en qué eslabón corre cada uno y quién es responsable de él.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M1-04", modulo: 1, submodulo: M1S1, titulo: "Cómo detecta necesidades el área de compras", instrucciones: "Investiga con base en casos cómo identifica compras la necesidad de adquirir algo: requisición del usuario, punto de reorden, consumo histórico o urgencia de producción. Resume los cuatro disparadores con ejemplo propio.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-05", modulo: 1, submodulo: M1S2, titulo: "Requisición interna de materiales para el Almacén Escuela", instrucciones: "Con el formato llenable elabora la requisición de cinco insumos que necesite el Almacén Escuela este bimestre, con justificación, prioridad y centro de costo.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-02", diasEntrega: 10 }),
+  A({ clave: "M1-06", modulo: 1, submodulo: M1S2, titulo: "Políticas de compra de dos empresas locales", instrucciones: "Compara las políticas de compra que publican o utilizan dos empresas del entorno: proveedores aprobados, competencia de precios, orden autorizada y ética. Presenta el análisis en cuadro comparativo.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-07", modulo: 1, submodulo: M1S2, titulo: "Solicitud de cotización formal a tres proveedores", instrucciones: "Elige un artículo real del mercado juarense y solicita cotización formal a tres proveedores con el formato llenable: especificación técnica, cantidad, tiempo de entrega y condiciones de pago.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-01", diasEntrega: 12 }),
+  A({ clave: "M1-08", modulo: 1, submodulo: M1S1, titulo: "Directorio de proveedores juarenses por categoría", instrucciones: "Integra un directorio de al menos diez proveedores locales clasificados por categoría (empaque, tarimas, insumos industriales, papelería, transporte) con teléfono, rama y producto clave.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-09", modulo: 1, submodulo: M1S1, titulo: "Punto de reorden de cinco insumos", instrucciones: "Con demanda diaria y tiempo de entrega que te asigne el docente, calcula el punto de reorden de cinco insumos y señala qué acción tomas cuando el inventario toca ese nivel.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-10", modulo: 1, submodulo: M1S1, titulo: "Stock de seguridad y agotamientos: ejercicios", instrucciones: "Resuelve seis ejercicios de stock de seguridad con variación de demanda y de tiempo de entrega; concluye en cinco líneas qué le cuesta a la empresa un agotamiento.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-11", modulo: 1, submodulo: M1S1, titulo: "Pronóstico de demanda con promedios móviles", instrucciones: "Con doce periodos de ventas históricas proporcionados en clase, pronostica el siguiente periodo con promedio móvil de tres meses y grafica realidad contra pronóstico.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M1-12", modulo: 1, submodulo: M1S1, titulo: "Levantamiento de necesidades de compra del plantel", instrucciones: "Recorre el taller y los laboratorios para levantar las necesidades reales de compra del siguiente mes; priorízalas con la mitad que asigna el docente y entrégalas en reporte de campo.", parcial: 1, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M1-13", modulo: 1, submodulo: M1S2, titulo: "Glosario técnico de adquisiciones aplicado", instrucciones: "Elabora un glosario con treinta términos de adquisiciones (requisición, orden de compra, lead time, incoterm, TCO...) y aplícalos en una oración del contexto logístico juarense.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-14", modulo: 1, submodulo: M1S1, titulo: "Evaluación del primer parcial: cadena de suministro y abastecimiento", instrucciones: "Examen escrito del primer parcial: conceptos de cadena de suministro, eslabones, flujos, punto de reorden, stock de seguridad y política de compras.", parcial: 1, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 2° parcial ------------------------------ */
+  A({ clave: "M1-15", modulo: 1, submodulo: M1S2, titulo: "Cuadro comparativo de cotizaciones y decisión de compra", instrucciones: "Con tus tres cotizaciones de M1-07, arma el cuadro comparativo con precio, flete, tiempo de entrega, garantía y forma de pago; justifica con datos a qué proveedor le comprarías.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-16", modulo: 1, submodulo: M1S1, titulo: "Matriz de evaluación de proveedores con criterios ponderados", instrucciones: "Evalúa a los tres proveedores cotizados con la matriz llenable: asigna ponderación a precio, calidad, entrega y servicio, califícalos y sustenta al ganador.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-04", diasEntrega: 12 }),
+  A({ clave: "M1-17", modulo: 1, submodulo: M1S1, titulo: "Checklist de auditoría a una empresa proveedora", instrucciones: "Diseña un checklist de auditoría a proveedor con diez rubros (registro fiscal, calidad, capacidad, referencias...) y aplícalo a un proveedor real o simulado.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-18", modulo: 1, submodulo: M1S1, titulo: "Costo total de propiedad (TCO) de una compra de equipo", instrucciones: "Calcula el TCO a cinco años de un montacargas o similar: precio, mantenimiento, energía, refacciones y valor de rescate. Compara dos opciones y recomienda.", parcial: 2, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M1-19", modulo: 1, submodulo: M1S1, titulo: "Guion de negociación con proveedor y carta de acuerdos", instrucciones: "Prepara el guion de una negociación de precio y condiciones con un proveedor: objetivos, concesiones y línea de retirada; culmina con la carta de acuerdos resultante.", parcial: 2, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M1-20", modulo: 1, submodulo: M1S2, titulo: "Orden de compra ejecutable con cálculo de IVA", instrucciones: "Emite la orden de compra completa del artículo ganador en tu matriz de proveedores, con partidas, cantidades, precios, subtotal, IVA, total y condiciones de entrega.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-03", diasEntrega: 10 }),
+  A({ clave: "M1-21", modulo: 1, submodulo: M1S2, titulo: "Bitácora de seguimiento de pedido", instrucciones: "Documenta el seguimiento de un pedido simulado desde el acuse hasta la entrega: estatus por fecha (producción, empaque, embarque, tránsito, recepción) y alertas de retraso.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-22", modulo: 1, submodulo: M1S2, titulo: "Simulación de compra completa: comprador contra vendedor", instrucciones: "En parejas, representa la negociación y cierre de una compra: uno vende con mínimo de utilidad y otro compra con presupuesto; entreguen el acta con los acuerdos firmados.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M1-23", modulo: 1, submodulo: M1S2, titulo: "Contrato de compraventa: análisis de cláusulas clave", instrucciones: "Analiza un modelo de contrato de compraventa mercantil e identifica objeto, precio, entrega, garantías, penalizaciones y jurisdicción. Explica por escrito en qué te fijarías antes de firmar.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-24", modulo: 1, submodulo: M1S2, titulo: "Ética en compras: dilemas y código de conducta", instrucciones: "Resuelve tres dilemas de ética en compras (regalos de proveedores, conflicto de interés, favorecimiento) y redacta los cinco puntos de un código de conducta para el área.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-25", modulo: 1, submodulo: M1S1, titulo: "Indicadores del área de compras: OTIF y cumplimiento", instrucciones: "Define y calcula con datos simulados los indicadores OTIF, entregas completas a tiempo, ahorros numéricos y cumplimiento de especificaciones de diez órdenes de compra.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-26", modulo: 1, submodulo: M1S1, titulo: "Compras locales frente a internacionales: nearshoring en Juárez", instrucciones: "Investiga cómo el nearshoring cambió las compras de las empresas de Ciudad Juárez: qué insumos insisten en importar y cuáles ya surten proveedores regionales. Sustenta con dos ejemplos.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-27", modulo: 1, submodulo: M1S2, titulo: "Evaluación del segundo parcial: proceso de adquisición", instrucciones: "Examen escrito del segundo parcial: cotización, comparación, decisión, orden de compra, seguimiento y ética en el proceso de adquisición.", parcial: 2, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 3er parcial ----------------------------- */
+  A({ clave: "M1-28", modulo: 1, submodulo: M1S2, titulo: "Orden de compra internacional con INCOTERMS", instrucciones: "Emite una orden de compra a un proveedor estadounidense con incoterm FOB El Paso: datos del exportador, moneda, tipo de cambio, agente aduanal y responsable del flete.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-03", diasEntrega: 12 }),
+  A({ clave: "M1-29", modulo: 1, submodulo: M1S1, titulo: "T-MEC y reglas de origen: qué conviene comprar en la región", instrucciones: "Explica qué son las reglas de origen del T-MEC y determina, para tres insumos de una maquiladora, si conviene comprarlos en la región o importarlos de Asia. Sustenta con costo total.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-30", modulo: 1, submodulo: M1S2, titulo: "Landed cost: costo de importar un insumo desde Estados Unidos", instrucciones: "Calcula el costo completo de importar un insumo: precio de fábrica, empaque, flete, seguro, contribuciones, honorarios del agente y flete local. Presenta la hoja de cálculo.", parcial: 3, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M1-31", modulo: 1, submodulo: M1S2, titulo: "Expediente documental de una adquisición", instrucciones: "Integra el expediente completo de una compra: requisición, tres cotizaciones, matriz de decisión, orden de compra, confirmación y factura (simulados), todo foliado y ordenado.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M1-32", modulo: 1, submodulo: M1S2, titulo: "Flujo de autorización de gasto y jerarquía de firmas", instrucciones: "Diagrama el flujo de autorización de un gasto desde la solicitud del usuario hasta el pago al proveedor, señalando montos máximos por nivel y tiempos de respuesta.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-33", modulo: 1, submodulo: M1S2, titulo: "Requisición de un servicio logístico externo", instrucciones: "Elabora la requisición del servicio de un flete foráneo Juárez–Monterrey o del almacenaje de doscientas tarimas por un mes: alcance, nivel de servicio y tiempos requeridos.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M1-02", diasEntrega: 10 }),
+  A({ clave: "M1-34", modulo: 1, submodulo: M1S1, titulo: "Leasing frente a compra de montacargas", instrucciones: "Compara comprar contra arrendar un montacargas a tres años: inversión inicial, mantenimiento, flexibilidad y costo mensual equivalente. Recomienda una opción en media cuartilla.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M1-35", modulo: 1, submodulo: M1S1, titulo: "Recorrido técnico: de la requisición a la recepción", instrucciones: "En el Almacén Escuela sigue el rastro documental y físico de una compra ya recibida: quién la pidió, cómo se autorizó, cuándo llegó y dónde quedó acomodada. Reporte con fotografías.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M1-36", modulo: 1, submodulo: M1S1, titulo: "Normatividad aplicable a las adquisiciones", instrucciones: "Sintetiza en un cuadro qué exigen la Ley Aduanera, el Código de Comercio, la ley del IVA y las NOM ante una compra nacional y ante una importación.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-37", modulo: 1, submodulo: M1S2, titulo: "Ficha técnica y homologación de un insumo nuevo", instrucciones: "Redacta la ficha técnica de un insumo que la empresa quiere cambiar de proveedor: características aprobadas, tolerancias y pruebas de homologación que exigirás al nuevo suministro.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M1-38", modulo: 1, submodulo: M1S1, titulo: "Proyecto integrador: plan anual de abastecimiento del Almacén Escuela", instrucciones: "En equipo, construye el plan anual de abastecimiento del Almacén Escuela: catálogo de insumos, proveedores aprobados, calendario de compras, cantidades estimadas y presupuesto por parcial. Incluye los formatos llenables asociados.", parcial: 3, evidencia: "practica", diasEntrega: 28 }),
+  A({ clave: "M1-39", modulo: 1, submodulo: M1S2, titulo: "Presentación y defensa del plan anual de abastecimiento", instrucciones: "Presenta ante el grupo tu plan de abastecimiento en quince minutos con apoyo visual; defiende las decisiones de proveedores y presupuesto ante las preguntas del panel.", parcial: 3, evidencia: "documento", diasEntrega: 21 }),
+  A({ clave: "M1-40", modulo: 1, submodulo: M1S2, titulo: "Evaluación del tercer parcial: documentación y cumplimiento", instrucciones: "Examen integral del tercer parcial: documentación de compra, expedientes, normatividad, reglas de origen y costos de importación.", parcial: 3, evidencia: "examen", diasEntrega: 5 }),
+];
+
+/* =====================================================================
+   MÓDULO II · 3° semestre · Organiza el flujo de mercancías en almacén
+   ===================================================================== */
+const MOD2: ActividadPrecargada[] = [
+  /* ----------------------------- 1er parcial ----------------------------- */
+  A({ clave: "M2-01", modulo: 2, submodulo: M2S1, titulo: "Diagrama del proceso de recepción en andén", instrucciones: "Dibuja y explica el proceso completo de recepción de mercancía en un almacén: cita previa, verificación documental, descarga, conteo, revisión y acomodo, con responsable de cada paso.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M2-02", modulo: 2, submodulo: M2S1, titulo: "Verificación documental: remisión, orden de compra y guía", instrucciones: "Con tres documentos simulados de un mismo embarque, ejecuta la verificación cruzada: folio, partidas, cantidades y firmas. Reporta las discrepancias encontradas y su trato.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M2-03", modulo: 2, submodulo: M2S1, titulo: "Reporte de recepción de un embarque simulado", instrucciones: "Registra con el formato llenable la recepción de un embarque simulado de doce partidas: verifica solicitado contra recibido, estado físico, bultos y ubicación asignada.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M2-01", diasEntrega: 10 }),
+  A({ clave: "M2-04", modulo: 2, submodulo: M2S1, titulo: "Descarga y verificación física de mercancía real", instrucciones: "En el Almacén Escuela ejecuta con el equipo la descarga y verificación física de una mercancía real (o simulada por el docente): conteo, tarja de daños y acomodo inicial. Evidencia con bitácora y fotografías.", parcial: 1, evidencia: "practica", diasEntrega: 10 }),
+  A({ clave: "M2-05", modulo: 2, submodulo: M2S1, titulo: "Agenda de citas y ventanas de andén para cinco proveedores", instrucciones: "Programa la agenda de un día de andén con cinco proveedores que llegan con distinto volumen y horario; evita traslapes y justifica el orden de atención asignado.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-06", modulo: 2, submodulo: M2S1, titulo: "Clasificación y registro fotográfico de daños en recepción", instrucciones: "Clasifica ocho casos fotográficos de daño (aplastado, mojado, roto, etiqueta ilegible...) en menores, mayores o rechazo, y redacta el registro formal de cada hallazgo para el proveedor.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-07", modulo: 2, submodulo: M2S1, titulo: "Lectura de etiquetas, códigos de barras y QR en bultos", instrucciones: "Identifica en bultos reales o de muestra la información de sus etiquetas y códigos: SKU, lote, caducidad, origen y cantidad; elabora la ficha de identificación de cada uno.", parcial: 1, evidencia: "practica", diasEntrega: 10 }),
+  A({ clave: "M2-08", modulo: 2, submodulo: M2S1, titulo: "Unidades de carga: tarimas, cajas y contenedores", instrucciones: "Elabora un cuadro de las unidades de carga usadas en la industria local con dimensiones, capacidad y uso típico, e incluye la forma correcta de estibar cada una.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-09", modulo: 2, submodulo: M2S1, titulo: "Checklist pre-operacional del montacargas", instrucciones: "Aplica la plantilla descargable FOR-LOG-06 de la biblioteca al montacargas del taller (o simulado), punto por punto, e informa los hallazgos citando la NOM-006-STPS-2014.", parcial: 1, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M2-10", modulo: 2, submodulo: M2S1, titulo: "Normatividad del manejo de cargas: resumen aplicado", instrucciones: "Resume en un cuadro los puntos clave de la NOM-006-STPS-2014 y de la NOM-024 sobre máximos de levantamiento manual, equipo autorizado y capacitación obligatoria.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-11", modulo: 2, submodulo: M2S1, titulo: "Altas en Kardex de diez recepciones con método PEPS", instrucciones: "Da de alta diez recepciones en el formato llenable de Kardex con PEPS: clave, especificación, costo y cantidad correcta, manteniendo el saldo al corriente.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M2-02", diasEntrega: 10 }),
+  A({ clave: "M2-12", modulo: 2, submodulo: M2S1, titulo: "Reporte de faltantes y sobrantes: trato con el proveedor", instrucciones: "Redacta el reporte oficial de un embarque con dos faltantes y un sobrante: aviso inmediato, nota al transportista y reclamo al proveedor con sus plazos.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-13", modulo: 2, submodulo: M2S1, titulo: "Recepción digital: radiofrecuencia y WMS", instrucciones: "Investiga cómo un sistema WMS y la radiofrecuencia agilizarán la recepción en un almacén moderno; presenta el flujo digital equivalente a tu diagrama de la actividad M2-01.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-14", modulo: 2, submodulo: M2S1, titulo: "Evaluación del primer parcial: recepción de mercancías", instrucciones: "Examen escrito del primer parcial: proceso de recepción, documentos, unidades de carga, normatividad y altas en Kardex.", parcial: 1, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 2° parcial ------------------------------ */
+  A({ clave: "M2-15", modulo: 2, submodulo: M2S2, titulo: "Croquis de zonificación del Almacén Escuela", instrucciones: "Levanta el croquis actual del Almacén Escuela con sus zonas (recepción, acomodo, picking, despacho, devoluciones) y propón la redistribución con justificación de flujo.", parcial: 2, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M2-16", modulo: 2, submodulo: M2S2, titulo: "Clasificación ABC para asignación de ubicaciones", instrucciones: "Con la demanda de cuarenta SKUs asignada en clase, calcula la curva ABC y asigna a cada clase su zona de almacenamiento (frente, media, fondo) con argumento de rotación.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-17", modulo: 2, submodulo: M2S2, titulo: "Rotulado de ubicaciones: pasillo-nivel-posición", instrucciones: "Rotula las ubicaciones de un rack del almacén con la codificación pasillo-nivel-posición y produce el padrón de ubicaciones con su SKU asignado. Evidencia en fotografía.", parcial: 2, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M2-18", modulo: 2, submodulo: M2S2, titulo: "Acomodo físico por rotación, peso y compatibilidad", instrucciones: "Reacomoda temáticamente un área asignada aplicando los criterios de rotación, peso, volumen y compatibilidad de productos; documenta antes y después con la razón de cada cambio.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M2-19", modulo: 2, submodulo: M2S2, titulo: "Sistemas de estibado y alturas máximas de apilado", instrucciones: "Compara los estibados tipo columna, en cruz y en espiga: estabilidad, aprovechamiento de superficie y altura máxima segura. Incluye cálculo de tarimas por metro cuadrado.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-20", modulo: 2, submodulo: M2S2, titulo: "Señalización del almacén: propuesta con evidencia en fotografía", instrucciones: "Diagnostica la señalización actual del almacén (pasillos, salidas, límite de altura, paleteras) y presenta la propuesta con normatividad visual y su costo estimado.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-21", modulo: 2, submodulo: M2S2, titulo: "Manejo manual y con patín hidráulico: seguridad aplicada", instrucciones: "Ejecuta dos maniobras supervisadas (movimiento manual de cajas y arrastre con patín hidráulico) aplicando la técnica segura; entrega la ficha de la maniobra con los riesgos controlados.", parcial: 2, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M2-22", modulo: 2, submodulo: M2S2, titulo: "Racks, tarimas y contenedores retornables: cuadro de decisión", instrucciones: "Construye el cuadro de decisión entre rack de tarimas, rack apilable, tarima plástica y contenedor retornable para tres casos de producto distintos de la región.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-23", modulo: 2, submodulo: M2S2, titulo: "Preparación del pedido con empaque y valor agregado", instrucciones: "Prepara tres pedidos simulados con empaque adecuado, etiquetado de venta y protección según el modo de transporte; registra tiempos y materiales consumidos.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M2-24", modulo: 2, submodulo: M2S2, titulo: "Programa 5S del área de almacenaje", instrucciones: "Implanta las cinco S en un área del almacén durante dos semanas: clasificación, orden, limpieza, estandarización y disciplina; présenta tablero de control y evidencia fotográfica.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M2-25", modulo: 2, submodulo: M2S2, titulo: "Zonificación por temperatura y mercancías especiales", instrucciones: "Define las zonas que requeriría un almacén que manejara alimentos, químicos y electrónicos a la vez: temperatura, ventilación, segregación y permisos aplicables.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-26", modulo: 2, submodulo: M2S2, titulo: "Gestión de tarimas y embalajes retornables", instrucciones: "Diseña el proceso de devolución de tarimas, racks y empaques retornables de la empresa: responsables, conteo, estado y manera de verificar que lleguen a su destino.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-27", modulo: 2, submodulo: M2S2, titulo: "Evaluación del segundo parcial: organización del almacén", instrucciones: "Examen escrito del segundo parcial: layout, slotting, ABC, estibados, señalización, 5S y preparación de pedidos.", parcial: 2, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 3er parcial ----------------------------- */
+  A({ clave: "M2-28", modulo: 2, submodulo: M2S3, titulo: "Kardex integral del periodo: PEPS, UEPS y promedio ponderado", instrucciones: "Lleva el Kardex completo de los diez SKUs del periodo con entradas, salidas y saldos comparado en tres métodos de valuación; concluye cuál conviene a la empresa y por qué.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M2-02", diasEntrega: 14 }),
+  A({ clave: "M2-29", modulo: 2, submodulo: M2S3, titulo: "Conteo cíclico semanal con acta y análisis de causas", instrucciones: "Ejecuta un conteo cíclico de una zona asignada y llena el acta: diferencias entre sistema y físico, causa de cada una y acción correctiva resultante.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M2-03", diasEntrega: 12 }),
+  A({ clave: "M2-30", modulo: 2, submodulo: M2S3, titulo: "Inventario físico general anual", instrucciones: "Participa en la planeación y ejecución del inventario físico anual del Almacén Escuela: brigadas, etiquetas de conteo, segundo conteo y conclusión con exactitud global alcanzada.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M2-31", modulo: 2, submodulo: M2S3, titulo: "Reporte de mermas, roturas y caducidades con disposición", instrucciones: "Documenta con el formato llenable las mermas y caducidades detectadas este periodo: causas, valor estimado y disposición (destrucción, donación, devolución).", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M2-04", diasEntrega: 12 }),
+  A({ clave: "M2-32", modulo: 2, submodulo: M2S3, titulo: "Causas de discrepancia de inventario y plan de acción", instrucciones: "Investiga las causas más comunes de diferencias de inventario y elabora el plan de acción del almacén para subir la exactitud al 98 %: proceso, tecnología y disciplina.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-33", modulo: 2, submodulo: M2S3, titulo: "Política FEFO y control de caducidades", instrucciones: "Diseña la política FEFO del almacén con lotes y alertas de caducidad próxima; aplícala al hastio simulado de veinte lotes y entrega el calendario de surtido resultante.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-34", modulo: 2, submodulo: M2S3, titulo: "Tablero de indicadores del almacén", instrucciones: "Construye el cuadro de mando del almacén con exactitud, rotación, llenado de pedidos, merma y ocupación; registra los valores de este periodo y su meta.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-35", modulo: 2, submodulo: M2S3, titulo: "Seguridad patrimonial y control de accesos", instrucciones: "Evalúa el control de accesos, custodia de llaves y manejo de mercancía de valor del almacén; propone el protocolo completo de seguridad patrimonial con responsables.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M2-36", modulo: 2, submodulo: M2S3, titulo: "Plan de salida de inventario obsoleto y lento", instrucciones: "Identifica del catálogo diez artículos de baja rotación y define su plan de salida: promoción, devolución a proveedor, donación o baja. Calcula la liberación de capital resultante.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M2-37", modulo: 2, submodulo: M2S3, titulo: "Propuesta de slotting para liberar el 20 % del espacio", instrucciones: "Con los datos reales del almacén, rediseña el slotting para liberar al menos el 20 % del espacio ocupado; demuestra el cálculo de superficie antes y después.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M2-38", modulo: 2, submodulo: M2S1, titulo: "Proyecto integrador: rediseño del Almacén Escuela con metas", instrucciones: "En equipo, presenta el rediseño integral del Almacén Escuela: layout, zonificación, rotulado, Kardex digital, conteo cíclico y tablero de indicadores con meta de exactitud del 98 %.", parcial: 3, evidencia: "practica", diasEntrega: 28 }),
+  A({ clave: "M2-39", modulo: 2, submodulo: M2S3, titulo: "Defensa del proyecto integrador de almacén", instrucciones: "Defiende tu rediseño ante el panel: costos, tiempos de implantación y métricas de éxito; entrega el ejecutivo de una cuartilla con las decisiones sustentadas.", parcial: 3, evidencia: "documento", diasEntrega: 21 }),
+  A({ clave: "M2-40", modulo: 2, submodulo: M2S3, titulo: "Evaluación del tercer parcial: control de mercancías", instrucciones: "Examen integral del tercer parcial: Kardex y métodos de valuación, conteo cíclico, mermas, indicadores, obsolescencia y seguridad del almacén.", parcial: 3, evidencia: "examen", diasEntrega: 5 }),
+];
+
+/* =====================================================================
+   MÓDULO III · 4° semestre · Gestiona el tráfico de mercancías de
+   importación y exportación
+   ===================================================================== */
+const MOD3: ActividadPrecargada[] = [
+  /* ----------------------------- 1er parcial ----------------------------- */
+  A({ clave: "M3-01", modulo: 3, submodulo: M3S1, titulo: "El cruce fronterizo de Ciudad Juárez: panorama del comercio exterior", instrucciones: "Investiga la infraestructura de cruce de la región (puentes, aduanas, núcleos de distribución) y resume el flujo diario de mercancía de importación y exportación por el corazón de Juárez.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M3-02", modulo: 3, submodulo: M3S1, titulo: "Regímenes aduaneros: definitivo, temporal y fiscal estratégico", instrucciones: "Elabora el cuadro de los regímenes aduaneros con definición, clave, plazo, uso típico en la maquiladora juarense y contribuciones que causan.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-03", modulo: 3, submodulo: M3S1, titulo: "El agente aduanal: patente, funciones y encargo conferido", instrucciones: "Explica qué es el agente aduanal, cómo se obtiene la patente, qué funciones ejerce frente a la empresa y qué significa conferirle el encargo aduanero. Incluye el organigrama de una agencia.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-04", modulo: 3, submodulo: M3S1, titulo: "Clasificación arancelaria de cinco productos en la TIGIE", instrucciones: "Clasifica cinco productos cotidianos en la TIGIE con las reglas generales de interpretación: fracción, descripción, TIGI tributo y regulación asociada. Documenta el razonamiento.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-05", modulo: 3, submodulo: M3S1, titulo: "Factura comercial internacional: anatomía y datos críticos", instrucciones: "Desglosa una factura comercial internacional: vendedor, consignatario, incoterm, moneda, cantidades y valores; señala los cinco errores que la invalidan ante la aduana.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-06", modulo: 3, submodulo: M3S1, titulo: "Lista de empaque (packing list) de un embarque de exportación", instrucciones: "Llena la lista de empaque de un embarque de veinte bultos hacia Estados Unidos: marcas, contenido por bulto, medidas, pesos neto y bruto, y su vínculo con la factura.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M3-03", diasEntrega: 12 }),
+  A({ clave: "M3-07", modulo: 3, submodulo: M3S1, titulo: "Certificado de origen T-MEC: acreditación y reglas", instrucciones: "Explica cómo se acredita el origen de una mercancía bajo el T-MEC, quién lo certifica, cómo llenarlo y qué pasa cuando la regla de origen no se cumple.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-08", modulo: 3, submodulo: M3S1, titulo: "Regulaciones no arancelarias: permisos y NOMs por partida", instrucciones: "Para tres productos (alimento, químico y electrónico) identifica las regulaciones no arancelarias aplicables a su importación: NOM, dependencia reguladora y trámite previo necesario.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M3-09", modulo: 3, submodulo: M3S1, titulo: "Cálculo de contribuciones: DTA, IGI e IVA", instrucciones: "Calcula las contribuciones de una importación con fracción asignada: valor en aduana, tasa del IGI, DTA y IVA; presenta la hoja de cálculo con la fórmula de cada concepto.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M3-10", modulo: 3, submodulo: M3S1, titulo: "Solicitud y expediente de importación (pedimento simplificado)", instrucciones: "Integra con el formato llenable el expediente de una importación A1: datos de la operación, fracciones declaradas y la lista de documentos anexos verificados.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M3-02", diasEntrega: 12 }),
+  A({ clave: "M3-11", modulo: 3, submodulo: M3S1, titulo: "Hoja de cálculo aduanera: valor en aduana y contribuciones", instrucciones: "Determina el valor en aduana de tres mercancías con distinto incoterm (EXW, FOB, CIF) sumando flete y seguro según corresponda, y calcula sus contribuciones totales.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M3-04", diasEntrega: 12 }),
+  A({ clave: "M3-12", modulo: 3, submodulo: M3S1, titulo: "Cláusulas de compraventa internacional", instrucciones: "Analiza una cláusula de compraventa internacional y vincúlala con el incoterm pactado: quién paga el flete, el seguro, las contribuciones y cuándo se transfiere el riesgo.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-13", modulo: 3, submodulo: M3S1, titulo: "Valoración en aduana: método del valor de transacción y ajustes", instrucciones: "Resume el método de valoración principal de aduanas y sus ajustes (royalties, asistencias, empaques adicionales); resuelve dos casos prácticos de determinación del valor en aduana.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M3-14", modulo: 3, submodulo: M3S1, titulo: "Evaluación del primer parcial: documentación del tráfico internacional", instrucciones: "Examen escrito del primer parcial: regímenes, TIGIE, factura, lista de empaque, contribuciones y expediente aduanero.", parcial: 1, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 2° parcial ------------------------------ */
+  A({ clave: "M3-15", modulo: 3, submodulo: M3S2, titulo: "INCOTERMS 2020: cuadro de responsabilidades y riesgos", instrucciones: "Construye el cuadro completo de los once INCOTERMS 2020 con punto de entrega, transferencia del riesgo y quién contrata flete y seguro en cada uno, y aplica cuatro a casos reales de Juárez.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-16", modulo: 3, submodulo: M3S2, titulo: "Conocimiento de embarque B/L y guía aérea AWB", instrucciones: "Analiza un B/L marítimo y un AWB aéreo: partidas, funciones (contrato, recibo, documento de título) y diferencias; explica qué verificas antes de aceptarlos.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-17", modulo: 3, submodulo: M3S2, titulo: "Modos de transporte internacional: comparativa y selección", instrucciones: "Compara carretero, ferroviario, marítimo y aéreo por costo, velocidad, capacidad y confiabilidad, y elige el modo óptimo para cuatro embarques distintos de la frontera.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-18", modulo: 3, submodulo: M3S2, titulo: "Cross-dock y consolidación en El Paso", instrucciones: "Describe la operación de un cross-dock fronterizo: recepción de LTL mexicanos, desconsolidación, re-etiquetado y salida en TL estadounidense. Diagrama con tiempos de cada etapa.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-19", modulo: 3, submodulo: M3S2, titulo: "Carta Porte de un traslado Juárez–Chihuahua", instrucciones: "Llena la Carta Porte con datos de un traslado nacional real: ubicaciones de origen y destino, mercancías, valores y datos del transportista; verifica los campos obligatorios del SAT.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M3-01", diasEntrega: 12 }),
+  A({ clave: "M3-20", modulo: 3, submodulo: M3S2, titulo: "Seguro de carga internacional: coberturas y reclamación", instrucciones: "Investiga las coberturas del seguro de mercancía (básica, todo riesgo, póliza anual), los incidentes que atiende y el procedimiento de reclamación con tiempos y documentos.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-21", modulo: 3, submodulo: M3S2, titulo: "Operadores logísticos 3PL y 4PL: cuándo convienen", instrucciones: "Diferencia 3PL y 4PL con ejemplos de la frontera; analiza cuándo la empresa gana o pierde al delegarles su operación logística con un caso de decisión numérico.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-22", modulo: 3, submodulo: M3S2, titulo: "Eventos estándar de rastreo de un embarque transfronterizo", instrucciones: "Define los ocho eventos estándar del rastreo de un embarque del puente al cliente de El Paso (salida, llegada, inspección, liberado...) y el medio por el que se avisa al cliente.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-23", modulo: 3, submodulo: M3S2, titulo: "Cotización de flete transfronterizo con tres transportistas", instrucciones: "Cotiza con tarifas reales o simuladas el flete de una carga Juárez–Dallas con tres transportistas: línea, tránsito, seguro y restricciones; recomienda al ganador con sustento.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M3-24", modulo: 3, submodulo: M3S2, titulo: "Terminales intermodales y puertos secos de la región", instrucciones: "Investiga las terminales intermodales y puertos secos más cercanos (Ferromex, Union Pacific, Santa Teresa) y su papel en la cadena logística juarense.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-25", modulo: 3, submodulo: M3S2, titulo: "Documentos del transportista: licencias, verificaciones y seguros", instrucciones: "Elabora el catálogo de documentos que deben acompañar a la unidad y al operador en un servicio internacional: licencia federal, verificaciones, tarjetón, seguros y permiso.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-26", modulo: 3, submodulo: M3S2, titulo: "Planeación de itinerario de un contenedor marítimo", instrucciones: "Planea el itinerario de un contenedor desde un puerto asiático hasta Ciudad Juárez: nave, transbordo, ferrocarril, aduana y último tramo; calcula días totales y puntos de riesgo.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M3-27", modulo: 3, submodulo: M3S2, titulo: "Evaluación del segundo parcial: transportación internacional", instrucciones: "Examen escrito del segundo parcial: INCOTERMS, documentos de transporte, modos, seguros, 3PL/4PL y rastreo.", parcial: 2, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 3er parcial ----------------------------- */
+  A({ clave: "M3-28", modulo: 3, submodulo: M3S2, titulo: "Simulación de cruce por el Puente Libre (Córdova–Américas)", instrucciones: "Ejecuta en clase la simulación completa de un cruce: verificación de documentos, semaforización, inspección y liberado; cada equipo representa un actor (transportista, agente, aduana).", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M3-29", modulo: 3, submodulo: M3S1, titulo: "Expediente de exportación con cálculo de contribuciones cero", instrucciones: "Integra el expediente de exportación definitiva de un producto local: datos del pedimento, documentos anexos verificados y la justificación de por qué las exportaciones no causan IGI.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M3-02", diasEntrega: 14 }),
+  A({ clave: "M3-30", modulo: 3, submodulo: M3S1, titulo: "Programa IMMEX: importación temporal de la maquiladora", instrucciones: "Explica el programa IMMEX: qué permite, qué obliga, plazos de retorno y control de inventarios; documenta el flujo de un material desde su importación temporal hasta su retorno.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-31", modulo: 3, submodulo: M3S1, titulo: "Devolución de impuestos y programas de fomento", instrucciones: "Investiga los mecanismos de devolución de contribuciones y programas de fomento al comercio exterior aplicables a una empresa fronteriza; resume condiciones y trámites.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-32", modulo: 3, submodulo: M3S1, titulo: "Trade compliance: controles y sanciones", instrucciones: "Presenta un panorama de cumplimiento en comercio exterior: controles de exportación, mercancías restringidas y sanciones típicas por incumplimiento, con tres casos de la prensa.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-33", modulo: 3, submodulo: M3S2, titulo: "Caso del embarque urgente: resolver el contratiempo documental", instrucciones: "Resuelve el caso: un embarque detenido en el puente por documental incompleta y el cliente lo necesita hoy. Describe tu plan hora a hora con cada actor involucrado.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-34", modulo: 3, submodulo: M3S2, titulo: "Devoluciones internacionales: logística inversa de exportación", instrucciones: "Diseña el proceso de una devolución internacional: reimportación o destrucción, cambio de régimen, documentos adicionales y costo de llevarla a cabo contra abandonar la mercancía.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-35", modulo: 3, submodulo: M3S1, titulo: "Auditoría aduanera: cómo responde la empresa", instrucciones: "Explica qué motiva una auditoría aduanera, qué expedientes revisa la autoridad y cómo se prepara y responde la empresa; elabora el plan de respuesta de diez pasos.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M3-36", modulo: 3, submodulo: M3S1, titulo: "Revisión interequipos del expediente completo de operación", instrucciones: "Intercambia tu expediente con otro equipo y verifícalo con el checklist oficial de anexos: encuentra sus errores, faltantes y valoraciones incorrectas, y emite observaciones rúbrica en mano.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M3-37", modulo: 3, submodulo: M3S1, titulo: "Digitalización aduanera: VUCEM y ventanillas electrónicas", instrucciones: "Investiga qué se trámite en la Ventanilla Única y otras plataformas electrónicas del comercio exterior mexicano; presenta el mapa de trámites digitales del importador.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M3-38", modulo: 3, submodulo: M3S1, titulo: "Proyecto integrador: expediente completo de exportación de un producto juarense", instrucciones: "En equipo, arma el expediente integral de exportación de un producto fabricado en Ciudad Juárez: clasificación, contribuciones, factura, lista de empaque, transporte, pedimento y rastreo, con destino a una ciudad de Estados Unidos.", parcial: 3, evidencia: "practica", diasEntrega: 28 }),
+  A({ clave: "M3-39", modulo: 3, submodulo: M3S2, titulo: "Presentación y defensa del expediente de exportación", instrucciones: "Presenta tu expediente de exportación ante panel y responde las observaciones de la simulación de revisión aduanera; entrega el resumen ejecutivo del despacho.", parcial: 3, evidencia: "documento", diasEntrega: 21 }),
+  A({ clave: "M3-40", modulo: 3, submodulo: M3S2, titulo: "Evaluación integral del módulo: operación de comercio exterior", instrucciones: "Examen integral del tercer parcial: expedientes, devoluciones, auditorías, digitalización aduanera y solución de contingencias del tráfico internacional.", parcial: 3, evidencia: "examen", diasEntrega: 5 }),
+];
+
+/* =====================================================================
+   MÓDULO IV · 5° semestre · Gestiona la distribución física de mercancías
+   ===================================================================== */
+const MOD4: ActividadPrecargada[] = [
+  /* ----------------------------- 1er parcial ----------------------------- */
+  A({ clave: "M4-01", modulo: 4, submodulo: M4S1, titulo: "Mapa de canales de distribución de una empresa de la región", instrucciones: "Elige una empresa de productos de consumo de Ciudad Juárez y dibuja sus canales de distribución hasta el consumidor final: central, mayoristas, tiendas, e-commerce y última milla.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M4-02", modulo: 4, submodulo: M4S1, titulo: "CEDIS central frente a inventario repartido en sucursales", instrucciones: "Compara concentrar el inventario en un CEDIS contra repartirlo en sucursales para diez casos de producto: nivel de servicio, costo y riesgo. Recomienda la red para dos empresas concretas.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-03", modulo: 4, submodulo: M4S1, titulo: "Cross-docking local: cuándo aplicarlo", instrucciones: "Explica el cross-docking y analiza con dos casos numéricos cuándo abarata la distribución juarense frente a almacenar; incluye el flujo de veinticuatro horas típico.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-04", modulo: 4, submodulo: M4S1, titulo: "Programación de ruta urbana con seis paradas", instrucciones: "Programa con el formato llenable una ruta urbana de seis paradas con ventanas de entrega distintas: orden de paradas, kilómetros, horas estimadas y costo por parada.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M4-01", diasEntrega: 12 }),
+  A({ clave: "M4-05", modulo: 4, submodulo: M4S1, titulo: "Picking y packing de tres pedidos con su lista", instrucciones: "Surt y empaca tres pedidos simulados de distinta complejidad aplicando método por orden; mide líneas surtidas por hora y registra los materiales del embalaje empleado.", parcial: 1, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M4-06", modulo: 4, submodulo: M4S1, titulo: "Métodos de picking: por orden, por zona y por olas", instrucciones: "Compara los tres métodos de picking con ventajas, desventajas, tecnología necesaria y cuándo elegir cada uno; resuelve un caso de asignación de método por tipo de pedido.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-07", modulo: 4, submodulo: M4S1, titulo: "Consolidación de carga en un tráiler", instrucciones: "Consolida seis embarques pequeños en un tráiler respetando compatibilidad, pesos y secuencia de entrega; calcula el ahorro contra seis envíos dedicados.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-08", modulo: 4, submodulo: M4S1, titulo: "Ventanas de entrega y agenda de citas de clientes", instrucciones: "Diseña la agenda semanal de entregas de un distribuidor con ocho clientes que exigen ventanas distintas; resuelve conflictos y escribe la política de citas correspondiente.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-09", modulo: 4, submodulo: M4S1, titulo: "Etiquetado y embalaje para distribución de última milla", instrucciones: "Prepara dos envíos de e-commerce con etiqueta de paquetería, guía escaneable, protección y documentación del cliente; evalúa su resistencia con la prueba de caída del taller.", parcial: 1, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M4-10", modulo: 4, submodulo: M4S1, titulo: "Comprobante de entrega (POD) con firma y evidencia", instrucciones: "Llena el POD de cinco entregas simuladas: bultos entregados, estado de la mercancía, nombre y firma de quien recibe, y observaciones de la entrega parcial o rechazada.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M4-02", diasEntrega: 10 }),
+  A({ clave: "M4-11", modulo: 4, submodulo: M4S1, titulo: "Matriz de distancias y kilometraje de la zona juarense", instrucciones: "Construye la matriz de distancias y tiempos entre diez puntos relevantes de entrega de Ciudad Juárez desde el CEDIS simulado; úsala para justificar una secuencia de ruta.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-12", modulo: 4, submodulo: M4S1, titulo: "Normatividad del autotransporte y verificación de unidades", instrucciones: "Resume la normatividad aplicable al autotransporte federal que recogerá tus embarques: pesos y dimensiones permitidos, verificaciones y seguros mínimos; documenta qué pides al contratar.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-13", modulo: 4, submodulo: M4S1, titulo: "Logística inversa urbana: recolección de devoluciones del cliente", instrucciones: "Diseña el proceso de recolección de una devolución de cliente final: autorización, ruta de regreso, revisión en CEDIS y reintegro al inventario o disposición final.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-14", modulo: 4, submodulo: M4S1, titulo: "Evaluación del primer parcial: distribución física", instrucciones: "Examen escrito del primer parcial: canales, CEDIS, rutas, picking, consolidación y POD.", parcial: 1, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 2° parcial ------------------------------ */
+  A({ clave: "M4-15", modulo: 4, submodulo: M4S2, titulo: "Nivel de servicio y SLA: qué prometer al cliente logístico", instrucciones: "Define el SLA de tu servicio de distribución con cuatro compromisos medibles (entrega a tiempo, integridad, respuesta, rastreo); explica la penalización ante cada incumplimiento.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-16", modulo: 4, submodulo: M4S2, titulo: "Bitácora de rastreo de cinco envíos con eventos y alertas", instrucciones: "Lleva la bitácora llenable de cinco envíos reales o simulados: eventos de estatus, alertas de retraso y avisos al cliente. Cierra con el porcentaje de entregas a tiempo.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M4-03", diasEntrega: 12 }),
+  A({ clave: "M4-17", modulo: 4, submodulo: M4S2, titulo: "Protocolo de información al cliente sobre el envío", instrucciones: "Redacta el protocolo que responde al cliente el estatus de su envío (canal, frecuencia, tono, escalación), incluyendo el esquema de avisos automatizados de un TMS moderno.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-18", modulo: 4, submodulo: M4S2, titulo: "Guion de atención a reclamaciones por entrega tardía", instrucciones: "Escribe el guion completo para atender una reclamación por entrega tardía: escucha, investigación, respuesta en plazo y compensación; resuelve dos casos como aplicación.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-19", modulo: 4, submodulo: M4S2, titulo: "Rol play: el cliente molesto por mercancía faltante", instrucciones: "Representa por equipos la llamada de un cliente que recibió mercancía incompleta; el operador debe seguir protocolo, ofrecer solución en la llamada y registrar el seguimiento.", parcial: 2, evidencia: "practica", diasEntrega: 12 }),
+  A({ clave: "M4-20", modulo: 4, submodulo: M4S2, titulo: "Encuesta de satisfacción del cliente y cálculo del NPS", instrucciones: "Aplica la encuesta llenable a diez clientes reales o representados: cinco preguntas de servicio y la pregunta de recomendación; calcula el NPS y dos acciones de mejora.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M4-04", diasEntrega: 12 }),
+  A({ clave: "M4-21", modulo: 4, submodulo: M4S2, titulo: "Indicadores de entrega: OTIF y fill rate", instrucciones: "Calcula OTIF y fill rate de veinte entregas simuladas; identifica las causas de incumplimiento y propone el plan para llegar al 95 % de entrega perfecta.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-22", modulo: 4, submodulo: M4S2, titulo: "Política de devoluciones y garantías orientada al cliente", instrucciones: "Redacta la política de devoluciones y garantías de tu empresa distribuidora: plazos, condiciones aceptadas, responsable y cómo se mide su cumplimiento sin afectar la utilidad.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-23", modulo: 4, submodulo: M4S2, titulo: "El contrato logístico: alcances, penalizaciones y anexos", instrucciones: "Analiza el modelo de un contrato de servicios logísticos: objeto, SLA, penalizaciones, seguro y terminación; redacta tres cláusulas de protección para el prestador.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-24", modulo: 4, submodulo: M4S2, titulo: "Reporte diario de embarques para cliente corporativo", instrucciones: "Diseña y llena el reporte diario de embarques que espera un cliente corporativo: ruta, estatus, hora estimada y alertas, con formato profesional para envío por correo.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-25", modulo: 4, submodulo: M4S2, titulo: "Tablero visual del control diario del tráfico", instrucciones: "Mantén durante una semana el tablero visual de embarques del aula: altas, salidas, incidencias y semaforización; presenta la foto final con el balance del servicio.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M4-26", modulo: 4, submodulo: M4S2, titulo: "Última milla en Ciudad Juárez: retos y soluciones propuestas", instrucciones: "Diagnostica tres retos reales de la última milla en Ciudad Juárez (geografía, informalidad de direcciones, tránsito fronterizo) y propón dos soluciones viables por reto.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-27", modulo: 4, submodulo: M4S2, titulo: "Evaluación del segundo parcial: servicio al cliente logístico", instrucciones: "Examen escrito del segundo parcial: SLA, rastreo, reclamaciones, NPS, indicadores de entrega y contrato logístico.", parcial: 2, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 3er parcial ----------------------------- */
+  A({ clave: "M4-28", modulo: 4, submodulo: M4S1, titulo: "Ruta regional Juárez–Chihuahua–Delicias con consolidación", instrucciones: "Programa la ruta regional con escala en Delicias: kilómetros, casetas, diesel, tiempos y consolidación de embarques de dos clientes; calcula el costo por tonelada resultante.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M4-01", diasEntrega: 12 }),
+  A({ clave: "M4-29", modulo: 4, submodulo: M4S1, titulo: "Costo por entrega y comparación con tarifas del mercado", instrucciones: "Calcula el costo real por entrega de tu servicio simulado y compáralo con las tarifas publicadas de tres paqueterías; concluye si estás caro, barato o bien posicionado.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-30", modulo: 4, submodulo: M4S1, titulo: "Distribución sostenible: vehículos y prácticas verdes", instrucciones: "Investiga opciones de última milla eléctrica, rutas optimizadas y embalajes reciclables para la distribución local; presenta el caso de negocio con ahorros y retorno.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-31", modulo: 4, submodulo: M4S2, titulo: "Dark stores, casilleros inteligentes y nuevas tendencias", instrucciones: "Presenta un informe de tendencias de entrega final aplicables a la frontera: dark stores, casilleros, dron y entregas programadas, con viabilidad de cada una para Juárez.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-32", modulo: 4, submodulo: M4S1, titulo: "Simulación integral: del CEDIS al cliente final", instrucciones: "Ejecuta la simulación completa de un servicio: alta del pedido, surtido, ruta, salida, rastreo, POD, aviso al cliente y cierre del día. Cada equipo documenta su rol y el resultado.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M4-33", modulo: 4, submodulo: M4S1, titulo: "Plan de contingencia del servicio ante bloqueos o clima", instrucciones: "Redacta el plan de contingencia del servicio de distribución ante tres escenarios (bloqueo carretero, tormenta, falla de unidad): alternativas, aviso y costo adicional.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-34", modulo: 4, submodulo: M4S2, titulo: "Diagnóstico de una paquetería local", instrucciones: "Visita o entrevista a una paquetería o repartidor local y diagnostica su proceso de servicio al cliente: tiempos prometidos contra cumplidos, quejas y manejo de extravíos.", parcial: 3, evidencia: "practica", diasEntrega: 16 }),
+  A({ clave: "M4-35", modulo: 4, submodulo: M4S1, titulo: "Empaque para transporte pesado y de exportación", instrucciones: "Resume los requisitos del empaque para transporte de larga distancia y exportación (madera NIMF-15, estibado reforzado, ataúdes de bulto) con un caso de selección correcta.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M4-36", modulo: 4, submodulo: M4S1, titulo: "Entrega perfecta y costo por kilómetro del distribuidor", instrucciones: "Integra los indicadores finales de la red simulada del parcial: entrega perfecta, costo por kilómetro recorrido, kilometraje improductivo y metros cúbicos desperdiciados.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-37", modulo: 4, submodulo: M4S2, titulo: "E-commerce fronterizo: cumplir la promesa de entrega", instrucciones: "Analiza las promesas de entrega de tres tiendas en línea que envían a Ciudad Juárez: plazo publicado contra cumplido, culpable del retraso y cómo se comunica al cliente.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M4-38", modulo: 4, submodulo: M4S2, titulo: "Proyecto integrador: rediseño de la red de distribución de una empresa juarense", instrucciones: "En equipo, rediseña la red de distribución de una empresa local real o simulada: CEDIS, rutas, SLA, POD, rastreo e indicadores, con meta de entrega perfecta del 95 % y costo meta por kilómetro.", parcial: 3, evidencia: "practica", diasEntrega: 28 }),
+  A({ clave: "M4-39", modulo: 4, submodulo: M4S1, titulo: "Presentación ejecutiva de la propuesta de red", instrucciones: "Presenta la propuesta de red a dirección (panel de docentes): quince minutos y cinco de preguntas con resumen financiero de ahorros y nivel de servicio proyectado.", parcial: 3, evidencia: "documento", diasEntrega: 21 }),
+  A({ clave: "M4-40", modulo: 4, submodulo: M4S2, titulo: "Evaluación final del módulo: distribución y atención al cliente", instrucciones: "Examen integral del tercer parcial: redes de distribución, costo por entrega, contingencias, tendencias y proyecto integrador.", parcial: 3, evidencia: "examen", diasEntrega: 5 }),
+];
+
+/* =====================================================================
+   MÓDULO V · 6° semestre · Cotiza costos de la cadena de suministro
+   ===================================================================== */
+const MOD5: ActividadPrecargada[] = [
+  /* ----------------------------- 1er parcial ----------------------------- */
+  A({ clave: "M5-01", modulo: 5, submodulo: M5S1, titulo: "Mapa de costos de la cadena de suministro", instrucciones: "Dibuja el mapa de costos de una cadena de suministro completa: origen, almacén, transformación, almacén terminado, fletes, aduanas y distribución, estimando la participación de cada elemento.", parcial: 1, evidencia: "documento", diasEntrega: 7 }),
+  A({ clave: "M5-02", modulo: 5, submodulo: M5S1, titulo: "Costos fijos y variables del Almacén Escuela", instrucciones: "Clasifica los costos del Almacén Escuela en fijos y variables, con monto mensual estimado y comportamiento ante aumentos de volumen del cincuenta por ciento. Presenta tabla y gráfica.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-03", modulo: 5, submodulo: M5S1, titulo: "Costo de almacenamiento por tarima y por día", instrucciones: "Calcula el costo de almacenar una tarima un día en el Almacén Escuela: prorrateo de espacio, personal, energía, papelería y seguridad entre posiciones ocupadas.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-04", modulo: 5, submodulo: M5S1, titulo: "Productividad de la mano de obra logística", instrucciones: "Mide la productividad de recepción y surtido del almacén (líneas por hora, tarimas por día) durante una semana simulada y deduce el costo de mano de obra por movimiento.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-05", modulo: 5, submodulo: M5S1, titulo: "Costo de mantener inventario: tasa anual de posesión", instrucciones: "Calcula la tasa anual de posesión del inventario promedio del almacén (capital, espacio, riesgo, obsolescencia) y el costo mensual de mantener una tarima sin movimiento.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-06", modulo: 5, submodulo: M5S1, titulo: "Levantamiento de consumos reales del almacén", instrucciones: "Levanta un día completo de consumos del almacén: horas-hombre por actividad, energía, embalajes y servicios; precísalo en pesos y presenta el dictamen de campo.", parcial: 1, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M5-07", modulo: 5, submodulo: M5S1, titulo: "Costeo de flete Juárez–Torreón con retorno vacío y cargado", instrucciones: "Costea un viaje completo Juárez–Torreón de ida y vuelta con la matriz de diesel, casetas, operador y seguro. Compara el costo con retorno vacío contra retorno cargado y explica la diferencia.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M5-08", modulo: 5, submodulo: M5S1, titulo: "Cotización del servicio de almacenaje con desglose", instrucciones: "Cotiza con el formato llenable el almacenaje de trescientas tarimas por tres meses: posición, manejos, reportes y seguro, con margen de utilidad documentado.", parcial: 1, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-01", diasEntrega: 12 }),
+  A({ clave: "M5-09", modulo: 5, submodulo: M5S1, titulo: "Costo de empaque y embalaje por unidad despachada", instrucciones: "Costea el empaque de tres productos con distinto nivel de protección: caja, relleno, cinta, etiqueta y tiempo; propón la opción que baje el costo sin subir daños.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-10", modulo: 5, submodulo: M5S1, titulo: "Incoterm y su efecto en el costo entregado", instrucciones: "Recalcula el costo entregado de un mismo producto bajo cuatro incoterms distintos y demuestra cómo se mueven los cargos entre vendedor y comprador.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-11", modulo: 5, submodulo: M5S1, titulo: "Benchmarking de tarifas logísticas del mercado juarense", instrucciones: "Reúne tarifas reales o publicadas de almacenaje, flete local y última milla en Ciudad Juárez; construye el cuadro de mercado y marca dónde se ubica tu servicio simulado.", parcial: 1, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-12", modulo: 5, submodulo: M5S1, titulo: "Caso resuelto: costo total de servicio de una cadena completa", instrucciones: "Resuelve el caso integral asignado: costo total de servir diez mil piezas del proveedor asiático al cliente de El Paso, desglosando cada etapa y su porcentaje del costo final.", parcial: 1, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M5-13", modulo: 5, submodulo: M5S1, titulo: "Herramientas digitales del costeo: hojas de cálculo, ERP y WMS", instrucciones: "Compara costear en hoja de cálculo contra un ERP/WMS: precisión, velocidad, costo del sistema y necesidades que justifican el salto tecnológico.", parcial: 1, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-14", modulo: 5, submodulo: M5S1, titulo: "Evaluación del primer parcial: costos directos e indirectos", instrucciones: "Examen escrito del primer parcial: fijos y variables, costo por tarima, mano de obra, fletes, empaque y benchmarking de tarifas.", parcial: 1, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 2° parcial ------------------------------ */
+  A({ clave: "M5-15", modulo: 5, submodulo: M5S1, titulo: "Prorrateo de costos indirectos del servicio", instrucciones: "Construye la tabla de prorrateo de los costos indirectos del almacén entre sus cuatro servicios usando dos bases distintas (volumen e ingreso); compara el efecto en cada tarifa.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-16", modulo: 5, submodulo: M5S1, titulo: "Punto de equilibrio del servicio logístico", instrucciones: "Determina con el formato llenable el punto de equilibrio del servicio de distribución con los costos y precio dados, y dibuja tres escenarios de volumen.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-04", diasEntrega: 12 }),
+  A({ clave: "M5-17", modulo: 5, submodulo: M5S1, titulo: "Margen contra markup: cotizar sin regalar utilidad", instrucciones: "Explica con ejemplos numéricos la diferencia entre margen y markup; corrige tres cotizaciones mal calculadas y verifica la utilidad real obtenida.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-18", modulo: 5, submodulo: M5S1, titulo: "Cotización integral con overhead, margen e IVA", instrucciones: "Emite la cotización integral de un servicio completo (almacenaje más distribución) con desglose de conceptos, prorrateo de overhead, margen e IVA, lista para el cliente.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-01", diasEntrega: 12 }),
+  A({ clave: "M5-19", modulo: 5, submodulo: M5S1, titulo: "Depreciación de unidades y montacargas: efecto en la tarifa", instrucciones: "Calcula la depreciación anual y por hora de una unidad de reparto y un montacargas; incluye su cargo en la tarifa horaria del servicio.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-20", modulo: 5, submodulo: M5S2, titulo: "Estructura del presupuesto logístico anual", instrucciones: "Presenta la estructura completa del presupuesto logístico anual de la empresa simulada: ingresos, costos de operación, seguridad, mantenimiento y papelerías, con responsables por rubro.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-21", modulo: 5, submodulo: M5S2, titulo: "Presupuesto de la cadena logística del Almacén Escuela", instrucciones: "Elabora con el formato llenable el presupuesto del siguiente semestre del Almacén Escuela: rubros estimados por periodo y su total anual, con respaldo de los datos levantados en M5-06.", parcial: 2, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-02", diasEntrega: 14 }),
+  A({ clave: "M5-22", modulo: 5, submodulo: M5S2, titulo: "Escenarios presupuestales en hoja de cálculo", instrucciones: "Construye en hoja de cálculo los escenarios base, optimista y pesimista del presupuesto logístico, variando volumen y precio de combustible; presenta el rango de utilidad.", parcial: 2, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M5-23", modulo: 5, submodulo: M5S2, titulo: "Desviaciones presupuestales: detección y corrección", instrucciones: "Analiza ocho variaciones de un presupuesto mensual real o simulado: clasifícalas en volúmen, precio o eficiencia y redacta la acción correctiva de cada una.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-24", modulo: 5, submodulo: M5S1, titulo: "Costeo basado en actividades (ABC costing) del almacén", instrucciones: "Aplica ABC costing a las cinco actividades del almacén (recepción, acomodo, surtido, embalaje, despacho): inductor de costo por actividad y redistribución de los indirectos.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-25", modulo: 5, submodulo: M5S1, titulo: "Flota propia contra 3PL: decisión capex u opex", instrucciones: "Compara operar flota propia contra contratar un 3PL para la distribución regional durante cinco años: inversión, costo por entrega, flexibilidad y riesgo. Recomienda con números.", parcial: 2, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-26", modulo: 5, submodulo: M5S2, titulo: "Presupuesto flexible ante cambios de volumen", instrucciones: "Transforma tu presupuesto anual en presupuesto flexible con reglas del tipo 'por cada cien tarimas aumenta X'; demuestra su recálculo ante dos variaciones de demanda.", parcial: 2, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-27", modulo: 5, submodulo: M5S2, titulo: "Evaluación del segundo parcial: presupuesto y estructura de costos", instrucciones: "Examen escrito del segundo parcial: prorrateo, punto de equilibrio, margen contra markup, presupuesto y escenarios.", parcial: 2, evidencia: "examen", diasEntrega: 5 }),
+  /* ----------------------------- 3er parcial ----------------------------- */
+  A({ clave: "M5-28", modulo: 5, submodulo: M5S2, titulo: "Informe de liquidación de un servicio terminado", instrucciones: "Emite con el formato llenable la liquidación del servicio logístico terminado: pactado contra real, diferencias justificadas y saldo a facturar o devolver.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-03", diasEntrega: 12 }),
+  A({ clave: "M5-29", modulo: 5, submodulo: M5S2, titulo: "Cierre financiero de un proyecto logístico", instrucciones: "Concilia el cierre financiero de un proyecto de tres meses: ingresos cobrados, costos reales, cuentas pendientes y utilidad definitiva, con su reporte a dirección.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-30", modulo: 5, submodulo: M5S2, titulo: "Negociación de tarifa anual con transportista", instrucciones: "Representa la negociación anual con un transportista: volumen comprometido, escalador de diesel, cláusulas de servicio y penalizaciones; cierra con acta de acuerdos.", parcial: 3, evidencia: "practica", diasEntrega: 14 }),
+  A({ clave: "M5-31", modulo: 5, submodulo: M5S1, titulo: "KPI financieros: costo por pedido, por kilogramo y por kilómetro", instrucciones: "Calcula e interpreta los tres KPIs financieros de la operación simulada del semestre con la serie de seis meses; señala tendencias y medidas de mejora.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-32", modulo: 5, submodulo: M5S2, titulo: "Auditoría de facturas de fletes: errores y recuperaciones", instrucciones: "Audita diez facturas de fletes contra rutas y tarifas pactadas: detecta errores, sobre-cargos y kilómetros declarados de más; calcula el monto recuperable.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-33", modulo: 5, submodulo: M5S2, titulo: "Presupuesto del semestre entrante de la carrera técnica", instrucciones: "Elabora el presupuesto real del semestre entrante del área de Logística del plantel: prácticas, insumos, mantenimiento del almacén y salidas técnicas; preséntalo a la tutora del área.", parcial: 3, evidencia: "formato", formatoCodigo: "FOR-LOG-M5-02", diasEntrega: 14 }),
+  A({ clave: "M5-34", modulo: 5, submodulo: M5S2, titulo: "Flujo de efectivo y condiciones de pago en logística", instrucciones: "Construye el flujo de efectivo del prestador con clientes que pagan a treinta y sesenta días: brechas de financiamiento, costo de capital y política de cobrar cuentas.", parcial: 3, evidencia: "documento", diasEntrega: 10 }),
+  A({ clave: "M5-35", modulo: 5, submodulo: M5S1, titulo: "Evaluación de proveedores por costo total de servicio", instrucciones: "Reevalúa a dos transportistas por costo total de servicio (tarifa, fallos, devoluciones y tiempo de respuesta), no solo por precio; emite el verdadero veredicto de compra.", parcial: 3, evidencia: "documento", diasEntrega: 12 }),
+  A({ clave: "M5-36", modulo: 5, submodulo: M5S1, titulo: "Caso integral: cotiza el lanzamiento de un producto", instrucciones: "Cotiza el servicio logístico completo del lanzamiento de un producto nuevo: importación, almacén, distribución regional y devoluciones, con punto de equilibrio y precio final de lista.", parcial: 3, evidencia: "practica", diasEntrega: 16 }),
+  A({ clave: "M5-37", modulo: 5, submodulo: M5S2, titulo: "Portafolio de evidencias y constancia del módulo", instrucciones: "Integra tu portafolio de evidencias del módulo con índice, carátula y orden del plan de estudios; verifica que cubra las competencias antes de solicitar tu constancia.", parcial: 3, evidencia: "documento", diasEntrega: 14 }),
+  A({ clave: "M5-38", modulo: 5, submodulo: M5S1, titulo: "Proyecto integrador: costeo completo de la cadena de una empresa real", instrucciones: "En equipo, costea la cadena de suministro de una empresa real o simulada de Ciudad Juárez: costeos por etapa, presupuesto anual, punto de equilibrio, tarifas y tres oportunidades de ahorro documentadas.", parcial: 3, evidencia: "practica", diasEntrega: 28 }),
+  A({ clave: "M5-39", modulo: 5, submodulo: M5S2, titulo: "Defensa del proyecto integrador de costos", instrucciones: "Defiende el costeo ante un panel con preguntas financieras: cómo comprobaste cada número, qué supersete y qué decisión tomaría la empresa con tu estudio.", parcial: 3, evidencia: "documento", diasEntrega: 21 }),
+  A({ clave: "M5-40", modulo: 5, submodulo: M5S2, titulo: "Evaluación final del módulo V y cierre de la carrera técnica", instrucciones: "Examen integral del tercer parcial y cierre: costeos, presupuestos, liquidaciones, KPIs financieros y proyecto integrador de la carrera técnica.", parcial: 3, evidencia: "examen", diasEntrega: 5 }),
+];
+
 export const ACTIVIDADES_PRECARGADAS: ActividadPrecargada[] = [
-  /* ------------------------ MÓDULO I · 2° semestre ------------------------ */
-  {
-    clave: "M1-A1",
-    modulo: 1,
-    submodulo: "Introducción a la logística",
-    titulo: "Mapa de la cadena de suministro de una empresa juarense",
-    instrucciones:
-      "Elige una maquiladora o distribuidora de Ciudad Juárez. Dibuja su cadena de suministro completa: proveedores, entrada de insumos, transformación, almacén, distribución y cliente final. Señala en qué punto ocurre el cruce fronterizo.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "documento",
-    diasEntrega: 7,
-  },
-  {
-    clave: "M1-A2",
-    modulo: 1,
-    submodulo: "Flujo de materiales e información",
-    titulo: "Requisición y orden de compra de un pedido real",
-    instrucciones:
-      "Con el formato FOR-LOG-02 elabora la requisición y la orden de compra de un pedido de 3 productos. Incluye proveedor, condiciones de pago, tiempo de entrega y el cálculo del IVA.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-02",
-    diasEntrega: 10,
-  },
-  {
-    clave: "M1-A3",
-    modulo: 1,
-    submodulo: "Flujo de materiales e información",
-    titulo: "Cuadro comparativo de tres proveedores",
-    instrucciones:
-      "Cotiza el mismo producto con tres proveedores. Compara precio, tiempo de entrega, garantía y forma de pago, y justifica con datos a cuál le comprarías.",
-    puntos: 100,
-    parcial: 2,
-    evidencia: "documento",
-    diasEntrega: 14,
-  },
-
-  /* ----------------------- MÓDULO II · 3° semestre ----------------------- */
-  {
-    clave: "M2-A1",
-    modulo: 2,
-    submodulo: "Recepción y acomodo",
-    titulo: "Checklist de recepción de mercancía en andén",
-    instrucciones:
-      "Documenta paso a paso la recepción de un embarque: cita, verificación documental, descarga, conteo, revisión de daños y acomodo. Anexa fotografías o croquis del acomodo propuesto.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "practica",
-    diasEntrega: 7,
-  },
-  {
-    clave: "M2-A2",
-    modulo: 2,
-    submodulo: "Control de inventarios y conteo cíclico",
-    titulo: "Kardex por PEPS y por costo promedio",
-    instrucciones:
-      "Con el formato FOR-LOG-01 registra 10 movimientos de un artículo (entradas y salidas) y calcula el inventario final por PEPS y por promedio ponderado. Explica por qué difieren los resultados.",
-    puntos: 100,
-    parcial: 2,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-01",
-    diasEntrega: 12,
-  },
-  {
-    clave: "M2-A3",
-    modulo: 2,
-    submodulo: "Recepción y acomodo",
-    titulo: "Inspección pre-operacional de montacargas",
-    instrucciones:
-      "Aplica el checklist FOR-LOG-06 a un montacargas del taller o de una empresa. Reporta hallazgos, clasifícalos por riesgo y propone las acciones correctivas.",
-    puntos: 100,
-    parcial: 3,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-06",
-    diasEntrega: 10,
-  },
-
-  /* ----------------------- MÓDULO III · 4° semestre ---------------------- */
-  {
-    clave: "M3-A1",
-    modulo: 3,
-    submodulo: "Rutas y modos de transporte",
-    titulo: "Carta porte de un embarque Juárez - Chihuahua",
-    instrucciones:
-      "Llena el formato FOR-LOG-03 con los datos de un embarque real o simulado. Verifica claves del SAT de producto, unidad y tipo de permiso SCT.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-03",
-    diasEntrega: 9,
-  },
-  {
-    clave: "M3-A2",
-    modulo: 3,
-    submodulo: "Abastecimiento y proveedores",
-    titulo: "Comparativo de modos de transporte",
-    instrucciones:
-      "Para un mismo embarque de 2 toneladas compara transporte terrestre, ferroviario y aéreo: costo, tiempo, riesgo y documentación requerida. Concluye cuál conviene y por qué.",
-    puntos: 100,
-    parcial: 2,
-    evidencia: "documento",
-    diasEntrega: 12,
-  },
-
-  /* ----------------------- MÓDULO IV · 5° semestre ----------------------- */
-  {
-    clave: "M4-A1",
-    modulo: 4,
-    submodulo: "Aduanas e INCOTERMS",
-    titulo: "Pedimento de importación A1 comentado",
-    instrucciones:
-      "Con el formato FOR-LOG-05 elabora un pedimento A1 simplificado. Identifica fracción arancelaria, valor en aduana, DTA, IVA e IGI, y explica cada campo en el margen.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-05",
-    diasEntrega: 10,
-  },
-  {
-    clave: "M4-A2",
-    modulo: 4,
-    submodulo: "Aduanas e INCOTERMS",
-    titulo: "Caso práctico de INCOTERMS 2020",
-    instrucciones:
-      "Analiza tres operaciones de comercio exterior y determina el INCOTERM aplicable. Señala dónde se transmite el riesgo y quién paga flete, seguro y despacho.",
-    puntos: 100,
-    parcial: 2,
-    evidencia: "documento",
-    diasEntrega: 12,
-  },
-  {
-    clave: "M4-A3",
-    modulo: 4,
-    submodulo: "Logística inversa y KPI",
-    titulo: "Tablero de KPI logísticos",
-    instrucciones:
-      "Calcula y grafica cinco indicadores: entregas a tiempo, exactitud de inventario, rotación, costo por pedido y devoluciones. Interpreta cada resultado.",
-    puntos: 100,
-    parcial: 3,
-    evidencia: "documento",
-    diasEntrega: 15,
-  },
-
-  /* ------------------------ MÓDULO V · 6° semestre ----------------------- */
-  {
-    clave: "M5-A1",
-    modulo: 5,
-    submodulo: "Tecnologías aplicadas a la cadena de suministro",
-    titulo: "Matriz de costeo de fletes y selección de ruta",
-    instrucciones:
-      "Con el formato FOR-LOG-04 costea tres rutas alternas para el mismo embarque: combustible, casetas, operador, seguro y tiempo. Recomienda la ruta óptima con números.",
-    puntos: 100,
-    parcial: 1,
-    evidencia: "formato",
-    formatoCodigo: "FOR-LOG-04",
-    diasEntrega: 10,
-  },
-  {
-    clave: "M5-A2",
-    modulo: 5,
-    submodulo: "Proyecto integrador de logística",
-    titulo: "Proyecto integrador: rediseño de la cadena de suministro",
-    instrucciones:
-      "En equipo, diagnostica la cadena de suministro de una empresa local, detecta tres problemas, propone la mejora con costos y presenta el plan de implementación.",
-    puntos: 100,
-    parcial: 3,
-    evidencia: "documento",
-    diasEntrega: 21,
-  },
+  ...MOD1,
+  ...MOD2,
+  ...MOD3,
+  ...MOD4,
+  ...MOD5,
 ];
 
 export function actividadesDelModulo(modulo: number | null | undefined) {
