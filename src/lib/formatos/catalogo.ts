@@ -522,12 +522,628 @@ const MOD5: FormatoDinamico[] = [
   },
 ];
 
+/* =====================================================================
+   AMPLIACIÓN DEL CATÁLOGO — formatos llenables adicionales
+   Cubren las actividades precargadas de los cinco módulos del plan DGETI
+   de Logística (4 formatos llenables por módulo, 20 en total).
+   ===================================================================== */
+
+const MOD1_EXTRA: FormatoDinamico[] = [
+  {
+    codigo: "FOR-LOG-M1-03",
+    titulo: "Orden de Compra de Mercancías",
+    categoria: "Adquisición de Mercancías y Servicios",
+    modulo: 1,
+    descripcion:
+      "Orden de compra nacional o internacional con partidas, precios, integración de subtotal, IVA y total, condiciones de pago y de entrega.",
+    fileName: "FOR-LOG-M1-03_Orden-de-Compra_CBTIS270",
+    referenciaNormativa: "Código de Comercio · Documentación mercantil nacional",
+    secciones: [
+      {
+        titulo: "Datos del emisor",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos de la orden",
+        campos: [
+          { id: "folioOC", etiqueta: "Folio de la orden de compra", tipo: "texto", requerido: true, placeholder: "OC-2026-____", ancho: 1 },
+          { id: "proveedor", etiqueta: "Proveedor (razón social)", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "telefonoProveedor", etiqueta: "Contacto del proveedor", tipo: "texto", ancho: 1 },
+          { id: "condicionesPago", etiqueta: "Condiciones de pago", tipo: "texto", requerido: true, placeholder: "30 días / contado / 50% anticipo", ancho: 1 },
+          { id: "lugarEntrega", etiqueta: "Lugar de entrega", tipo: "texto", requerido: true, placeholder: "Almacén Escuela CBTIS 270", ancho: 2 },
+          { id: "fechaEntrega", etiqueta: "Fecha compromiso de entrega", tipo: "fecha", requerido: true, ancho: 1 },
+          { id: "incoterms", etiqueta: "INCOTERM (si es importación)", tipo: "texto", placeholder: "FOB / EXW / CIF", ancho: 1 },
+          { id: "moneda", etiqueta: "Moneda y tipo de cambio", tipo: "texto", placeholder: "MXN · USD 18.90", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Partidas de la orden",
+        campos: [
+          { id: "tablaPartidas", etiqueta: "Partidas", tipo: "tabla", columnas: ["No.", "Clave / SKU", "Descripción", "U/M", "Cantidad", "Precio unitario", "Importe"], filasTabla: 8, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Integración de importes",
+        campos: [
+          { id: "subtotal", etiqueta: "Subtotal", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "iva", etiqueta: "IVA (16 %)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "total", etiqueta: "Total de la orden", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "montoLetra", etiqueta: "Importe con letra", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "observacionesOC", etiqueta: "Observaciones y condiciones adicionales", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Toda orden parte de una requisición autorizada y de cotización ganadora documentada.",
+      "Verifica que subtotal, IVA y total cuadren antes de firmar.",
+      "El importe con letra es obligatorio en órdenes formales.",
+      "En importaciones indica siempre el INCOTERM pactado y quién contrata el flete.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Jefe de compras", "Control escolar CBTIS 270"],
+  },
+  {
+    codigo: "FOR-LOG-M1-04",
+    titulo: "Matriz de Evaluación y Selección de Proveedores",
+    categoria: "Adquisición de Mercancías y Servicios",
+    modulo: 1,
+    descripcion:
+      "Matriz con criterios ponderados para comparar proveedores y sustentar objetivamente la decisión de compra.",
+    fileName: "FOR-LOG-M1-04_Evaluacion-de-Proveedores_CBTIS270",
+    referenciaNormativa: "Política de compras y competencia de precios · CBTIS 270",
+    secciones: [
+      {
+        titulo: "Datos del evaluador",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos de la evaluación",
+        campos: [
+          { id: "folioEval", etiqueta: "Folio de evaluación", tipo: "texto", requerido: true, placeholder: "EVAL-2026-____", ancho: 1 },
+          { id: "periodo", etiqueta: "Periodo evaluado", tipo: "texto", ancho: 1 },
+          { id: "articuloEvaluado", etiqueta: "Bien o servicio evaluado", tipo: "textoLargo", requerido: true, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Matriz ponderada de criterios",
+        campos: [
+          { id: "tablaCriterios", etiqueta: "Criterios y calificaciones", tipo: "tabla", columnas: ["Criterio", "Ponderación (%)", "Proveedor A", "Proveedor B", "Proveedor C"], filasTabla: 8, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Resultado de la evaluación",
+        campos: [
+          { id: "totalA", etiqueta: "Puntaje ponderado proveedor A", tipo: "numero", ancho: 1 },
+          { id: "totalB", etiqueta: "Puntaje ponderado proveedor B", tipo: "numero", ancho: 1 },
+          { id: "totalC", etiqueta: "Puntaje ponderado proveedor C", tipo: "numero", ancho: 1 },
+          { id: "proveedorRecomendado", etiqueta: "Proveedor recomendado y justificación", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "accionesSeguimiento", etiqueta: "Acciones de seguimiento con los demás proveedores", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "La suma de ponderaciones debe dar 100 %.",
+      "Los criterios mínimos son precio, calidad, tiempo de entrega y servicio.",
+      "Adjunta las cotizaciones que respaldan las calificaciones.",
+      "Documenta la decisión: en auditoría se pedirá tu matriz.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Jefe de compras"],
+  },
+];
+
+const MOD2_EXTRA: FormatoDinamico[] = [
+  {
+    codigo: "FOR-LOG-M2-03",
+    titulo: "Acta de Inventario Físico y Conteo Cíclico",
+    categoria: "Almacén e Inventarios",
+    modulo: 2,
+    descripcion:
+      "Acta para registrar conteos físicos o cíclicos con diferencias entre sistema y físico, causas y plan de corrección.",
+    fileName: "FOR-LOG-M2-03_Inventario-Fisico_CBTIS270",
+    referenciaNormativa: "NIF C-4 · Inventarios",
+    secciones: [
+      {
+        titulo: "Datos del conteo",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha, INSTITUCIONAL.aula],
+      },
+      {
+        titulo: "Identificación del conteo",
+        campos: [
+          { id: "folioActa", etiqueta: "Folio del acta", tipo: "texto", requerido: true, placeholder: "INV-2026-____", ancho: 1 },
+          { id: "tipoConteo", etiqueta: "Tipo de conteo", tipo: "texto", requerido: true, placeholder: "Cíclico / General anual", ancho: 1 },
+          { id: "zonaConteada", etiqueta: "Zona o pasillo contado", tipo: "texto", requerido: true, ancho: 1 },
+          { id: "horaInicio", etiqueta: "Hora de inicio", tipo: "texto", ancho: 1 },
+          { id: "horaFin", etiqueta: "Hora de término", tipo: "texto", ancho: 1 },
+          { id: "contadores", etiqueta: "Brigada de conteo (integrantes)", tipo: "texto", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Diferencias detectadas",
+        campos: [
+          { id: "tablaConteo", etiqueta: "Partidas contadas", tipo: "tabla", columnas: ["Ubicación", "SKU", "Descripción", "Sistema", "Físico", "Diferencia", "Causa probable"], filasTabla: 10, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Resultado y corrección",
+        campos: [
+          { id: "exactitud", etiqueta: "Exactitud alcanzada (%)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "incidencias", etiqueta: "Incidencias durante el conteo", tipo: "textoLargo", ancho: 3 },
+          { id: "planAccion", etiqueta: "Plan de corrección de diferencias", tipo: "textoLargo", requerido: true, ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Cuenta dos veces cualquier partida con diferencia antes de reportarla.",
+      "Nadie ajusta el sistema sin causa documentada.",
+      "Calcula la exactitud: partidas coincidentes entre partidas contadas.",
+      "Meta institucional del Almacén Escuela: exactitud mínima del 98 %.",
+    ],
+    firmas: ["Alumno que elabora", "Segundo contador", "Docente responsable", "Control escolar CBTIS 270"],
+  },
+  {
+    codigo: "FOR-LOG-M2-04",
+    titulo: "Reporte de Mermas, Roturas y Devoluciones",
+    categoria: "Almacén e Inventarios",
+    modulo: 2,
+    descripcion:
+      "Registro de mermas, mercancía dañada, caducidades y devoluciones, con su valor estimado y disposición final.",
+    fileName: "FOR-LOG-M2-04_Mermas-y-Devoluciones_CBTIS270",
+    referenciaNormativa: "NIF C-4 · Inventarios · disposición de mercancía deteriorada",
+    secciones: [
+      {
+        titulo: "Datos del reporte",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha, INSTITUCIONAL.aula],
+      },
+      {
+        titulo: "Identificación",
+        campos: [
+          { id: "folioReporte", etiqueta: "Folio del reporte", tipo: "texto", requerido: true, placeholder: "MER-2026-____", ancho: 1 },
+          { id: "areaOrigen", etiqueta: "Área de origen", tipo: "texto", placeholder: "Acomodo / Picking / Devoluciones", ancho: 1 },
+          { id: "periodoReporte", etiqueta: "Periodo que cubre", tipo: "texto", ancho: 1 },
+          { id: "motivoGeneral", etiqueta: "Contexto del reporte", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Partidas afectadas",
+        campos: [
+          { id: "tablaMermas", etiqueta: "Mermas y devoluciones", tipo: "tabla", columnas: ["SKU", "Descripción", "Cantidad", "U/M", "Causa (rotura, caducidad, robo...)", "Disposición (destrucción, donación, devolución)"], filasTabla: 10, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Valorización y disposición",
+        campos: [
+          { id: "valorEstimado", etiqueta: "Valor estimado total de la merma ($)", tipo: "numero", ancho: 1 },
+          { id: "disposicionResuelta", etiqueta: "Disposición final aplicada y su documentación", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "prevencion", etiqueta: "Medidas para que no vuelva a ocurrir", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Toda merma sale del Kardex con causa y disposición documentadas, nunca por ajuste verbal.",
+      "La mercancía caducada se segrega de inmediato de la zona de surtido.",
+      "La destrucción de mercancía se presencia con el docente responsable.",
+      "Las devoluciones a proveedor piden nota de cargo o nota de crédito.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Encargado de almacén"],
+  },
+];
+
+const MOD3_EXTRA: FormatoDinamico[] = [
+  {
+    codigo: "FOR-LOG-M3-03",
+    titulo: "Lista de Empaque (Packing List) de Exportación",
+    categoria: "Comercio Exterior",
+    modulo: 3,
+    descripcion:
+      "Lista de empaque internacional con detalle por bulto: marcas, contenido, dimensiones y pesos, vinculada a la factura comercial.",
+    fileName: "FOR-LOG-M3-03_Packing-List_CBTIS270",
+    referenciaNormativa: "Ley Aduanera art. 36-A · Documentos complementarios de la operación",
+    secciones: [
+      {
+        titulo: "Datos del responsable",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos del embarque",
+        campos: [
+          { id: "folioPacking", etiqueta: "Folio de la lista de empaque", tipo: "texto", requerido: true, placeholder: "PL-2026-____", ancho: 1 },
+          { id: "facturaRelacionada", etiqueta: "Factura comercial relacionada", tipo: "texto", requerido: true, ancho: 1 },
+          { id: "fechaEmbarque", etiqueta: "Fecha de embarque", tipo: "fecha", requerido: true, ancho: 1 },
+          { id: "consignatario", etiqueta: "Consignatario (destinatario)", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "paisDestino", etiqueta: "País de destino", tipo: "texto", requerido: true, ancho: 1 },
+          { id: "bultosTotales", etiqueta: "Número total de bultos", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "pesoNeto", etiqueta: "Peso neto total (kg)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "pesoBruto", etiqueta: "Peso bruto total (kg)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "volumen", etiqueta: "Volumen total (m³)", tipo: "numero", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Detalle por bulto",
+        campos: [
+          { id: "tablaBultos", etiqueta: "Bultos del embarque", tipo: "tabla", columnas: ["Bulto", "Marca / Referencia", "Contenido", "Cantidad", "Largo (cm)", "Ancho (cm)", "Alto (cm)", "Peso (kg)"], filasTabla: 10, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Declaraciones",
+        campos: [
+          { id: "mercanciasEspeciales", etiqueta: "¿Incluye mercancía peligrosa, refrigerada o frágil?", tipo: "texto", placeholder: "Sí / No — describe", ancho: 3 },
+          { id: "observacionesPL", etiqueta: "Observaciones para el recibidor", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "La lista de empaque debe coincidir pieza a pieza con la factura comercial.",
+      "Los pesos se documentan con báscula calibrada; la aduana los verifica en revisión.",
+      "Enumera las marcas tal como van impresas en los bultos.",
+      "Guarda una copia sellada en el expediente de la operación.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Agente aduanal"],
+  },
+  {
+    codigo: "FOR-LOG-M3-04",
+    titulo: "Hoja de Cálculo de Valor en Aduana y Contribuciones",
+    categoria: "Comercio Exterior",
+    modulo: 3,
+    descripcion:
+      "Determinación del valor en aduana según el INCOTERM y cálculo de IGI, DTA e IVA de la operación.",
+    fileName: "FOR-LOG-M3-04_Valor-en-Aduana_CBTIS270",
+    referenciaNormativa: "Ley Aduanera arts. 64-78 · Leyes de los IGI, del IVA y del DTA",
+    secciones: [
+      {
+        titulo: "Datos del analista",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos de la operación",
+        campos: [
+          { id: "folioCalc", etiqueta: "Folio del cálculo", tipo: "texto", requerido: true, placeholder: "CALC-2026-____", ancho: 1 },
+          { id: "proveedorExtranjero", etiqueta: "Proveedor extranjero", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "incoterm", etiqueta: "INCOTERM pactado", tipo: "texto", requerido: true, placeholder: "EXW / FOB / CIF", ancho: 1 },
+          { id: "moneda", etiqueta: "Moneda de la factura", tipo: "texto", placeholder: "USD", ancho: 1 },
+          { id: "tipoCambio", etiqueta: "Tipo de cambio aplicado", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "aduana", etiqueta: "Aduana de despacho", tipo: "texto", placeholder: "240 · Ciudad Juárez", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Determinación del valor en aduana",
+        campos: [
+          { id: "valorMercancias", etiqueta: "Valor de las mercancías en factura ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "fleteInternacional", etiqueta: "Flete internacional incrementable ($)", tipo: "numero", ancho: 1 },
+          { id: "seguro", etiqueta: "Seguro de transporte ($)", tipo: "numero", ancho: 1 },
+          { id: "otrosIncrementables", etiqueta: "Otros incrementables (empaque, comisiones) ($)", tipo: "numero", ancho: 1 },
+          { id: "valorEnAduana", etiqueta: "Valor en aduana determinado ($)", tipo: "numero", requerido: true, ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Cálculo de contribuciones",
+        campos: [
+          { id: "tablaContribuciones", etiqueta: "Contribuciones", tipo: "tabla", columnas: ["Concepto (IGI, DTA, IVA...)", "Base ($)", "Tasa (%)", "Importe ($)"], filasTabla: 6, ancho: 3 },
+          { id: "totalContribuciones", etiqueta: "Total de contribuciones a pagar ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "notaCalculo", etiqueta: "Notas del cálculo y fuentes de las tasas", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "El INCOTERM define qué incrementables se suman al valor en aduana.",
+      "Las tasas se verifican en la Ley del IGI y la TIGIE vigentes, no de memoria.",
+      "El IVA se calcula sobre la base completa que marca la Ley del IVA.",
+      "Adjunta la hoja al expediente de forma impresa o digital.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Agente aduanal"],
+  },
+];
+
+const MOD4_EXTRA: FormatoDinamico[] = [
+  {
+    codigo: "FOR-LOG-M4-02",
+    titulo: "Comprobante de Entrega (POD) al Cliente",
+    categoria: "Distribución Física",
+    modulo: 4,
+    descripcion:
+      "Comprobante de entrega con detalle de bultos, estado de la mercancía, firma de quien recibe e incidencias.",
+    fileName: "FOR-LOG-M4-02_POD-Comprobante-de-Entrega_CBTIS270",
+    referenciaNormativa: "Prácticas mercantiles de entrega · registros del contrato de transporte",
+    secciones: [
+      {
+        titulo: "Datos del operador",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos de la entrega",
+        campos: [
+          { id: "folioPOD", etiqueta: "Folio del POD", tipo: "texto", requerido: true, placeholder: "POD-2026-____", ancho: 1 },
+          { id: "noGuia", etiqueta: "Número de guía / embarque", tipo: "texto", requerido: true, ancho: 1 },
+          { id: "cliente", etiqueta: "Cliente receptor", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "direccionEntrega", etiqueta: "Dirección de entrega", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "fechaEntrega", etiqueta: "Fecha de entrega", tipo: "fecha", requerido: true, ancho: 1 },
+          { id: "horaEntrega", etiqueta: "Hora de entrega", tipo: "texto", ancho: 1 },
+          { id: "unidadPlacas", etiqueta: "Unidad y placas", tipo: "texto", ancho: 1 },
+          { id: "operadorNombre", etiqueta: "Operador que entrega", tipo: "texto", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Detalle entregado",
+        campos: [
+          { id: "tablaEntrega", etiqueta: "Mercancía entregada", tipo: "tabla", columnas: ["No.", "Descripción", "Solicitado", "Entregado", "Estado", "Observaciones"], filasTabla: 8, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Recepción del cliente",
+        campos: [
+          { id: "recibioNombre", etiqueta: "Nombre de quien recibe", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "puestoRecibe", etiqueta: "Puesto de quien recibe", tipo: "texto", ancho: 1 },
+          { id: "entregaCompleta", etiqueta: "Resultado de la entrega", tipo: "texto", requerido: true, placeholder: "Completa / Parcial / Rechazada", ancho: 1 },
+          { id: "incidenciasPOD", etiqueta: "Incidencias, faltantes o daños declarados al momento", tipo: "textoLargo", ancho: 3 },
+          { id: "evidenciaFoto", etiqueta: "Evidencia fotográfica anexa", tipo: "texto", placeholder: "Adjunta / N/A", ancho: 1 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "El cliente firma el POD sólo después de contar y revisar junto con el operador.",
+      "Toda entrega parcial queda descrita con las cantidades faltantes exactas.",
+      "Sin POD firmado no hay prueba de la entrega ni cierre del ciclo de facturación.",
+      "Anexa fotografía del embalaje cuando el estado se declara distinto de íntegro.",
+    ],
+    firmas: ["Alumno que elabora", "Operador que entrega", "Cliente que recibe", "Docente responsable"],
+  },
+  {
+    codigo: "FOR-LOG-M4-03",
+    titulo: "Bitácora de Rastreo de Envíos",
+    categoria: "Distribución Física",
+    modulo: 4,
+    descripcion:
+      "Bitácora para seguir el estatus de envíos del periodo con eventos, promesas de entrega y alertas al cliente.",
+    fileName: "FOR-LOG-M4-03_Bitacora-de-Rastreo_CBTIS270",
+    referenciaNormativa: "Prácticas de monitoreo · protocolo de información al cliente",
+    secciones: [
+      {
+        titulo: "Datos del responsable",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos del reporte",
+        campos: [
+          { id: "folioBitacora", etiqueta: "Folio de la bitácora", tipo: "texto", requerido: true, placeholder: "BIT-2026-____", ancho: 1 },
+          { id: "clienteRastreo", etiqueta: "Cliente o operación", tipo: "texto", ancho: 1 },
+          { id: "periodoRastreo", etiqueta: "Periodo que cubre", tipo: "texto", placeholder: "Semana 4 · feb", ancho: 1 },
+          { id: "totalEnvios", etiqueta: "Envíos monitoreados", tipo: "numero", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Eventos por envío",
+        campos: [
+          { id: "tablaRastreo", etiqueta: "Rastreo", tipo: "tabla", columnas: ["Guía", "Origen–Destino", "Transportista", "Estatus actual", "Último evento (fecha/detalle)", "Promesa de entrega", "Alerta / acción"], filasTabla: 10, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Balance del periodo",
+        campos: [
+          { id: "porcentajeATiempo", etiqueta: "% de entregas a tiempo", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "incidenciasPeriodo", etiqueta: "Incidencias y retrasos del periodo", tipo: "textoLargo", ancho: 3 },
+          { id: "mejoraRastreo", etiqueta: "Acciones de mejora para el siguiente periodo", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Actualiza la bitácora cada día; un evento sin registrar es un correo perdido para el cliente.",
+      "Avisa al cliente de un retraso antes de que él pregunte.",
+      "Cierra el periodo contando entregas cumplidas contra prometidas.",
+      "Los eventos se capturan tal como los reporta el transportista.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable"],
+  },
+  {
+    codigo: "FOR-LOG-M4-04",
+    titulo: "Encuesta de Satisfacción del Cliente (NPS)",
+    categoria: "Servicio al Cliente",
+    modulo: 4,
+    descripcion:
+      "Encuesta de cinco dimensiones del servicio más la pregunta de recomendación, con cálculo del NPS y acciones de mejora.",
+    fileName: "FOR-LOG-M4-04_Encuesta-Satisfaccion_CBTIS270",
+    referenciaNormativa: "Metodología Net Promoter Score (NPS)",
+    secciones: [
+      {
+        titulo: "Datos del encuestador",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos de la aplicación",
+        campos: [
+          { id: "clienteEvaluado", etiqueta: "Empresa o servicio evaluado", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "servicioEvaluado", etiqueta: "Servicio evaluado", tipo: "texto", placeholder: "Entrega de última milla", ancho: 1 },
+          { id: "fechaEncuesta", etiqueta: "Fecha de aplicación", tipo: "fecha", requerido: true, ancho: 1 },
+          { id: "medioAplicacion", etiqueta: "Medio de aplicación", tipo: "texto", placeholder: "Presencial / telefónica / en línea", ancho: 1 },
+          { id: "muestra", etiqueta: "Clientes encuestados (muestra)", tipo: "numero", requerido: true, ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Calificaciones promedio (1 a 10)",
+        campos: [
+          { id: "q1", etiqueta: "Puntualidad de la entrega", tipo: "numero", placeholder: "1-10", ancho: 1 },
+          { id: "q2", etiqueta: "Integridad de la mercancía", tipo: "numero", placeholder: "1-10", ancho: 1 },
+          { id: "q3", etiqueta: "Atención del personal", tipo: "numero", placeholder: "1-10", ancho: 1 },
+          { id: "q4", etiqueta: "Información y rastreo del envío", tipo: "numero", placeholder: "1-10", ancho: 1 },
+          { id: "q5", etiqueta: "Resolución de problemas", tipo: "numero", placeholder: "1-10", ancho: 1 },
+          { id: "q6", etiqueta: "¿Recomendarías el servicio? (0-10)", tipo: "numero", requerido: true, placeholder: "0-10", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Cálculo del NPS y mejora",
+        campos: [
+          { id: "promotores", etiqueta: "Promotores 9-10 (%)", tipo: "numero", ancho: 1 },
+          { id: "pasivos", etiqueta: "Pasivos 7-8 (%)", tipo: "numero", ancho: 1 },
+          { id: "detractores", etiqueta: "Detractores 0-6 (%)", tipo: "numero", ancho: 1 },
+          { id: "nps", etiqueta: "NPS resultante (promotores − detractores)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "accionesMejora", etiqueta: "Dos acciones de mejora derivadas de la encuesta", tipo: "textoLargo", requerido: true, ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Aplica la encuesta a una muestra mínima de diez clientes o su representación.",
+      "El NPS se calcula como % de promotores menos % de detractores y puede ser negativo.",
+      "Comenta la pregunta de recomendación; es la que revela lealtad, no sólo satisfacción.",
+      "Documenta dos acciones que sí puedas ejecutar el siguiente periodo.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable"],
+  },
+];
+
+const MOD5_EXTRA: FormatoDinamico[] = [
+  {
+    codigo: "FOR-LOG-M5-02",
+    titulo: "Presupuesto de la Cadena Logística",
+    categoria: "Presupuesto Logístico",
+    modulo: 5,
+    descripcion:
+      "Presupuesto por rubros y periodos de la operación logística, con total anual, variación y supuestos.",
+    fileName: "FOR-LOG-M5-02_Presupuesto-Logistico_CBTIS270",
+    referenciaNormativa: "NIF C-8 · Instrumentos financieros (informativo) · control presupuestal interno",
+    secciones: [
+      {
+        titulo: "Datos del responsable",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos del presupuesto",
+        campos: [
+          { id: "folioPto", etiqueta: "Folio del presupuesto", tipo: "texto", requerido: true, placeholder: "PTO-2026-____", ancho: 1 },
+          { id: "areaPresupuestada", etiqueta: "Área o cadena presupuestada", tipo: "texto", requerido: true, placeholder: "Almacén Escuela CBTIS 270", ancho: 2 },
+          { id: "periodoPresupuesto", etiqueta: "Periodo del presupuesto", tipo: "texto", requerido: true, placeholder: "Semestre feb–jul 2026", ancho: 1 },
+          { id: "responsableFinanzas", etiqueta: "Responsable de finanzas del área", tipo: "texto", ancho: 2 },
+        ],
+      },
+      {
+        titulo: "Rubros por periodo",
+        campos: [
+          { id: "tablaRubros", etiqueta: "Rubros", tipo: "tabla", columnas: ["Rubro", "Periodo 1 ($)", "Periodo 2 ($)", "Periodo 3 ($)", "Total anual ($)", "Observaciones"], filasTabla: 12, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Integración y supuestos",
+        campos: [
+          { id: "totalPresupuesto", etiqueta: "Total del presupuesto ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "variacionVsAnterior", etiqueta: "Variación contra el periodo anterior (%)", tipo: "numero", ancho: 1 },
+          { id: "supuestosPto", etiqueta: "Supuestos y respaldo de los números", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "autorizadoPor", etiqueta: "Autorizado por (cargo)", tipo: "texto", ancho: 2 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Cada rubro debe estar respaldado con datos reales: consumo, tarifa o historial.",
+      "El supuesto de todo número significativo queda escrito; sin supuestos no hay presupuesto serio.",
+      "Compara contra el periodo anterior y explica cualquier variación mayor al 10 %.",
+      "Presenta el presupuesto a la persona que lo va a autorizar.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Dirección del área"],
+  },
+  {
+    codigo: "FOR-LOG-M5-03",
+    titulo: "Informe de Liquidación de Servicios Logísticos",
+    categoria: "Liquidación de Servicios",
+    modulo: 5,
+    descripcion:
+      "Liquidación final del servicio: conceptos pactados contra reales, diferencias justificadas y saldo a facturar o devolver.",
+    fileName: "FOR-LOG-M5-03_Liquidacion-de-Servicios_CBTIS270",
+    referenciaNormativa: "Control interno de contratos de servicios · CBTIS 270",
+    secciones: [
+      {
+        titulo: "Datos del liquidador",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos del servicio",
+        campos: [
+          { id: "folioLiquidacion", etiqueta: "Folio de la liquidación", tipo: "texto", requerido: true, placeholder: "LIQ-2026-____", ancho: 1 },
+          { id: "clienteLiquidado", etiqueta: "Cliente del servicio", tipo: "texto", requerido: true, ancho: 2 },
+          { id: "servicioRealizado", etiqueta: "Servicio realizado (alcance)", tipo: "textoLargo", requerido: true, ancho: 3 },
+          { id: "periodoServicio", etiqueta: "Periodo del servicio", tipo: "texto", ancho: 1 },
+          { id: "noContrato", etiqueta: "Número de contrato / cotización", tipo: "texto", ancho: 2 },
+        ],
+      },
+      {
+        titulo: "Pactado contra real",
+        campos: [
+          { id: "tablaLiquidacion", etiqueta: "Conceptos", tipo: "tabla", columnas: ["Concepto", "Pactado ($)", "Real ($)", "Diferencia ($)", "Justificación"], filasTabla: 8, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Cierre de la liquidación",
+        campos: [
+          { id: "totalPactado", etiqueta: "Total pactado ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "totalReal", etiqueta: "Total real ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "saldo", etiqueta: "Saldo a facturar / devolver ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "noFacturaSalida", etiqueta: "Factura de cierre emitida", tipo: "texto", ancho: 1 },
+          { id: "observacionesCierre", etiqueta: "Observaciones del cierre y pendientes", tipo: "textoLargo", ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Ninguna diferencia se liquida sin su justificación escrita; el cliente la conoce.",
+      "El saldo positivo se factura de inmediato; el negativo genera devolución o nota de crédito.",
+      "Guarda el informe junto con el contrato y los PODs del servicio.",
+      "El cierre define la utilidad real; contrasta con la utilidad presupuestada.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable", "Cliente (de enterado)"],
+  },
+  {
+    codigo: "FOR-LOG-M5-04",
+    titulo: "Hoja de Punto de Equilibrio del Servicio Logístico",
+    categoria: "Análisis de Costos",
+    modulo: 5,
+    descripcion:
+      "Determinación del punto de equilibrio del servicio con tres escenarios de volumen, margen de seguridad y decisión de negocio.",
+    fileName: "FOR-LOG-M5-04_Punto-de-Equilibrio_CBTIS270",
+    referenciaNormativa: "Fundamentos de contabilidad de costos · NIF C-1 (informativo)",
+    secciones: [
+      {
+        titulo: "Datos del analista",
+        campos: [INSTITUCIONAL.alumno, INSTITUCIONAL.matricula, INSTITUCIONAL.grupo, INSTITUCIONAL.semestre, INSTITUCIONAL.turno, INSTITUCIONAL.docente, INSTITUCIONAL.fecha],
+      },
+      {
+        titulo: "Datos del servicio",
+        campos: [
+          { id: "servicioAnalizado", etiqueta: "Servicio analizado", tipo: "texto", requerido: true, placeholder: "Distribución urbana de cajas", ancho: 2 },
+          { id: "costoFijo", etiqueta: "Costo fijo mensual ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "costoVariable", etiqueta: "Costo variable unitario ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "precioUnitario", etiqueta: "Precio unitario de lista ($)", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "contribucionMarginal", etiqueta: "Contribución marginal ($)", tipo: "numero", ancho: 1 },
+        ],
+      },
+      {
+        titulo: "Escenarios de volumen",
+        campos: [
+          { id: "tablaEscenarios", etiqueta: "Escenarios", tipo: "tabla", columnas: ["Escenario", "Volumen (unidades)", "Ingresos ($)", "Costos totales ($)", "Utilidad / Pérdida ($)"], filasTabla: 6, ancho: 3 },
+        ],
+      },
+      {
+        titulo: "Resultado y decisión",
+        campos: [
+          { id: "unidadesEquilibrio", etiqueta: "Unidades de equilibrio", tipo: "numero", requerido: true, ancho: 1 },
+          { id: "margenSeguridad", etiqueta: "Margen de seguridad (%)", tipo: "numero", ancho: 1 },
+          { id: "decision", etiqueta: "Decisión o recomendación de negocio", tipo: "textoLargo", requerido: true, ancho: 3 },
+        ],
+      },
+    ],
+    instrucciones: [
+      "Verifica el costo variable unitario con datos de operación, no con supuestos.",
+      "El punto de equilibrio se calcula: costo fijo entre contribución marginal.",
+      "Muestra al menos un escenario por debajo del equilibrio: obliga a pensar en el riesgo.",
+      "Concluye con una decisión: lanzar, renegociar costos o no operar el servicio.",
+    ],
+    firmas: ["Alumno que elabora", "Docente responsable"],
+  },
+];
+
 export const FORMATOS_DINAMICOS: FormatoDinamico[] = [
   ...MOD1,
+  ...MOD1_EXTRA,
   ...MOD2,
+  ...MOD2_EXTRA,
   ...MOD3,
+  ...MOD3_EXTRA,
   ...MOD4,
+  ...MOD4_EXTRA,
   ...MOD5,
+  ...MOD5_EXTRA,
 ];
 
 export const NOMBRE_MODULO: Record<number, string> = {

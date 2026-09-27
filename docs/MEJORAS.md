@@ -10,8 +10,11 @@ Cada ficha dice qué es, por qué conviene, qué archivos se tocan y cuánto tra
 Escala de esfuerzo: **S** = una sesión corta · **M** = media sesión larga · **L** = varias sesiones.
 
 Estado actual (para ubicarse): 21 tablas en Neon, aula viva con pase de lista,
-13 actividades precargadas, biblioteca de formatos con habilitación por docente/semestre/grupo,
-expedientes filtrados por tutor, mensajes internos, avisos, almacén y notificaciones.
+200 actividades precargadas (40 por módulo, alineadas a los submódulos oficiales
+del plan DGETI de Logística y repartidas en los tres parciales), biblioteca de
+formatos con habilitación por docente/semestre/grupo (20 formatos llenables,
+4 por módulo, más 6 plantillas Excel descargables), expedientes filtrados por
+tutor, mensajes internos, avisos, almacén y notificaciones.
 
 ---
 
