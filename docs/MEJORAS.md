@@ -9,12 +9,14 @@ Cada ficha dice qué es, por qué conviene, qué archivos se tocan y cuánto tra
 
 Escala de esfuerzo: **S** = una sesión corta · **M** = media sesión larga · **L** = varias sesiones.
 
-Estado actual (para ubicarse): 21 tablas en Neon, aula viva con pase de lista,
+Estado actual (para ubicarse): 24 tablas en Neon, aula viva con pase de lista,
 200 actividades precargadas (40 por módulo, alineadas a los submódulos oficiales
-del plan DGETI de Logística y repartidas en los tres parciales), biblioteca de
-formatos con habilitación por docente/semestre/grupo (20 formatos llenables,
-4 por módulo, más 6 plantillas Excel descargables), expedientes filtrados por
-tutor, mensajes internos, avisos, almacén y notificaciones.
+del plan DGETI de Logística y repartidas en los tres parciales: 14, 13 y 13),
+biblioteca de formatos con habilitación por docente/semestre/grupo (20 formatos
+llenables, 4 por módulo, más 6 plantillas Excel descargables), 25 escenarios de
+rastreo GPS de embarques con mapa en vivo, 15 cuestionarios autocalificables de
+120 reactivos, expedientes filtrados por tutor, mensajes internos, avisos,
+almacén y notificaciones.
 
 ---
 
@@ -166,3 +168,79 @@ que quita fondos y agranda todo ayuda mucho al proyectar.
 | 6 | Alertas de riesgo | 3.1 | M | Valor para tutoría y dirección |
 | 7 | Carga masiva de alumnos | 4.5 | M | Quita la fricción del arranque de semestre |
 | 8 | Reportes imprimibles | 3.5 | M | Lo que la escuela entrega en papel |
+
+---
+
+## Lo que se construyó después de este documento
+
+Tres bloques nuevos que no estaban en el catálogo original y ya están en el
+panel. Ninguno requiere captura: todo viene precargado y el docente sólo activa.
+
+### Rastreo GPS de embarques · `/panel/embarques` (menú «Rastreo GPS»)
+
+- **25 escenarios precargados**, cinco por cada módulo DGETI
+  (`src/lib/academico/embarques.ts`): del Almacén Escuela del CBTIS No. 270 a la
+  última milla en Ciudad Juárez, Juárez→CDMX por la federal 45, Chihuahua→Puerto
+  de Veracruz, maniobras dentro del puerto, cruces internacionales por Nuevo
+  Laredo y Piedras Negras, y rutas del sureste.
+- **Carga masiva**: un clic crea un escenario o **todos los embarques de un
+  módulo completo**. Folio (`EMB-M3-26-004`), ruta, paradas y bitácora inicial se
+  generan solos y no se duplican.
+- **Mapa en vivo** con Leaflet y OpenStreetMap: ruta planeada punteada, recorrido
+  ya hecho en color, origen, checkpoints y destino, más el marcador de la unidad.
+- **Dos modos de rastreo**: *GPS real* (el operador asignado comparte su
+  ubicación desde el celular con la Geolocation API) y *simulado* (la ruta avanza
+  sola mientras alguien tiene el rastreo abierto; en clase el viaje completo dura
+  cinco minutos y el kilometraje mostrado es el real).
+- **Línea de tiempo** con cambios de estado, checkpoints alcanzados, incidencias,
+  asignación de operador y posiciones recibidas; cada evento con hora y
+  coordenada.
+- El avance simulado no usa procesos en segundo plano: se calcula con el tiempo
+  transcurrido entre consultas, así funciona igual en Vercel que en cualquier
+  hosting (`avanzarSimulacion` en `src/lib/academico/rastreo.ts`).
+
+### Cuestionarios autocalificables · `/panel/cuestionarios` (menú «Cuestionarios»)
+
+- **15 evaluaciones** —una por parcial en los cinco módulos— con **120 reactivos**
+  sobre adquisiciones, almacén, comercio exterior, distribución y costos
+  (`src/lib/academico/cuestionarios.ts`).
+- Cronómetro con envío automático al agotarse, calificación instantánea y
+  **explicación de cada reactivo** después de enviar.
+- **Las respuestas correctas no salen del servidor**: la página manda al alumno
+  sólo `{id, enunciado, opciones}`; la calificación se hace en
+  `/api/cuestionarios/resolver` y sólo entonces se devuelve la explicación.
+- Historial de intentos y mejor marca por cuestionario; el docente ve los
+  resultados de sus aulas en la misma pantalla.
+
+### Carga masiva del semestre por aula · dentro de cada clase
+
+Botones en el aula del docente: **«Parcial 1 / 2 / 3 (14, 13 y 13 actividades)»**,
+**«Todo el semestre: actividades + material»** y **«Publicar todo el material»**.
+Activan todo para el grupo con fechas calculadas en cascada (el primer parcial
+arranca a la semana, el segundo a mes y medio y el tercero a los tres meses, con
+dos días entre actividades), la rúbrica institucional pegada en las instrucciones
+y un aviso único por alumno. Nada se duplica: si la actividad ya existía, se
+reactiva.
+
+### Tablas nuevas (con migración automática en `ensure-schema.ts`)
+
+| Tabla | Para qué |
+|---|---|
+| `shipments` | Embarque: folio, ruta serializada, modo, estado, avance, posición y operador asignado |
+| `shipment_events` | Línea de tiempo: estado, checkpoint, incidencia, asignación, posición, entrega |
+| `quiz_attempts` | Intentos de cuestionario: aciertos, calificación, tiempo y qué opción se eligió (nunca la correcta) |
+
+### Verificación de este bloque
+
+- `npm run typecheck` y `npm run build` en verde; las rutas nuevas
+  (`/panel/embarques`, `/panel/embarques/[id]`, `/panel/cuestionarios`,
+  `/panel/cuestionarios/[clave]`, `/api/embarques/[id]/posicion`,
+  `/api/cuestionarios/resolver`) compilan y responden.
+- ESLint sin observaciones en todo el código nuevo. Quedan 16 errores
+  pre-existentes de main en nueve archivos que este bloque no toca (reglas nuevas
+  de `react-hooks` y `react/no-unescaped-entities` en `eslint-config-next` 16).
+- Comprobaciones sobre los catálogos reales: 25 escenarios (5 por módulo), 15
+  cuestionarios y 120 reactivos con índice correcto en rango, geometría de las
+  rutas (avance 0 = origen, avance 1 = destino, checkpoints crecientes),
+  calificación 100 con todo correcto y 0 en blanco, y 200 actividades repartidas
+  14/13/13 por módulo.
