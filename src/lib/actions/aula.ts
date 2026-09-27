@@ -16,10 +16,15 @@ import {
   materials,
   submissions,
 } from "@/db/schema";
-import { actividadPorClave } from "@/lib/academico/actividades";
-import { materialPorClave } from "@/lib/academico/materiales";
+import {
+  actividadPorClave,
+  actividadesDelModulo,
+  type ActividadPrecargada,
+} from "@/lib/academico/actividades";
+import { materialPorClave, materialesDelModulo } from "@/lib/academico/materiales";
+import { RUBRICA } from "@/lib/academico/rubrica";
 import { registrarAuditoria } from "@/lib/auditoria";
-import { sincronizarGrupoDelAula } from "@/lib/academico/aula";
+import { alumnosDelAula, sincronizarGrupoDelAula } from "@/lib/academico/aula";
 import { crearNotificacionSegura } from "@/lib/comunicacion-datos";
 import { hashPassword } from "@/lib/auth";
 import { requireUser } from "@/lib/guards";
@@ -623,6 +628,241 @@ export async function cargarListaGrupoAction(formData: FormData) {
   );
 
   refrescar(courseId);
+}
+
+/* ---------------------------- CARGA MASIVA DEL SEMESTRE ---------------------------- */
+
+/**
+ * Fechas en cascada del semestre: el primer parcial arranca a la semana, el
+ * segundo a mes y medio y el tercero a los tres meses; dentro de cada parcial
+ * cada actividad se recorre dos días para que el grupo no reciba todo el mismo
+ * día. La hora de corte es siempre 23:59 del día de entrega.
+ */
+const ARRANQUE_PARCIAL: Record<number, number> = { 1: 7, 2: 45, 3: 90 };
+const PASO_ENTRE_ACTIVIDADES_DIAS = 2;
+
+function fechaEnCascada(parcial: number, indice: number): Date {
+  const base = new Date();
+  base.setDate(base.getDate() + (ARRANQUE_PARCIAL[parcial] ?? 7) + indice * PASO_ENTRE_ACTIVIDADES_DIAS);
+  base.setHours(23, 59, 0, 0);
+  return base;
+}
+
+/** Rúbrica institucional pegada a las instrucciones al activar en bloque. */
+function instruccionesConRubrica(instrucciones: string): string {
+  const criterios = RUBRICA.map((c) => `${c.titulo} ${c.puntos}`).join(" · ");
+  return `${instrucciones}\n\nRúbrica institucional (100 pts): ${criterios}.`;
+}
+
+/** Activa una actividad del catálogo para el aula, sin duplicarla. */
+async function activarPlantilla(courseId: number, plantilla: ActividadPrecargada, entrega: Date) {
+  const [yaExiste] = await db
+    .select({ id: assignments.id })
+    .from(assignments)
+    .where(and(eq(assignments.courseId, courseId), eq(assignments.origen, plantilla.clave)))
+    .limit(1);
+
+  if (yaExiste) {
+    await db.update(assignments).set({ activa: true }).where(eq(assignments.id, yaExiste.id));
+    return false;
+  }
+
+  await db.insert(assignments).values({
+    courseId,
+    titulo: plantilla.titulo,
+    instrucciones: instruccionesConRubrica(plantilla.instrucciones),
+    puntos: plantilla.puntos,
+    parcial: plantilla.parcial,
+    activa: true,
+    origen: plantilla.clave,
+    evidencia: plantilla.evidencia,
+    fechaEntrega: entrega,
+  });
+  return true;
+}
+
+/** Activa todo el material precargado del módulo del aula. */
+async function publicarMaterialDelModulo(courseId: number, modulo: number) {
+  const materiales = materialesDelModulo(modulo);
+  let nuevos = 0;
+  for (const plantilla of materiales) {
+    const [yaExiste] = await db
+      .select({ id: materials.id })
+      .from(materials)
+      .where(and(eq(materials.courseId, courseId), eq(materials.origen, plantilla.clave)))
+      .limit(1);
+
+    if (yaExiste) {
+      await db.update(materials).set({ activo: true }).where(eq(materials.id, yaExiste.id));
+      continue;
+    }
+
+    await db.insert(materials).values({
+      courseId,
+      titulo: plantilla.titulo,
+      descripcion: plantilla.descripcion,
+      tipo: plantilla.tipo,
+      url: plantilla.descargaUrl ?? plantilla.enlaceExterno ?? null,
+      submodulo: plantilla.submodulo,
+      duracion: plantilla.duracion,
+      origen: plantilla.clave,
+      activo: true,
+    });
+    nuevos += 1;
+  }
+  return { total: materiales.length, nuevos };
+}
+
+/**
+ * Carga masiva por parcial: activa las actividades de un parcial completo del
+ * módulo del aula, con fechas en cascada, rúbrica en las instrucciones y un
+ * aviso único por alumno (no uno por actividad, para no inundar el buzón).
+ */
+export async function cargarParcialAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const parcial = Number(formData.get("parcial"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso || !curso.modulo || ![1, 2, 3].includes(parcial)) return;
+
+  const plantillas = actividadesDelModulo(curso.modulo).filter((a) => a.parcial === parcial);
+  let creadas = 0;
+  let reactivadas = 0;
+  let indice = 0;
+  for (const plantilla of plantillas) {
+    const nueva = await activarPlantilla(courseId, plantilla, fechaEnCascada(parcial, indice));
+    if (nueva) creadas += 1;
+    else reactivadas += 1;
+    indice += 1;
+  }
+
+  const primera = fechaEnCascada(parcial, 0);
+  const ultima = fechaEnCascada(parcial, Math.max(0, plantillas.length - 1));
+
+  for (const alumno of await alumnosDelAula(courseId)) {
+    await crearNotificacionSegura({
+      userId: alumno.id,
+      titulo: `${parcial}° parcial cargado en ${curso.nombre}`,
+      contenido:
+        `${creadas + reactivadas} actividades del ${parcial}° parcial quedaron activas, con fechas del ` +
+        `${formatoFechaCorta(primera)} al ${formatoFechaCorta(ultima)} y rúbrica de 100 puntos.`,
+      tipo: "actividad",
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "carga_masiva_parcial",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `Parcial ${parcial}: ${creadas} actividades nuevas y ${reactivadas} reactivadas`,
+  });
+
+  const jar = await cookies();
+  jar.set(
+    "cbtis270_carga_aviso",
+    `${parcial}° parcial cargado: ${creadas} actividades nuevas y ${reactivadas} que ya estaban, con fechas del ${formatoFechaCorta(primera)} al ${formatoFechaCorta(ultima)}.`,
+    { path: "/", maxAge: 25 },
+  );
+
+  refrescar(courseId);
+}
+
+/**
+ * Carga el semestre completo: las tres parciales del módulo más todo el material
+ * de lectura. Un clic y el aula queda lista para todo el ciclo.
+ */
+export async function cargarSemestreAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso || !curso.modulo) return;
+
+  let creadas = 0;
+  let reactivadas = 0;
+  for (const parcial of [1, 2, 3]) {
+    const plantillas = actividadesDelModulo(curso.modulo).filter((a) => a.parcial === parcial);
+    let indice = 0;
+    for (const plantilla of plantillas) {
+      const nueva = await activarPlantilla(courseId, plantilla, fechaEnCascada(parcial, indice));
+      if (nueva) creadas += 1;
+      else reactivadas += 1;
+      indice += 1;
+    }
+  }
+
+  const material = await publicarMaterialDelModulo(courseId, curso.modulo);
+
+  for (const alumno of await alumnosDelAula(courseId)) {
+    await crearNotificacionSegura({
+      userId: alumno.id,
+      titulo: `Semestre completo cargado en ${curso.nombre}`,
+      contenido:
+        `${creadas + reactivadas} actividades de las tres parciales y ${material.total} materiales de lectura ` +
+        `quedaron disponibles. Las entregas van del ${formatoFechaCorta(fechaEnCascada(1, 0))} al ${formatoFechaCorta(fechaEnCascada(3, 12))}.`,
+      tipo: "actividad",
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "carga_masiva_semestre",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `${creadas} actividades nuevas, ${reactivadas} reactivadas y ${material.nuevos} materiales nuevos`,
+  });
+
+  const jar = await cookies();
+  jar.set(
+    "cbtis270_carga_aviso",
+    `Semestre cargado: ${creadas + reactivadas} actividades de las tres parciales y ${material.total} materiales publicados.`,
+    { path: "/", maxAge: 25 },
+  );
+
+  refrescar(courseId);
+}
+
+/** Publica de un golpe todo el material de lectura del módulo. */
+export async function publicarTodoElMaterialAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso || !curso.modulo) return;
+
+  const material = await publicarMaterialDelModulo(courseId, curso.modulo);
+
+  for (const alumno of await alumnosDelAula(courseId)) {
+    await crearNotificacionSegura({
+      userId: alumno.id,
+      titulo: `Material publicado en ${curso.nombre}`,
+      contenido: `${material.total} lecturas, guías y casos del Módulo ${curso.modulo} ya están disponibles en el aula.`,
+      tipo: "aula",
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "material_publicado_masivo",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `${material.nuevos} materiales nuevos de ${material.total}`,
+  });
+
+  const jar = await cookies();
+  jar.set("cbtis270_carga_aviso", `${material.total} materiales del módulo publicados para el grupo.`, {
+    path: "/",
+    maxAge: 25,
+  });
+
+  refrescar(courseId);
+}
+
+/** Fecha corta para los avisos: "07 oct 2026". */
+function formatoFechaCorta(fecha: Date): string {
+  return new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short", year: "numeric" }).format(fecha);
 }
 
 /* ------------------------------ EMPEZAR CLASE ------------------------------ */

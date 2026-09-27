@@ -39,7 +39,11 @@ export type NombreIcono =
   | "conversacion"
   | "imprimir"
   | "insignia"
-  | "punto";
+  | "punto"
+  | "gps"
+  | "ruta"
+  | "cuestionario"
+  | "cronometro";
 
 type TrazoProps = SVGProps<SVGSVGElement> & {
   nombre: NombreIcono;
@@ -244,6 +248,36 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
       <path d="M6.5 21v-5.5l-1.8-2.6a1.8 1.8 0 0 1 2.7-2.3l1.1 1.1V5.2a1.6 1.6 0 1 1 3.2 0v4.3" />
       <path d="M11.7 9.5V4.6a1.6 1.6 0 1 1 3.2 0v5" />
       <path d="M14.9 9.8V6.4a1.6 1.6 0 1 1 3.2 0V15a6 6 0 0 1-1.2 3.6L15.5 21" />
+    </>
+  ),
+
+  // Rastreo GPS y evaluación
+  gps: (
+    <>
+      <path d="M12 21s6.5-5.7 6.5-11A6.5 6.5 0 0 0 5.5 10c0 5.3 6.5 11 6.5 11Z" />
+      <circle cx="12" cy="10" r="2.4" />
+      <path d="M12 2.2v1.4M21.8 10h-1.4M12 19.2v-1.4M3.6 10H2.2" />
+    </>
+  ),
+  ruta: (
+    <>
+      <circle cx="5.5" cy="5.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+      <path d="M8 5.5h6a3 3 0 0 1 0 6H10a3 3 0 0 0 0 6h6" strokeDasharray="2.5 2.5" />
+    </>
+  ),
+  cuestionario: (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="2.5" />
+      <path d="M9 8.5h6M9 12.5h6" />
+      <path d="m9.2 16.6 1.3 1.3 2.6-2.6" />
+    </>
+  ),
+  cronometro: (
+    <>
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M12 9.5v4l2.5 1.8" />
+      <path d="M9.5 2.5h5M12 2.5V6" />
     </>
   ),
 };

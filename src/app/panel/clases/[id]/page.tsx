@@ -34,9 +34,12 @@ import {
   activarMaterialAction,
   borrarDelMuroAction,
   cargarListaGrupoAction,
+  cargarParcialAction,
+  cargarSemestreAction,
   desactivarMaterialAction,
   empezarClaseAction,
   publicarEnMuroAction,
+  publicarTodoElMaterialAction,
   ajustarAsistenciaAction,
   calificarEvidenciaAction,
   cerrarPaseDeListaAction,
@@ -816,6 +819,45 @@ async function ActividadesDocente({
           ? `Ya vienen cargadas las del Módulo ${modulo}. Actívalas cuando toque verlas en clase.`
           : "Asigna un módulo al aula para ver sus actividades precargadas."}
       </p>
+
+      {/* Carga masiva del semestre */}
+      {modulo ? (
+        <div className="mt-4 rounded-2xl border-2 border-inst-200 bg-inst-50/60 p-5">
+          <p className="text-xs font-black uppercase tracking-widest text-inst-700">
+            Carga masiva del semestre
+          </p>
+          <p className="mt-0.5 text-sm text-slate-600">
+            Activa todo de un golpe: fechas calculadas en cascada dentro de cada parcial, rúbrica
+            institucional en las instrucciones y un aviso al grupo. Nada se duplica.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[1, 2, 3].map((parcial) => {
+              const cuantas = precargadas.filter((a) => a.parcial === parcial).length;
+              return (
+                <form key={parcial} action={cargarParcialAction}>
+                  <input type="hidden" name="courseId" value={courseId} />
+                  <input type="hidden" name="parcial" value={parcial} />
+                  <BotonEnviar className="btn-secundario px-3.5 py-2 text-xs" pendienteTexto="Cargando…">
+                    Parcial {parcial} ({cuantas} actividades)
+                  </BotonEnviar>
+                </form>
+              );
+            })}
+            <form action={cargarSemestreAction}>
+              <input type="hidden" name="courseId" value={courseId} />
+              <BotonEnviar className="btn-primario px-3.5 py-2 text-xs" pendienteTexto="Cargando…">
+                Todo el semestre: actividades + material
+              </BotonEnviar>
+            </form>
+            <form action={publicarTodoElMaterialAction}>
+              <input type="hidden" name="courseId" value={courseId} />
+              <BotonEnviar className="btn-mini px-3.5 py-2" pendienteTexto="Publicando…">
+                Publicar todo el material
+              </BotonEnviar>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 space-y-3">
         {precargadas.map((act) => {

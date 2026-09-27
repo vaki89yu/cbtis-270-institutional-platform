@@ -342,6 +342,71 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 CREATE INDEX IF NOT EXISTS audit_log_fecha ON audit_log (created_at DESC);
 
+CREATE TABLE IF NOT EXISTS shipments (
+  id serial PRIMARY KEY,
+  folio text NOT NULL UNIQUE,
+  titulo text NOT NULL,
+  descripcion text,
+  modulo integer NOT NULL,
+  submodulo text,
+  origen text,
+  origen_nombre text NOT NULL,
+  destino_nombre text NOT NULL,
+  carga text,
+  unidad text,
+  ruta text NOT NULL,
+  distancia_km integer NOT NULL DEFAULT 0,
+  modo text NOT NULL DEFAULT 'simulado',
+  estado text NOT NULL DEFAULT 'programado',
+  progreso double precision NOT NULL DEFAULT 0,
+  latitud double precision,
+  longitud double precision,
+  velocidad_kmh integer NOT NULL DEFAULT 0,
+  checkpoints_pasados text NOT NULL DEFAULT '',
+  posicion_en timestamptz,
+  operador_id integer REFERENCES users(id) ON DELETE SET NULL,
+  operador_nombre text,
+  docente_id integer REFERENCES users(id) ON DELETE SET NULL,
+  course_id integer REFERENCES courses(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS shipments_modulo ON shipments (modulo);
+CREATE INDEX IF NOT EXISTS shipments_curso ON shipments (course_id);
+
+CREATE TABLE IF NOT EXISTS shipment_events (
+  id serial PRIMARY KEY,
+  shipment_id integer NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+  tipo text NOT NULL DEFAULT 'estado',
+  titulo text NOT NULL,
+  detalle text,
+  latitud double precision,
+  longitud double precision,
+  registrado_por_id integer REFERENCES users(id) ON DELETE SET NULL,
+  registrado_por_nombre text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS shipment_events_embarque
+  ON shipment_events (shipment_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id serial PRIMARY KEY,
+  cuestionario_clave text NOT NULL,
+  student_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id integer REFERENCES courses(id) ON DELETE SET NULL,
+  correctas integer NOT NULL DEFAULT 0,
+  total integer NOT NULL DEFAULT 0,
+  calificacion integer NOT NULL DEFAULT 0,
+  duracion_seg integer NOT NULL DEFAULT 0,
+  respuestas text NOT NULL DEFAULT '[]',
+  agotado boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS quiz_attempts_alumno ON quiz_attempts (student_id, cuestionario_clave);
+CREATE INDEX IF NOT EXISTS quiz_attempts_aula ON quiz_attempts (course_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS material_origen_curso
   ON materials (course_id, origen) WHERE origen IS NOT NULL;
 

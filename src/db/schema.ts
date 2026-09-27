@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   integer,
   pgTable,
   serial,
@@ -442,6 +443,108 @@ export const warehousePractices = pgTable("warehouse_practices", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Embarques para el rastreo GPS en clase.
+ *
+ * Cada fila es un escenario logístico real o simulado que el docente crea desde
+ * el catálogo precargado. Guarda la ruta completa (puntos "lat,lng" separados
+ * por ";"), el modo de rastreo —`simulado` avanza solo mientras alguien tiene
+ * abierta la pantalla, `gps` recibe la ubicación real del celular del operador
+ * asignado— y la última posición conocida.
+ */
+export const shipments = pgTable(
+  "shipments",
+  {
+    id: serial("id").primaryKey(),
+    /** Folio institucional del embarque, ej. "EMB-M3-26-004" */
+    folio: text("folio").notNull().unique(),
+    titulo: text("titulo").notNull(),
+    descripcion: text("descripcion"),
+    /** Módulo profesional al que pertenece el escenario (1..5) */
+    modulo: integer("modulo").notNull(),
+    submodulo: text("submodulo"),
+    /** Clave del escenario precargado del que se creó, si aplica */
+    origen: text("origen"),
+    origenNombre: text("origen_nombre").notNull(),
+    destinoNombre: text("destino_nombre").notNull(),
+    /** Mercancía que viaja y unidad que la transporta */
+    carga: text("carga"),
+    unidad: text("unidad"),
+    /** Puntos de la ruta: "lat,lng" separados por ";" */
+    ruta: text("ruta").notNull(),
+    distanciaKm: integer("distancia_km").notNull().default(0),
+    /** "simulado" | "gps" */
+    modo: text("modo").notNull().default("simulado"),
+    /** programado | en_transito | detenido | incidencia | entregado */
+    estado: text("estado").notNull().default("programado"),
+    /** Avance del modo simulado sobre la ruta: 0 a 1 */
+    progreso: doublePrecision("progreso").notNull().default(0),
+    latitud: doublePrecision("latitud"),
+    longitud: doublePrecision("longitud"),
+    velocidadKmh: integer("velocidad_kmh").notNull().default(0),
+    /** Índices de los checkpoints ya alcanzados, separados por "," */
+    checkpointsPasados: text("checkpoints_pasados").notNull().default(""),
+    posicionEn: timestamp("posicion_en", { withTimezone: true }),
+    operadorId: integer("operador_id").references(() => users.id, { onDelete: "set null" }),
+    operadorNombre: text("operador_nombre"),
+    docenteId: integer("docente_id").references(() => users.id, { onDelete: "set null" }),
+    /** Aula en la que se está usando el escenario, si el docente lo vinculó */
+    courseId: integer("course_id").references(() => courses.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
+/**
+ * Línea de tiempo del embarque: cambios de estado, checkpoints alcanzados,
+ * incidencias reportadas, asignación de operador y posiciones del GPS real.
+ */
+export const shipmentEvents = pgTable("shipment_events", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id")
+    .notNull()
+    .references(() => shipments.id, { onDelete: "cascade" }),
+  /** estado | checkpoint | incidencia | asignacion | posicion | entrega */
+  tipo: text("tipo").notNull().default("estado"),
+  titulo: text("titulo").notNull(),
+  detalle: text("detalle"),
+  latitud: doublePrecision("latitud"),
+  longitud: doublePrecision("longitud"),
+  registradoPorId: integer("registrado_por_id").references(() => users.id, { onDelete: "set null" }),
+  registradoPorNombre: text("registrado_por_nombre"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Intentos de los cuestionarios autocalificables.
+ *
+ * Nunca se guardan las respuestas correctas del catálogo: sólo qué opción
+ * eligió el alumno, cuántas acertó y el tiempo que tardó. La calificación la
+ * calcula el servidor en el momento de enviar.
+ */
+export const quizAttempts = pgTable(
+  "quiz_attempts",
+  {
+    id: serial("id").primaryKey(),
+    /** Clave del cuestionario del catálogo, ej. "Q-M2-P3" */
+    cuestionarioClave: text("cuestionario_clave").notNull(),
+    studentId: integer("student_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Aula en la que se aplicó, si el alumno entró desde una */
+    courseId: integer("course_id").references(() => courses.id, { onDelete: "set null" }),
+    correctas: integer("correctas").notNull().default(0),
+    total: integer("total").notNull().default(0),
+    /** Calificación sobre 100, calculada en el servidor */
+    calificacion: integer("calificacion").notNull().default(0),
+    duracionSeg: integer("duracion_seg").notNull().default(0),
+    /** Qué opción eligió en cada pregunta: "[0,2,1,-1,...]" */
+    respuestas: text("respuestas").notNull().default("[]"),
+    /** El tiempo se agotó y se envió solo */
+    agotado: boolean("agotado").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
 export type User = typeof users.$inferSelect;
 export type Course = typeof courses.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
@@ -455,3 +558,6 @@ export type Attendance = typeof attendances.$inferSelect;
 export type AttendanceJustification = typeof attendanceJustifications.$inferSelect;
 export type LogisticsTemplate = typeof logisticsTemplates.$inferSelect;
 export type WarehousePractice = typeof warehousePractices.$inferSelect;
+export type Shipment = typeof shipments.$inferSelect;
+export type ShipmentEvent = typeof shipmentEvents.$inferSelect;
+export type QuizAttempt = typeof quizAttempts.$inferSelect;

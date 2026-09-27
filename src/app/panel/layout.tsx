@@ -23,6 +23,8 @@ const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
   { href: "/panel/calificaciones", label: "Boleta y Concentrado", icono: "insignia" },
   { href: "/panel/almacen", label: "Almacén Escuela", icono: "almacen" },
   { href: "/panel/formatos", label: "Biblioteca de Formatos", icono: "formatos" },
+  { href: "/panel/embarques", label: "Rastreo GPS", icono: "gps" },
+  { href: "/panel/cuestionarios", label: "Cuestionarios", icono: "cuestionario" },
   { href: "/panel/expedientes", label: "Expedientes", icono: "expedientes" },
   { href: "/panel/seguimiento", label: "Seguimiento y Riesgo", icono: "alerta" },
   { href: "/panel/notificaciones", label: "Notificaciones", icono: "notificaciones" },
