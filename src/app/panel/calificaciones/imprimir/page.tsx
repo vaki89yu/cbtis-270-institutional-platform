@@ -69,7 +69,7 @@ export default async function ConcentradoImprimible({ searchParams }: Props) {
         <BotonImprimir />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-slate-900 shadow-sm print:border-0 print:shadow-none">
+      <div className="hoja-oficial rounded-2xl border border-slate-200 bg-white p-8 text-slate-900 shadow-sm print:border-0 print:shadow-none">
         <header className="border-b-2 border-slate-800 pb-3 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider">{INST.sep}</p>
           <p className="text-[9px] uppercase tracking-wide text-slate-600">{INST.dgeti}</p>
