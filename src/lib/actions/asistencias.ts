@@ -10,6 +10,7 @@ import {
   enrollments,
   users,
 } from "@/db/schema";
+import { registrarAuditoria } from "@/lib/auditoria";
 import { requireRole, requireUser } from "@/lib/guards";
 import { crearNotificacion, registrarActividad } from "@/lib/notificaciones";
 
@@ -164,6 +165,7 @@ export async function resolverJustificanteAction(formData: FormData) {
       estado: resolucion,
       notaRevision: nota || null,
       revisadoPorId: user.id,
+      revisadoEn: new Date(),
     })
     .where(eq(attendanceJustifications.id, justId));
 
@@ -191,6 +193,15 @@ export async function resolverJustificanteAction(formData: FormData) {
     `Tu docente revisó el justificante para ${just.cursoNombre}. Estatus: ${resolucion}. ${nota ? `Nota: ${nota}` : ""}`,
     "justificante_resuelto",
   );
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: `justificante_${resolucion}`,
+    entidad: "attendance_justification",
+    entidadId: justId,
+    detalle: `${just.cursoNombre}${nota ? ` · ${nota}` : ""}`,
+  });
 
   revalidatePath("/panel/asistencias");
 }
