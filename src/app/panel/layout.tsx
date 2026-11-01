@@ -15,7 +15,7 @@ import { logoutAction } from "@/lib/actions/auth";
 
 export const dynamic = "force-dynamic";
 
-const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
+const enlaces: Array<{ href: string; label: string; icono: NombreIcono; soloAdmin?: boolean }> = [
   { href: "/panel", label: "Inicio", icono: "inicio" },
   { href: "/panel/clases", label: "Aulas", icono: "aulas" },
   { href: "/panel/asistencias", label: "Asistencias", icono: "asistencias" },
@@ -27,6 +27,7 @@ const enlaces: Array<{ href: string; label: string; icono: NombreIcono }> = [
   { href: "/panel/cuestionarios", label: "Cuestionarios", icono: "cuestionario" },
   { href: "/panel/expedientes", label: "Expedientes", icono: "expedientes" },
   { href: "/panel/seguimiento", label: "Seguimiento y Riesgo", icono: "alerta" },
+  { href: "/panel/bitacora", label: "Bitácora", icono: "candado", soloAdmin: true },
   { href: "/panel/notificaciones", label: "Notificaciones", icono: "notificaciones" },
   { href: "/panel/mensajes", label: "Mensajes", icono: "mensajes" },
 ];
@@ -56,7 +57,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
           </div>
         </div>
         <div className="mx-auto max-w-7xl px-4 pb-2">
-          <PanelNav enlaces={enlaces} />
+          <PanelNav enlaces={enlaces.filter((enlace) => !enlace.soloAdmin || user.rol === "admin")} />
         </div>
       </header>
 

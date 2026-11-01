@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { attendances, courses, enrollments, users } from "@/db/schema";
+import { BotonExportar } from "@/components/boton-exportar";
 import { BotonEnviar, FormEstado } from "@/components/form-estado";
 import {
   registrarAsistenciaLoteAction,
@@ -336,6 +337,9 @@ export default async function AsistenciasPage({ searchParams }: Props) {
             </button>
           </div>
         </form>
+        <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
+          <BotonExportar tipo="asistencias" params={{ aula: cursoSeleccionadoId }} etiqueta="Exportar acumulado" compacto />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.7fr_1.1fr]">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { BotonExportar } from "@/components/boton-exportar";
 import { Icono } from "@/components/iconos";
 import { PanelRastreoDocente } from "@/components/rastreo/panel-docente";
 import { BotonEnviar } from "@/components/form-estado";
@@ -48,6 +49,11 @@ export default async function RastreoPage() {
           {embarques.length} embarques {esDocente ? "creados por ti" : "para tu grupo"}
         </span>
       </div>
+      {esDocente ? (
+        <div className="mt-3">
+          <BotonExportar tipo="embarques" etiqueta="Exportar seguimiento" compacto />
+        </div>
+      ) : null}
     </div>
   );
 

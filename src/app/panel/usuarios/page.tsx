@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { auditLog, studentProfiles, users } from "@/db/schema";
+import { BotonExportar } from "@/components/boton-exportar";
 import { BotonEnviar, FormEstado } from "@/components/form-estado";
 import {
   alternarActivoAction,
@@ -38,11 +39,14 @@ export default async function UsuariosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">Gestión de usuarios</h1>
-        <p className="text-sm text-slate-500">
-          Alta de docentes de Logística, cambio de rol y control de acceso a la plataforma.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Gestión de usuarios</h1>
+          <p className="text-sm text-slate-500">
+            Alta de docentes de Logística, cambio de rol y control de acceso a la plataforma.
+          </p>
+        </div>
+        <BotonExportar tipo="usuarios" etiqueta="Exportar padrón" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

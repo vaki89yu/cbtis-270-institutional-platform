@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { auditLog } from "@/db/schema";
+import { demoRegistrarAuditoria } from "@/lib/demo-store";
 
 /**
  * Bitácora de auditoría. Nunca debe tumbar una operación: si falla el registro,
@@ -23,6 +24,12 @@ export async function registrarAuditoria(entrada: {
       detalle: entrada.detalle ?? null,
     });
   } catch {
-    // La auditoría es informativa, jamás bloqueante.
+    // Sin base de datos el registro va al almacén demo; la auditoría es
+    // informativa y jamás bloqueante.
+    try {
+      demoRegistrarAuditoria(entrada);
+    } catch {
+      // Nada que hacer.
+    }
   }
 }
