@@ -422,6 +422,23 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
 
 CREATE INDEX IF NOT EXISTS quiz_questions_clave_idx ON quiz_questions (cuestionario_clave);
 
+CREATE TABLE IF NOT EXISTS tutor_links (
+  id serial PRIMARY KEY,
+  student_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL UNIQUE,
+  token_pista text NOT NULL DEFAULT '',
+  etiqueta text NOT NULL DEFAULT 'Tutor',
+  creado_por_id integer REFERENCES users(id) ON DELETE SET NULL,
+  creado_por_nombre text,
+  expira_en timestamptz NOT NULL,
+  revocado_en timestamptz,
+  ultimo_acceso_en timestamptz,
+  accesos integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS tutor_links_alumno_idx ON tutor_links (student_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS material_origen_curso
   ON materials (course_id, origen) WHERE origen IS NOT NULL;
 

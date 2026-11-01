@@ -117,6 +117,21 @@ type DemoAudit = {
   createdAt: string;
 };
 
+type DemoTutorLink = {
+  id: number;
+  studentId: number;
+  tokenHash: string;
+  tokenPista: string;
+  etiqueta: string;
+  creadoPorId: number | null;
+  creadoPorNombre: string | null;
+  expiraEn: string;
+  revocadoEn: string | null;
+  ultimoAccesoEn: string | null;
+  accesos: number;
+  createdAt: string;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
@@ -128,6 +143,7 @@ type DemoStore = {
   reactivos: DemoReactivo[];
   quizAttempts: DemoAttempt[];
   auditoria: DemoAudit[];
+  tutorLinks: DemoTutorLink[];
   nextId: number;
 };
 
@@ -150,6 +166,7 @@ function loadStore(): DemoStore {
           reactivos: parsed.reactivos ?? [],
           quizAttempts: parsed.quizAttempts ?? [],
           auditoria: parsed.auditoria ?? [],
+          tutorLinks: parsed.tutorLinks ?? [],
           nextId: parsed.nextId ?? 1,
         };
       }
@@ -168,6 +185,7 @@ function loadStore(): DemoStore {
     reactivos: [],
     quizAttempts: [],
     auditoria: [],
+    tutorLinks: [],
     nextId: 1,
   };
 }
@@ -214,6 +232,9 @@ function getStore(): DemoStore {
   }
   if (!globalForDemo.__cbtisDemoStore.auditoria) {
     globalForDemo.__cbtisDemoStore.auditoria = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.tutorLinks) {
+    globalForDemo.__cbtisDemoStore.tutorLinks = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -316,6 +337,7 @@ export function demoClearStore() {
     reactivos: [],
     quizAttempts: [],
     auditoria: [],
+    tutorLinks: [],
     nextId: 1,
   };
   persist();
@@ -753,4 +775,53 @@ export function demoRegistrarAuditoria(entrada: {
 
 export function demoListarAuditoria(): DemoAudit[] {
   return getStore().auditoria.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/* ---------------------------------------------------------------
+ * ENLACES DE CONSULTA PARA TUTORES (modo demo)
+ * --------------------------------------------------------------- */
+
+export function demoCrearEnlaceTutor(
+  data: Omit<DemoTutorLink, "id" | "createdAt" | "revocadoEn" | "ultimoAccesoEn" | "accesos">,
+): DemoTutorLink {
+  const store = getStore();
+  const enlace: DemoTutorLink = {
+    ...data,
+    id: siguienteId(store),
+    revocadoEn: null,
+    ultimoAccesoEn: null,
+    accesos: 0,
+    createdAt: new Date().toISOString(),
+  };
+  store.tutorLinks.push(enlace);
+  persist();
+  return enlace;
+}
+
+export function demoListarEnlacesTutor(studentId: number): DemoTutorLink[] {
+  return getStore()
+    .tutorLinks.filter((e) => e.studentId === studentId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function demoBuscarEnlaceTutorPorHash(tokenHash: string): DemoTutorLink | null {
+  return getStore().tutorLinks.find((e) => e.tokenHash === tokenHash) ?? null;
+}
+
+export function demoRevocarEnlaceTutor(id: number): DemoTutorLink | null {
+  const store = getStore();
+  const enlace = store.tutorLinks.find((e) => e.id === id);
+  if (!enlace) return null;
+  enlace.revocadoEn = new Date().toISOString();
+  persist();
+  return enlace;
+}
+
+export function demoRegistrarAccesoEnlaceTutor(id: number): void {
+  const store = getStore();
+  const enlace = store.tutorLinks.find((e) => e.id === id);
+  if (!enlace) return;
+  enlace.accesos += 1;
+  enlace.ultimoAccesoEn = new Date().toISOString();
+  persist();
 }
