@@ -439,6 +439,17 @@ CREATE TABLE IF NOT EXISTS tutor_links (
 
 CREATE INDEX IF NOT EXISTS tutor_links_alumno_idx ON tutor_links (student_id);
 
+CREATE TABLE IF NOT EXISTS course_teachers (
+  id serial PRIMARY KEY,
+  course_id integer NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  teacher_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  agregado_por_id integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS course_teacher_unico
+  ON course_teachers (course_id, teacher_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS material_origen_curso
   ON materials (course_id, origen) WHERE origen IS NOT NULL;
 

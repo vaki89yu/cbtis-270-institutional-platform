@@ -43,7 +43,8 @@ export type NombreIcono =
   | "gps"
   | "ruta"
   | "cuestionario"
-  | "cronometro";
+  | "cronometro"
+  | "buscar";
 
 type TrazoProps = SVGProps<SVGSVGElement> & {
   nombre: NombreIcono;
@@ -52,6 +53,12 @@ type TrazoProps = SVGProps<SVGSVGElement> & {
 };
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
+  buscar: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" />
+    </>
+  ),
   // Navegación del panel
   inicio: (
     <>

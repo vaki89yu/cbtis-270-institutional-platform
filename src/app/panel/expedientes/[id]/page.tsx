@@ -202,6 +202,42 @@ export default async function ExpedienteDetallePage({ params }: Props) {
         </div>
       </header>
 
+      {/* Documentos oficiales en PDF */}
+      {esGestor || user.id === studentId ? (
+        <section className="tarjeta p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                <Icono nombre="imprimir" tamano={20} className="text-inst-700" />
+                Documentos del alumno
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                PDF listos para imprimir o entregar en ventanilla. Cada descarga queda registrada en
+                la bitácora con su folio.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`/api/constancias/constancia/${studentId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primario px-4 py-2 text-xs"
+              >
+                Constancia de estudios
+              </a>
+              <a
+                href={`/api/constancias/kardex/${studentId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secundario px-4 py-2 text-xs"
+              >
+                Kardex académico
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {/* Enlaces de consulta para tutores */}
       {esGestor ? (
         <section className="tarjeta p-6">

@@ -9,6 +9,7 @@ import {
   attendanceSessions,
   attendances,
   classPosts,
+  courseTeachers,
   courses,
   enrollments,
   studentProfiles,
@@ -29,12 +30,90 @@ import { alumnosDelAula, sincronizarGrupoDelAula } from "@/lib/academico/aula";
 import { crearNotificacionSegura } from "@/lib/comunicacion-datos";
 import { hashPassword } from "@/lib/auth";
 import { requireUser } from "@/lib/guards";
+import { esDocenteDelAula } from "@/lib/permisos-aula";
 
+/**
+ * Aula que puede administrar el usuario: dirección todo, el docente principal
+ * y los co-docentes registrados en `course_teachers`.
+ */
 async function aulaDelDocente(courseId: number, userId: number, rol: string) {
   const [curso] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
   if (!curso) return null;
-  if (rol !== "admin" && curso.docenteId !== userId) return null;
-  return curso;
+  if (rol === "admin" || curso.docenteId === userId) return curso;
+  return (await esDocenteDelAula(courseId, userId)) ? curso : null;
+}
+
+/* ---------------------------- EQUIPO DOCENTE ------------------------------ */
+
+/** Suma un co-docente al aula. Sólo dirección o el docente principal. */
+export async function agregarCodocenteAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const teacherId = Number(formData.get("teacherId"));
+  if (!Number.isFinite(courseId) || !Number.isFinite(teacherId)) return;
+
+  const [curso] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
+  if (!curso) return;
+  if (user.rol !== "admin" && curso.docenteId !== user.id) return;
+
+  const [docente] = await db
+    .select({ id: users.id, nombre: users.nombre })
+    .from(users)
+    .where(and(eq(users.id, teacherId), eq(users.rol, "docente"), eq(users.activo, true)))
+    .limit(1);
+  if (!docente || docente.id === curso.docenteId) return;
+
+  try {
+    await db
+      .insert(courseTeachers)
+      .values({ courseId, teacherId, agregadoPorId: user.id })
+      .onConflictDoNothing();
+  } catch {
+    return;
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "aula_codocente_agregado",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `${docente.nombre} se sumó al aula ${curso.clave}`,
+  });
+
+  refrescar(courseId);
+}
+
+/** Quita un co-docente del aula (el docente principal no se puede quitar). */
+export async function quitarCodocenteAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const teacherId = Number(formData.get("teacherId"));
+  if (!Number.isFinite(courseId) || !Number.isFinite(teacherId)) return;
+
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso) return;
+  if (user.rol !== "admin" && curso.docenteId !== user.id && user.id !== teacherId) return;
+  if (teacherId === curso.docenteId) return;
+
+  try {
+    await db
+      .delete(courseTeachers)
+      .where(and(eq(courseTeachers.courseId, courseId), eq(courseTeachers.teacherId, teacherId)));
+  } catch {
+    return;
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "aula_codocente_retirado",
+    entidad: "course",
+    entidadId: courseId,
+    detalle: `Docente #${teacherId} salió del aula ${curso.clave}`,
+  });
+
+  refrescar(courseId);
 }
 
 function refrescar(courseId: number) {
