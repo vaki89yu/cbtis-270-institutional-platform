@@ -327,3 +327,15 @@ Mejoras de producto posteriores al bloque B. Detalle en
 | Calendario de entregas | `/panel/calendario` | Rejilla mensual con las actividades de tus aulas, estado de entrega y filtro por aula. |
 | Avisos programados | `/panel/avisos` | Un comunicado puede guardarse con fecha futura y aparece solo cuando llega el momento. |
 | Reporte de grupo en PDF | botón en `/panel/clases/[id]` | Una hoja por aula con promedio, asistencia y pendientes de cada alumno, con folio y registro en la bitácora. |
+
+---
+
+## Bloque 12 — Enlace de tutor por correo y justificantes
+
+Detalle en
+[`docs/BLOQUE-12-TUTOR-POR-CORREO-Y-JUSTIFICANTES.md`](./BLOQUE-12-TUTOR-POR-CORREO-Y-JUSTIFICANTES.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Envío del enlace de tutor por correo | expediente → «Enlace de consulta para tutores» | Se captura el correo del tutor y la liga se envía sola; queda registrado a quién se mandó. Sin SMTP, el enlace se crea igual y se copia a mano. |
+| Justificante de inasistencia en PDF | expediente → «Faltas recientes» | Documento con folio, motivo, firmas y aviso de control escolar para faltas y faltas justificadas. |

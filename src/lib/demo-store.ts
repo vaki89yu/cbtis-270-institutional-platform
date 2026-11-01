@@ -125,6 +125,7 @@ type DemoTutorLink = {
   etiqueta: string;
   creadoPorId: number | null;
   creadoPorNombre: string | null;
+  tutorEmail: string | null;
   expiraEn: string;
   revocadoEn: string | null;
   ultimoAccesoEn: string | null;
@@ -782,11 +783,14 @@ export function demoListarAuditoria(): DemoAudit[] {
  * --------------------------------------------------------------- */
 
 export function demoCrearEnlaceTutor(
-  data: Omit<DemoTutorLink, "id" | "createdAt" | "revocadoEn" | "ultimoAccesoEn" | "accesos">,
+  data: Omit<DemoTutorLink, "id" | "createdAt" | "revocadoEn" | "ultimoAccesoEn" | "accesos" | "tutorEmail"> & {
+    tutorEmail?: string | null;
+  },
 ): DemoTutorLink {
   const store = getStore();
   const enlace: DemoTutorLink = {
     ...data,
+    tutorEmail: data.tutorEmail ?? null,
     id: siguienteId(store),
     revocadoEn: null,
     ultimoAccesoEn: null,

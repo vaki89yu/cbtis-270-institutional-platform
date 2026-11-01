@@ -61,8 +61,10 @@ export const ETIQUETA_ACCION: Record<string, string> = {
   aula_codocente_retirado: "Co-docente retirado del aula",
   constancia_generada: "Constancia o kardex generado",
   reporte_grupo_generado: "Reporte de grupo generado",
+  justificante_generado: "Justificante de inasistencia generado",
   enlace_tutor_creado: "Enlace de tutor creado",
   enlace_tutor_revocado: "Enlace de tutor revocado",
+  enlace_tutor_enviado: "Enlace de tutor enviado por correo",
   exportacion_generada: "Exportación generada",
   password_restablecida: "Contraseña restablecida",
 };

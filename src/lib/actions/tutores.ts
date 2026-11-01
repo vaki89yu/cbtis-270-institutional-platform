@@ -7,14 +7,16 @@
  * viaja en una cookie httpOnly de tres minutos para pintarlo en el expediente.
  */
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { courses, enrollments, studentProfiles } from "@/db/schema";
-import { COOKIE_ENLACE_TUTOR, crearEnlaceTutor, revocarEnlaceTutor } from "@/lib/tutores";
+import { COOKIE_ENLACE_TUTOR, crearEnlaceTutor, plantillaEnlaceTutor, revocarEnlaceTutor } from "@/lib/tutores";
+import { enviarCorreo } from "@/lib/email";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { requireRole } from "@/lib/guards";
+import { expedienteCompletoEstudiante } from "@/lib/consultas";
 import type { SessionUser } from "@/lib/auth";
 
 export type EstadoEnlaceTutor = { error?: string; ok?: string };
@@ -58,11 +60,17 @@ export async function crearEnlaceTutorAction(
 
   const etiqueta = String(formData.get("etiqueta") ?? "Tutor").trim() || "Tutor";
   const dias = Number(formData.get("dias") ?? 7);
+  const correoTutor = String(formData.get("emailTutor") ?? "").trim().toLowerCase();
+
+  if (correoTutor && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoTutor)) {
+    return { error: "El correo del tutor no es válido." };
+  }
 
   const resultado = await crearEnlaceTutor({
     studentId,
     etiqueta,
     dias,
+    email: correoTutor || null,
     actor: { id: user.id, nombre: user.nombre },
   });
   if (!resultado.ok) return { error: resultado.error };
@@ -87,11 +95,51 @@ export async function crearEnlaceTutorAction(
     accion: "enlace_tutor_creado",
     entidad: "tutor_link",
     entidadId: resultado.enlace.id,
-    detalle: `Alumno #${studentId} · ${etiqueta} · ${dias} día(s)`,
+    detalle: `Alumno #${studentId} · ${etiqueta} · ${dias} día(s)${correoTutor ? ` · correo ${correoTutor}` : ""}`,
   });
 
+  // Envío opcional por correo: la liga sólo puede mandarse en este momento,
+  // porque en la base únicamente queda el hash del token.
+  let mensajeCorreo = "";
+  if (correoTutor) {
+    try {
+      const cabeceras = await headers();
+      const host = cabeceras.get("x-forwarded-host") ?? cabeceras.get("host") ?? "localhost:3000";
+      const protocolo = cabeceras.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+      const url = `${protocolo}://${host}/consulta/${resultado.token}`;
+      const expediente = await expedienteCompletoEstudiante(studentId);
+      const correo = plantillaEnlaceTutor({
+        etiqueta,
+        alumno: expediente?.alumno.nombre ?? `alumno #${studentId}`,
+        url,
+        expiraEn: resultado.enlace.expiraEn,
+      });
+      const envio = await enviarCorreo({
+        para: correoTutor,
+        asunto: correo.asunto,
+        texto: correo.texto,
+        html: correo.html,
+      });
+      if (envio.sent) {
+        mensajeCorreo = ` y enviado a ${correoTutor}`;
+        await registrarAuditoria({
+          userId: user.id,
+          actor: user.nombre,
+          accion: "enlace_tutor_enviado",
+          entidad: "tutor_link",
+          entidadId: resultado.enlace.id,
+          detalle: `Alumno #${studentId} · ${correoTutor}`,
+        });
+      } else {
+        mensajeCorreo = ". El correo no salió (SMTP sin configurar): copia la liga y compártela";
+      }
+    } catch (error) {
+      mensajeCorreo = `. No se pudo enviar el correo (${(error as Error).message?.slice(0, 60)}): copia la liga`;
+    }
+  }
+
   revalidatePath(`/panel/expedientes/${studentId}`);
-  return { ok: "Enlace creado. Cópialo ahora: por seguridad no se vuelve a mostrar." };
+  return { ok: `Enlace creado${mensajeCorreo}. Cópialo ahora: por seguridad no se vuelve a mostrar.` };
 }
 
 export async function revocarEnlaceTutorAction(formData: FormData) {
