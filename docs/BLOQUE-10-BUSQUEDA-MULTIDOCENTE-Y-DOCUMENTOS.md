@@ -68,6 +68,9 @@ va en la consulta SQL, no en la interfaz.
 calificaciones, recordatorios) ahora también acepta co-docentes, así que la co-docencia aplica
 en todo el flujo y no sólo en la vista.
 
+`clasesDelDocente` también suma las aulas compartidas, así que la pantalla «Aulas» del docente
+muestra las propias y las de co-docencia.
+
 ### Interfaz
 En `/panel/clases/[id]`, sección **Equipo docente del aula**: lista con la etiqueta
 «Principal» o «Co-docente», botón para quitar y formulario para sumar a otro docente.

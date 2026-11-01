@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   announcements,
@@ -6,6 +6,7 @@ import {
   attendances,
   attendanceJustifications,
   classSessions,
+  courseTeachers,
   courses,
   enrollments,
   logisticsTemplates,
@@ -43,6 +44,17 @@ export async function clasesDelEstudiante(studentId: number) {
 }
 
 export async function clasesDelDocente(docenteId: number) {
+  // Aulas propias + aulas donde el docente es co-docente (course_teachers).
+  const compartidas = await safeQuery(
+    () =>
+      db
+        .select({ courseId: courseTeachers.courseId })
+        .from(courseTeachers)
+        .where(eq(courseTeachers.teacherId, docenteId)),
+    [] as Array<{ courseId: number }>,
+  );
+  const idsCompartidos = compartidas.map((fila) => fila.courseId);
+
   return safeQuery(
     () =>
       db
@@ -52,7 +64,11 @@ export async function clasesDelDocente(docenteId: number) {
         })
         .from(courses)
         .leftJoin(enrollments, eq(enrollments.courseId, courses.id))
-        .where(eq(courses.docenteId, docenteId))
+        .where(
+          idsCompartidos.length > 0
+            ? or(eq(courses.docenteId, docenteId), inArray(courses.id, idsCompartidos))
+            : eq(courses.docenteId, docenteId),
+        )
         .groupBy(courses.id)
         .orderBy(asc(courses.nombre)),
     [],
