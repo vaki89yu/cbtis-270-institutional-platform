@@ -37,7 +37,7 @@ export type AlumnoEnRiesgo = {
   motivos: string[];
 };
 
-function evaluar(datos: {
+export function evaluarRiesgo(datos: {
   faltasSeguidas: number;
   porcentajeAsistencia: number | null;
   sinEntregar: number;
@@ -73,6 +73,19 @@ function evaluar(datos: {
  * docente encargado; sin él (dirección) se revisa a todo el plantel.
  */
 export async function alumnosEnRiesgo(opciones?: {
+  docenteId?: number;
+  soloConRiesgo?: boolean;
+}): Promise<AlumnoEnRiesgo[]> {
+  try {
+    return await calcularAlumnosEnRiesgo(opciones);
+  } catch (error) {
+    // Sin base de datos (preview) no hay semáforo que calcular.
+    console.warn("[riesgo] Sin base de datos:", (error as Error).message?.slice(0, 120));
+    return [];
+  }
+}
+
+async function calcularAlumnosEnRiesgo(opciones?: {
   docenteId?: number;
   soloConRiesgo?: boolean;
 }): Promise<AlumnoEnRiesgo[]> {
@@ -173,7 +186,7 @@ export async function alumnosEnRiesgo(opciones?: {
     const promedio =
       notas.length > 0 ? Math.round(notas.reduce((a, b) => a + b, 0) / notas.length) : null;
 
-    const { nivel, motivos } = evaluar({ faltasSeguidas, porcentajeAsistencia, sinEntregar, promedio });
+    const { nivel, motivos } = evaluarRiesgo({ faltasSeguidas, porcentajeAsistencia, sinEntregar, promedio });
 
     return {
       id: al.id,

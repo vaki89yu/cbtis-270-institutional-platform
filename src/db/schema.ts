@@ -574,6 +574,37 @@ export const quizQuestions = pgTable(
   (table) => [index("quiz_questions_clave_idx").on(table.cuestionarioClave)],
 );
 
+/**
+ * Enlaces de consulta para tutores/padres.
+ *
+ * Decisión de producto: el tutor NO crea cuenta. Se le entrega un enlace
+ * personal con token; en la base sólo se guarda el hash SHA-256 del token, la
+ * caducidad, quién lo emitió y si ya fue revocado. Un enlace = un alumno.
+ */
+export const tutorLinks = pgTable(
+  "tutor_links",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** SHA-256 del token: el token en claro nunca se guarda */
+    tokenHash: text("token_hash").notNull().unique(),
+    /** Últimos caracteres del token, sólo para identificarlo en la lista */
+    tokenPista: text("token_pista").notNull().default(""),
+    /** "Madre", "Padre", "Tutor legal"… */
+    etiqueta: text("etiqueta").notNull().default("Tutor"),
+    creadoPorId: integer("creado_por_id").references(() => users.id, { onDelete: "set null" }),
+    creadoPorNombre: text("creado_por_nombre"),
+    expiraEn: timestamp("expira_en", { withTimezone: true }).notNull(),
+    revocadoEn: timestamp("revocado_en", { withTimezone: true }),
+    ultimoAccesoEn: timestamp("ultimo_acceso_en", { withTimezone: true }),
+    accesos: integer("accesos").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("tutor_links_alumno_idx").on(table.studentId)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Course = typeof courses.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
@@ -591,3 +622,4 @@ export type Shipment = typeof shipments.$inferSelect;
 export type ShipmentEvent = typeof shipmentEvents.$inferSelect;
 export type QuizAttempt = typeof quizAttempts.$inferSelect;
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
+export type TutorLink = typeof tutorLinks.$inferSelect;

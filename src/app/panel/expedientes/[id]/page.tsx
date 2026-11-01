@@ -1,13 +1,18 @@
 import Link from "next/link";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { attendances, courses, userActivity } from "@/db/schema";
+import { CopiarEnlace } from "@/components/copiar-enlace";
+import { BotonEnviar, FormEstado } from "@/components/form-estado";
 import { Icono } from "@/components/iconos";
 import { riesgoDelAlumno } from "@/lib/academico/riesgo";
 import { expedienteCompletoEstudiante } from "@/lib/consultas";
 import { formatoFecha, formatoFechaHora, requireUser } from "@/lib/guards";
+import { crearEnlaceTutorAction, revocarEnlaceTutorAction } from "@/lib/actions/tutores";
+import { COOKIE_ENLACE_TUTOR, ETIQUETAS_TUTOR, estadoEnlace, listarEnlacesDelAlumno } from "@/lib/tutores";
 
 export const metadata: Metadata = { title: "Ficha del Expediente Estudiantil" };
 export const dynamic = "force-dynamic";
@@ -33,21 +38,47 @@ export default async function ExpedienteDetallePage({ params }: Props) {
 
   const riesgo = await riesgoDelAlumno(studentId);
 
-  const ultimasAsistencias = await db
-    .select({ fecha: attendances.fecha, estado: attendances.estado, curso: courses.nombre })
-    .from(attendances)
-    .leftJoin(courses, eq(courses.id, attendances.courseId))
-    .where(eq(attendances.studentId, studentId))
-    .orderBy(desc(attendances.fecha))
-    .limit(10);
+  // Enlaces de consulta para tutores: sólo los gestiona docente o dirección.
+  const esGestor = user.rol !== "estudiante";
+  const enlacesTutor = esGestor ? await listarEnlacesDelAlumno(studentId) : [];
 
-  // Línea de tiempo: todo lo que le ha pasado al alumno, en orden
-  const bitacora = await db
-    .select()
-    .from(userActivity)
-    .where(eq(userActivity.userId, studentId))
-    .orderBy(desc(userActivity.createdAt))
-    .limit(12);
+  let enlaceNuevo: string | null = null;
+  if (esGestor) {
+    const jar = await cookies();
+    const flash = jar.get(COOKIE_ENLACE_TUTOR)?.value;
+    if (flash) {
+      const [token, idDelFlash] = flash.split("|");
+      if (token && Number(idDelFlash) === studentId) {
+        const cabeceras = await headers();
+        const host = cabeceras.get("x-forwarded-host") ?? cabeceras.get("host") ?? "localhost:3000";
+        const protocolo = cabeceras.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+        enlaceNuevo = `${protocolo}://${host}/consulta/${token}`;
+      }
+    }
+  }
+
+  // Sin base de datos (preview) la ficha se arma con lo que haya en el almacén demo.
+  let ultimasAsistencias: Array<{ fecha: Date; estado: string; curso: string | null }> = [];
+  let bitacora: Array<typeof userActivity.$inferSelect> = [];
+  try {
+    ultimasAsistencias = await db
+      .select({ fecha: attendances.fecha, estado: attendances.estado, curso: courses.nombre })
+      .from(attendances)
+      .leftJoin(courses, eq(courses.id, attendances.courseId))
+      .where(eq(attendances.studentId, studentId))
+      .orderBy(desc(attendances.fecha))
+      .limit(10);
+
+    // Línea de tiempo: todo lo que le ha pasado al alumno, en orden
+    bitacora = await db
+      .select()
+      .from(userActivity)
+      .where(eq(userActivity.userId, studentId))
+      .orderBy(desc(userActivity.createdAt))
+      .limit(12);
+  } catch {
+    // La ficha sigue mostrando identidad y enlace de tutores.
+  }
 
   type Hito = { fecha: Date; titulo: string; detalle: string; color: string };
   const hitos: Hito[] = [
@@ -170,6 +201,134 @@ export default async function ExpedienteDetallePage({ params }: Props) {
           </div>
         </div>
       </header>
+
+      {/* Enlaces de consulta para tutores */}
+      {esGestor ? (
+        <section className="tarjeta p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                <Icono nombre="correo" tamano={20} className="text-inst-700" />
+                Enlace de consulta para tutores
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                Genera una liga personal para la madre, el padre o el tutor legal. No necesita
+                cuenta y sólo puede ver asistencia, promedio, pendientes y alertas de este alumno.
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-500">
+              {enlacesTutor.length} enlace(s)
+            </span>
+          </div>
+
+          {enlaceNuevo ? (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-800">
+                Cópialo ahora: no se vuelve a mostrar
+              </p>
+              <p className="mt-1 text-xs text-emerald-900">
+                En la base de datos sólo se guarda el hash del token. Si se pierde, hay que revocarlo
+                y generar otro.
+              </p>
+              <CopiarEnlace url={enlaceNuevo} />
+            </div>
+          ) : null}
+
+          <FormEstado
+            action={crearEnlaceTutorAction}
+            submitLabel="Generar enlace"
+            pendienteTexto="Generando…"
+            botonClase="btn-primario"
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <input type="hidden" name="studentId" value={studentId} />
+            <label>
+              <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Se entrega a
+              </span>
+              <select name="etiqueta" className="campo" defaultValue="Madre">
+                {ETIQUETAS_TUTOR.map((etiqueta) => (
+                  <option key={etiqueta} value={etiqueta}>
+                    {etiqueta}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Vigencia
+              </span>
+              <select name="dias" className="campo" defaultValue="7">
+                <option value="7">7 días</option>
+                <option value="15">15 días</option>
+                <option value="30">30 días</option>
+              </select>
+            </label>
+          </FormEstado>
+
+          {enlacesTutor.length > 0 ? (
+            <ul className="mt-5 space-y-2 border-t border-slate-100 pt-4">
+              {enlacesTutor.map((enlace) => {
+                const estado = estadoEnlace(enlace);
+                return (
+                  <li
+                    key={enlace.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2"
+                  >
+                    <div className="min-w-0 text-xs text-slate-600">
+                      <p className="font-bold text-slate-800">
+                        {enlace.etiqueta}
+                        <span className="ml-2 font-mono text-[10px] text-slate-400">
+                          …{enlace.tokenPista}
+                        </span>
+                      </p>
+                      <p className="mt-0.5">
+                        Creado {formatoFechaHora(enlace.createdAt)} por{" "}
+                        {enlace.creadoPorNombre ?? "el plantel"} · vence {formatoFechaHora(enlace.expiraEn)}
+                      </p>
+                      <p className="mt-0.5 text-slate-400">
+                        {enlace.accesos} consulta(s)
+                        {enlace.ultimoAccesoEn
+                          ? ` · última ${formatoFechaHora(enlace.ultimoAccesoEn)}`
+                          : " · sin abrir todavía"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          estado === "activo"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : estado === "expirado"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {estado}
+                      </span>
+                      {estado !== "revocado" ? (
+                        <form action={revocarEnlaceTutorAction}>
+                          <input type="hidden" name="id" value={enlace.id} />
+                          <input type="hidden" name="studentId" value={studentId} />
+                          <BotonEnviar
+                            className="rounded-lg bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700"
+                            pendienteTexto="Revocando…"
+                          >
+                            Revocar
+                          </BotonEnviar>
+                        </form>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">
+              Este alumno todavía no tiene enlaces de consulta.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       {/* Tarjetas de Indicadores */}
       <div className="grid gap-4 sm:grid-cols-3">

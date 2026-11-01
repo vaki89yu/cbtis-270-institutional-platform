@@ -14,6 +14,7 @@ import {
   users,
   warehousePractices,
 } from "@/db/schema";
+import { demoFindUserById } from "@/lib/demo-store";
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -342,47 +343,71 @@ export async function listaExpedientesEstudiantes(opciones?: {
 }
 
 export async function expedienteCompletoEstudiante(studentId: number) {
-  return safeQuery(
-    async () => {
-      const [alumnoRow] = await db
-        .select({
-          alumno: users,
-          perfil: studentProfiles,
-        })
-        .from(users)
-        .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
-        .where(eq(users.id, studentId))
-        .limit(1);
+  try {
+    const [alumnoRow] = await db
+      .select({
+        alumno: users,
+        perfil: studentProfiles,
+      })
+      .from(users)
+      .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
+      .where(eq(users.id, studentId))
+      .limit(1);
 
-      if (!alumnoRow) return null;
+    if (!alumnoRow) return null;
 
-      const [tutorRow] = alumnoRow.perfil?.tutorDocenteId
-        ? await db
-            .select({ tutor: users })
-            .from(users)
-            .where(eq(users.id, alumnoRow.perfil.tutorDocenteId))
-            .limit(1)
-        : [null];
+    const [tutorRow] = alumnoRow.perfil?.tutorDocenteId
+      ? await db
+          .select({ tutor: users })
+          .from(users)
+          .where(eq(users.id, alumnoRow.perfil.tutorDocenteId))
+          .limit(1)
+      : [null];
 
-      const cursosInscritos = await db
-        .select({ curso: courses, docente: users.nombre })
-        .from(enrollments)
-        .innerJoin(courses, eq(courses.id, enrollments.courseId))
-        .innerJoin(users, eq(users.id, courses.docenteId))
-        .where(eq(enrollments.studentId, studentId));
+    const cursosInscritos = await db
+      .select({ curso: courses, docente: users.nombre })
+      .from(enrollments)
+      .innerJoin(courses, eq(courses.id, enrollments.courseId))
+      .innerJoin(users, eq(users.id, courses.docenteId))
+      .where(eq(enrollments.studentId, studentId));
 
-      const asistencias = await resumenAsistenciaEstudiante(studentId);
-      const tareas = await tareasDelEstudiante(studentId);
+    const asistencias = await resumenAsistenciaEstudiante(studentId);
+    const tareas = await tareasDelEstudiante(studentId);
 
-      return {
-        alumno: alumnoRow.alumno,
-        perfil: alumnoRow.perfil,
-        tutor: tutorRow?.tutor ?? null,
-        cursos: cursosInscritos,
-        asistencias,
-        tareas,
-      };
-    },
-    null,
-  );
+    return {
+      alumno: alumnoRow.alumno,
+      perfil: alumnoRow.perfil,
+      tutor: tutorRow?.tutor ?? null,
+      cursos: cursosInscritos,
+      asistencias,
+      tareas,
+    };
+  } catch (error) {
+    console.warn("[consultas] Expediente sin base de datos, modo demo:", (error as Error).message?.slice(0, 150));
+    // Preview sin PostgreSQL: se arma la ficha con la cuenta del almacén demo
+    // para que el expediente (y el enlace de tutores) se puedan probar.
+    const demo = demoFindUserById(studentId);
+    if (!demo) return null;
+    return {
+      alumno: {
+        id: demo.id,
+        nombre: demo.nombre,
+        email: demo.email,
+        passwordHash: demo.passwordHash,
+        rol: demo.rol,
+        matricula: demo.matricula ?? null,
+        especialidad: demo.especialidad ?? null,
+        semestre: demo.semestre ?? null,
+        turno: demo.turno ?? null,
+        activo: demo.activo,
+        emailVerificado: demo.emailVerificado,
+        createdAt: new Date(demo.createdAt),
+      },
+      perfil: null,
+      tutor: null,
+      cursos: [] as Array<{ curso: typeof courses.$inferSelect; docente: string }>,
+      asistencias: { total: 0, presentes: 0, retardos: 0, faltas: 0, justificados: 0, porcentaje: 100 },
+      tareas: [] as Array<{ tarea: typeof assignments.$inferSelect; curso: typeof courses.$inferSelect; entrega: typeof submissions.$inferSelect | null }>,
+    };
+  }
 }

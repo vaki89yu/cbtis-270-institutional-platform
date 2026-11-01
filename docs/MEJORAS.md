@@ -276,5 +276,16 @@ PR 1 del bloque B, ya implementado. Detalle en
 | Bitácora consultable | `/panel/bitacora` (admin) | Filtros por actor, acción, entidad y fechas, con paginación y exportación. |
 | Exportación XLSX/CSV | botones en 8 pantallas | Calificaciones, asistencias, alumnos, usuarios, analítica, prácticas, embarques y bitácora, con permisos por rol. |
 
-Siguen pendientes del bloque B: consulta para tutores (B1), búsqueda global
-(B3), cron de recordatorios (B5), multi-docente (B7) y constancias en PDF (B8).
+---
+
+## Bloque 8 — Consulta para tutores (operativo escolar)
+
+PR 2 del bloque B, ya implementado. Detalle en
+[`docs/BLOQUE-8-CONSULTA-TUTORES.md`](./BLOQUE-8-CONSULTA-TUTORES.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Enlace de consulta para tutores | expediente del alumno → sección «Enlace de consulta» y `/consulta/[token]` | Dirección o el docente encargado genera una liga personal (7/15/30 días) para la madre, el padre o el tutor legal. Sin cuenta: sólo lectura de asistencia, promedio, pendientes y semáforo de ese alumno. Token hasheado, revocable y con bitácora de accesos. |
+
+Siguen pendientes del bloque B: búsqueda global (B3), cron de recordatorios
+(B5), multi-docente (B7) y constancias en PDF (B8).
