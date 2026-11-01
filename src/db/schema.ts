@@ -581,6 +581,27 @@ export const quizQuestions = pgTable(
  * personal con token; en la base sólo se guarda el hash SHA-256 del token, la
  * caducidad, quién lo emitió y si ya fue revocado. Un enlace = un alumno.
  */
+/**
+ * Docentes adicionales con permiso para administrar un aula (multi-docente).
+ * El docente principal sigue siendo `courses.docenteId`; esta tabla agrega
+ * co-docentes que pueden pasar lista, publicar y calificar.
+ */
+export const courseTeachers = pgTable(
+  "course_teachers",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    teacherId: integer("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agregadoPorId: integer("agregado_por_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("course_teacher_unico").on(table.courseId, table.teacherId)],
+);
+
 export const tutorLinks = pgTable(
   "tutor_links",
   {

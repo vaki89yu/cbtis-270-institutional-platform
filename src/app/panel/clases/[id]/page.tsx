@@ -30,6 +30,8 @@ import {
 } from "@/lib/academico/aula";
 import {
   abrirPaseDeListaAction,
+  agregarCodocenteAction,
+  quitarCodocenteAction,
   activarActividadAction,
   activarMaterialAction,
   borrarDelMuroAction,
@@ -55,6 +57,7 @@ import { FORMATOS_DINAMICOS, NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 import { PLANTILLAS_EXCEL } from "@/lib/formatos/plantillas";
 import { cookies } from "next/headers";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
+import { docentesDelAula, docentesDisponiblesParaAula, esDocenteDelAula } from "@/lib/permisos-aula";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +86,13 @@ export default async function AulaPage({ params }: Props) {
   if (!fila) notFound();
   const { curso, docente } = fila;
 
-  const esDocente = user.rol === "admin" || curso.docenteId === user.id;
+  const esDocente =
+    user.rol === "admin" ||
+    curso.docenteId === user.id ||
+    (user.rol === "docente" && (await esDocenteDelAula(courseId, user.id)));
+  const esDocentePrincipal = user.rol === "admin" || curso.docenteId === user.id;
+  const docentesAula = esDocente ? await docentesDelAula(courseId) : [];
+  const candidatosCodocente = esDocentePrincipal ? await docentesDisponiblesParaAula(courseId) : [];
 
   // La lista del grupo se arma sola con los registros de los alumnos
   if (esDocente) await sincronizarGrupoDelAula(courseId);
@@ -184,6 +193,88 @@ export default async function AulaPage({ params }: Props) {
           </div>
         </div>
       </header>
+
+      {/* --------------------------- EQUIPO DOCENTE ---------------------------- */}
+      {esDocente ? (
+        <section className="tarjeta p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+                <Icono nombre="usuarios" tamano={20} className="text-inst-700" />
+                Equipo docente del aula
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                Varios docentes pueden compartir el aula: todos pasan lista, publican material y
+                califican. El docente principal no se puede quitar.
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-500">
+              {docentesAula.length} docente(s)
+            </span>
+          </div>
+
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {docentesAula.map((docente) => (
+              <li
+                key={docente.id}
+                className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-slate-800">{docente.nombre}</p>
+                  <p className="truncate text-xs text-slate-500">{docente.email}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      docente.principal ? "bg-inst-50 text-inst-700" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {docente.principal ? "Principal" : "Co-docente"}
+                  </span>
+                  {!docente.principal && (esDocentePrincipal || docente.id === user.id) ? (
+                    <form action={quitarCodocenteAction}>
+                      <input type="hidden" name="courseId" value={courseId} />
+                      <input type="hidden" name="teacherId" value={docente.id} />
+                      <BotonEnviar
+                        className="rounded-lg bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700"
+                        pendienteTexto="Quitando…"
+                      >
+                        Quitar
+                      </BotonEnviar>
+                    </form>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {esDocentePrincipal ? (
+            <form action={agregarCodocenteAction} className="mt-4 flex flex-wrap items-end gap-3">
+              <input type="hidden" name="courseId" value={courseId} />
+              <label className="min-w-56 flex-1">
+                <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-500">
+                  Sumar docente
+                </span>
+                <select name="teacherId" className="campo" defaultValue="" required>
+                  <option value="" disabled>
+                    {candidatosCodocente.length === 0
+                      ? "No hay docentes disponibles"
+                      : "Selecciona un docente…"}
+                  </option>
+                  {candidatosCodocente.map((docente) => (
+                    <option key={docente.id} value={docente.id}>
+                      {docente.nombre} · {docente.email}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <BotonEnviar className="btn-primario px-4 py-2 text-xs" pendienteTexto="Sumando…">
+                Agregar al aula
+              </BotonEnviar>
+            </form>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* ---------------------------- PASE DE LISTA ---------------------------- */}
       <section className="tarjeta p-6">

@@ -5,6 +5,7 @@ import type { NombreIcono } from "@/components/iconos";
 import { BotonSalir } from "@/components/boton-salir";
 import { ModoClase } from "@/components/modo-clase";
 import { PanelNav } from "@/components/panel-nav";
+import { BusquedaGlobal } from "@/components/busqueda-global";
 import {
   EtiquetaSeccion,
   FondoSeccionPanel,
@@ -43,6 +44,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <MarcaInstitucional href="/panel" variante="claro" />
           <div className="flex items-center gap-3">
+            <BusquedaGlobal />
             <ModoClase />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-white">{user.nombre}</p>
