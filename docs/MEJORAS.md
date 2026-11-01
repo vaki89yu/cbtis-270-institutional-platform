@@ -287,5 +287,17 @@ PR 2 del bloque B, ya implementado. Detalle en
 |---|---|---|
 | Enlace de consulta para tutores | expediente del alumno → sección «Enlace de consulta» y `/consulta/[token]` | Dirección o el docente encargado genera una liga personal (7/15/30 días) para la madre, el padre o el tutor legal. Sin cuenta: sólo lectura de asistencia, promedio, pendientes y semáforo de ese alumno. Token hasheado, revocable y con bitácora de accesos. |
 
-Siguen pendientes del bloque B: búsqueda global (B3), cron de recordatorios
-(B5), multi-docente (B7) y constancias en PDF (B8).
+---
+
+## Bloque 9 — Recordatorios automáticos (operativo escolar)
+
+PR 3 del bloque B, ya implementado. Detalle en
+[`docs/BLOQUE-9-RECORDATORIOS-AUTOMATICOS.md`](./BLOQUE-9-RECORDATORIOS-AUTOMATICOS.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Cron diario de recordatorios | `vercel.json` → `/api/cron/recordatorios` | Avisa a quien no ha entregado una actividad que cierra en 48 h o que venció hace menos de 7 días; notificación interna + correo, con deduplicación de 72 h. |
+| Resumen semanal para docentes | mismo cron, lunes | Cada docente recibe cuántas entregas le faltan por actividad en sus aulas, con enlace directo. |
+
+Siguen pendientes del bloque B: búsqueda global (B3), multi-docente (B7) y
+constancias en PDF (B8).
