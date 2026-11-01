@@ -1,6 +1,7 @@
 import {
   boolean,
   doublePrecision,
+  index,
   integer,
   pgTable,
   serial,
@@ -545,6 +546,34 @@ export const quizAttempts = pgTable(
   },
 );
 
+/**
+ * Reactivos que el docente agrega a un cuestionario del catálogo.
+ *
+ * El banco oficial (120 reactivos) vive en `src/lib/academico/cuestionarios.ts`
+ * y no se toca desde la base: aquí sólo se guardan los reactivos extra que el
+ * docente escribe para su grupo. Al calificar, el servidor une catálogo +
+ * extras, así que las respuestas correctas nunca salen del servidor.
+ */
+export const quizQuestions = pgTable(
+  "quiz_questions",
+  {
+    id: serial("id").primaryKey(),
+    /** Clave del cuestionario del catálogo, ej. "Q-M2-P3" */
+    cuestionarioClave: text("cuestionario_clave").notNull(),
+    enunciado: text("enunciado").notNull(),
+    /** Opciones serializadas como JSON: ["...", "...", "...", "..."] */
+    opciones: text("opciones").notNull().default("[]"),
+    /** Índice de la opción correcta dentro de `opciones` */
+    correcta: integer("correcta").notNull().default(0),
+    explicacion: text("explicacion").notNull().default(""),
+    autorId: integer("autor_id").references(() => users.id, { onDelete: "set null" }),
+    autorNombre: text("autor_nombre"),
+    activa: boolean("activa").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("quiz_questions_clave_idx").on(table.cuestionarioClave)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Course = typeof courses.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
@@ -561,3 +590,4 @@ export type WarehousePractice = typeof warehousePractices.$inferSelect;
 export type Shipment = typeof shipments.$inferSelect;
 export type ShipmentEvent = typeof shipmentEvents.$inferSelect;
 export type QuizAttempt = typeof quizAttempts.$inferSelect;
+export type QuizQuestion = typeof quizQuestions.$inferSelect;

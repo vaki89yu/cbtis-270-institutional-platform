@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Examen } from "@/components/cuestionarios/examen";
 import { Icono } from "@/components/iconos";
-import { cuestionarioParaElAlumno, cuestionarioPorClave } from "@/lib/academico/cuestionarios";
+import { versionPublicaDeCuestionario } from "@/lib/academico/cuestionarios";
+import { cuestionarioConExtras } from "@/lib/academico/banco-reactivos";
 import { intentosDelAlumno } from "@/lib/academico/evaluaciones";
 import { NOMBRE_MODULO } from "@/lib/formatos/catalogo";
 import { formatoFechaHora, requireUser } from "@/lib/guards";
@@ -15,14 +16,14 @@ type Props = { params: Promise<{ clave: string }> };
 
 export default async function CuestionarioPage({ params }: Props) {
   const { clave } = await params;
-  const completo = cuestionarioPorClave(clave);
+  // Catálogo oficial + reactivos que el docente agregó a este cuestionario
+  const completo = await cuestionarioConExtras(clave);
   if (!completo) notFound();
 
   const user = await requireUser();
 
   // Versión pública: sin respuestas correctas ni explicaciones
-  const paraElAlumno = cuestionarioParaElAlumno(clave);
-  if (!paraElAlumno) notFound();
+  const paraElAlumno = versionPublicaDeCuestionario(completo);
 
   const historial = await intentosDelAlumno(user.id, clave);
   const mejor = historial.reduce<number | null>(

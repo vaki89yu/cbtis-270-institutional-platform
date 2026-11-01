@@ -151,6 +151,15 @@ export default async function CuestionariosPage() {
         intento; el banco de respuestas correctas nunca se muestra en pantalla antes de enviar.
       </p>
 
+      <div className="flex flex-wrap gap-2">
+        <Link href="/panel/cuestionarios/banco" className="btn-primario px-4 py-2.5 text-sm">
+          Banco de reactivos propios
+        </Link>
+        <Link href="/panel/cuestionarios/analitica" className="btn-secundario px-4 py-2.5 text-sm">
+          Analítica por reactivo
+        </Link>
+      </div>
+
       <section className="tarjeta p-6">
         <h2 className="text-lg font-black text-slate-900">Resultados de tus grupos</h2>
         <div className="mt-4 overflow-x-auto">

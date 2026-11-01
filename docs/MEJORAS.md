@@ -244,3 +244,22 @@ reactiva.
   rutas (avance 0 = origen, avance 1 = destino, checkpoints crecientes),
   calificación 100 con todo correcto y 0 en blanco, y 200 actividades repartidas
   14/13/13 por módulo.
+
+---
+
+## Bloque 5 — Banco de reactivos, analítica y recordatorios
+
+Tres funciones nuevas, ya implementadas en la rama actual. El detalle técnico,
+los archivos y la verificación están en
+[`docs/BLOQUE-5-BANCO-Y-ANALITICA.md`](./BLOQUE-5-BANCO-Y-ANALITICA.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Banco de reactivos propio | `/panel/cuestionarios/banco` | El docente agrega hasta 40 reactivos por cuestionario (enunciado, opciones, correcta y explicación). Se suman al catálogo oficial en el examen y se califican en el servidor. |
+| Analítica por reactivo | `/panel/cuestionarios/analitica` | Porcentaje de acierto por reactivo, qué opción eligió el grupo y cuál es el «error más común». Admin ve todo el plantel; docente, sólo sus aulas. |
+| Recordatorio de entrega | aula → actividades, y `/panel/tareas/[id]` | Notifica a quienes no han entregado, con deduplicación de 12 horas y registro en la bitácora. |
+
+Siguen pendientes del catálogo original: **4.3 offline real** (cola en IndexedDB
+y Background Sync) y el endurecimiento de acceso detectado en la auditoría
+(rate limiting, códigos OTP fuera de logs y cookies legibles, secretos de firma
+hardcodeados y rutas de diagnóstico públicas).

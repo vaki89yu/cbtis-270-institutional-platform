@@ -21,6 +21,10 @@ export type PreguntaCuestionario = {
   correcta: number;
   /** Retroalimentación que se muestra después de enviar. No sale del servidor. */
   explicacion: string;
+  /** Reactivo escrito por el docente (no pertenece al banco oficial) */
+  extra?: boolean;
+  /** Nombre del docente que lo escribió, sólo para el panel del docente */
+  autorNombre?: string | null;
 };
 
 export type Cuestionario = {
@@ -1719,9 +1723,7 @@ export const TOTAL_PREGUNTAS = CUESTIONARIOS.reduce((a, c) => a + c.preguntas.le
  * Versión pública de un cuestionario: sin el índice correcto y sin la
  * explicación. Es lo único que llega al navegador del alumno.
  */
-export function cuestionarioParaElAlumno(clave: string) {
-  const c = cuestionarioPorClave(clave);
-  if (!c) return null;
+export function versionPublicaDeCuestionario(c: Cuestionario) {
   return {
     clave: c.clave,
     modulo: c.modulo,
@@ -1734,18 +1736,22 @@ export function cuestionarioParaElAlumno(clave: string) {
       id: p.id,
       enunciado: p.enunciado,
       opciones: p.opciones,
+      extra: Boolean(p.extra),
     })),
   };
+}
+
+export function cuestionarioParaElAlumno(clave: string) {
+  const c = cuestionarioPorClave(clave);
+  if (!c) return null;
+  return versionPublicaDeCuestionario(c);
 }
 
 /**
  * Califica un intento contra el banco de preguntas. Devuelve el resultado por
  * reactivo con su explicación, que sólo se genera después de recibir respuestas.
  */
-export function calificarCuestionario(clave: string, respuestas: number[]) {
-  const c = cuestionarioPorClave(clave);
-  if (!c) return null;
-
+export function calificarRespuestas(c: Cuestionario, respuestas: number[]) {
   let correctas = 0;
   const detalle = c.preguntas.map((p, indice) => {
     const elegida = Number.isInteger(respuestas[indice]) ? respuestas[indice] : -1;
@@ -1769,6 +1775,13 @@ export function calificarCuestionario(clave: string, respuestas: number[]) {
     calificacion,
     detalle,
   };
+}
+
+/** Atajo por clave sobre el banco oficial (sin reactivos del docente). */
+export function calificarCuestionario(clave: string, respuestas: number[]) {
+  const c = cuestionarioPorClave(clave);
+  if (!c) return null;
+  return calificarRespuestas(c, respuestas);
 }
 
 /** Retroalimentación corta según el resultado. */

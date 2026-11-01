@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   assignments,
@@ -14,6 +14,7 @@ import {
   studentProfiles,
   users,
   materials,
+  notifications,
   submissions,
 } from "@/db/schema";
 import {
@@ -348,6 +349,97 @@ export async function entregarEvidenciaAction(formData: FormData) {
       tipo: "entrega",
     });
   }
+
+  refrescar(courseId);
+}
+
+
+/**
+ * Recordatorio de entrega: avisa a los alumnos del aula que todavía no han
+ * entregado una actividad activa.
+ *
+ * Se evita el spam: si la misma persona ya recibió un recordatorio de esta
+ * actividad en las últimas 12 horas, no se le vuelve a notificar.
+ */
+export async function recordarPendientesAction(formData: FormData) {
+  const user = await requireUser();
+  const courseId = Number(formData.get("courseId"));
+  const assignmentId = Number(formData.get("assignmentId"));
+  if (!Number.isFinite(courseId) || !Number.isFinite(assignmentId)) return;
+
+  const curso = await aulaDelDocente(courseId, user.id, user.rol);
+  if (!curso) return;
+
+  const [tarea] = await db
+    .select()
+    .from(assignments)
+    .where(and(eq(assignments.id, assignmentId), eq(assignments.courseId, courseId)))
+    .limit(1);
+  if (!tarea || !tarea.activa) return;
+
+  const [alumnos, entregas] = await Promise.all([
+    alumnosDelAula(courseId),
+    db
+      .select({ studentId: submissions.studentId })
+      .from(submissions)
+      .where(eq(submissions.assignmentId, assignmentId)),
+  ]);
+
+  const yaEntregaron = new Set(entregas.map((e) => e.studentId));
+  const pendientes = alumnos.filter((a) => !yaEntregaron.has(a.id));
+  if (pendientes.length === 0) return;
+
+  const titulo = `Entrega pendiente · ${tarea.titulo}`;
+  const hace12h = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+  // Deduplicación: no repetir el mismo recordatorio el mismo día.
+  let yaAvisados = new Set<number>();
+  try {
+    const recientes = await db
+      .select({ userId: notifications.userId })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.tipo, "recordatorio"),
+          eq(notifications.titulo, titulo),
+          gt(notifications.createdAt, hace12h),
+          inArray(
+            notifications.userId,
+            pendientes.map((a) => a.id),
+          ),
+        ),
+      );
+    yaAvisados = new Set(recientes.map((r) => r.userId));
+  } catch {
+    // Sin base de datos se manda el recordatorio igual (crearNotificacionSegura
+    // cae al almacén demo).
+  }
+
+  const fecha = new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(tarea.fechaEntrega));
+
+  const destinatarios = pendientes.filter((a) => !yaAvisados.has(a.id));
+  for (const alumno of destinatarios) {
+    await crearNotificacionSegura({
+      userId: alumno.id,
+      titulo,
+      contenido: `Te falta entregar "${tarea.titulo}" en ${curso.nombre}. La fecha límite es el ${fecha}. Entra al aula y sube tu evidencia.`,
+      tipo: "recordatorio",
+    });
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    actor: user.nombre,
+    accion: "recordatorio_entrega",
+    entidad: "assignment",
+    entidadId: assignmentId,
+    detalle: `${curso.nombre}: ${destinatarios.length} de ${pendientes.length} pendientes avisados de "${tarea.titulo}"`,
+  });
 
   refrescar(courseId);
 }

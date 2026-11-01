@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
-import { calificarCuestionario, cuestionarioPorClave, veredicto } from "@/lib/academico/cuestionarios";
+import { calificarRespuestas, veredicto } from "@/lib/academico/cuestionarios";
+import { cuestionarioConExtras } from "@/lib/academico/banco-reactivos";
 import { guardarIntento } from "@/lib/academico/evaluaciones";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
   }
 
   const clave = String(body.clave ?? "");
-  const cuestionario = cuestionarioPorClave(clave);
+  // Catálogo oficial + reactivos que el docente agregó: se califican juntos.
+  const cuestionario = await cuestionarioConExtras(clave);
   if (!cuestionario) {
     return Response.json({ ok: false, error: "Ese cuestionario no existe." }, { status: 404 });
   }
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const resultado = calificarCuestionario(clave, respuestas);
+  const resultado = calificarRespuestas(cuestionario, respuestas);
   if (!resultado) {
     return Response.json({ ok: false, error: "No se pudo calificar el intento." }, { status: 500 });
   }

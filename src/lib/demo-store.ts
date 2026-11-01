@@ -79,6 +79,33 @@ type DemoHabilitacion = {
   createdAt: string;
 };
 
+type DemoReactivo = {
+  id: number;
+  cuestionarioClave: string;
+  enunciado: string;
+  opciones: string[];
+  correcta: number;
+  explicacion: string;
+  autorId: number | null;
+  autorNombre: string | null;
+  activa: boolean;
+  createdAt: string;
+};
+
+type DemoAttempt = {
+  id: number;
+  cuestionarioClave: string;
+  studentId: number;
+  courseId: number | null;
+  correctas: number;
+  total: number;
+  calificacion: number;
+  duracionSeg: number;
+  respuestas: number[];
+  agotado: boolean;
+  createdAt: string;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
@@ -87,6 +114,8 @@ type DemoStore = {
   notifications: DemoNotification[];
   messages: DemoMessage[];
   habilitaciones: DemoHabilitacion[];
+  reactivos: DemoReactivo[];
+  quizAttempts: DemoAttempt[];
   nextId: number;
 };
 
@@ -106,6 +135,8 @@ function loadStore(): DemoStore {
           notifications: parsed.notifications ?? [],
           messages: parsed.messages ?? [],
           habilitaciones: parsed.habilitaciones ?? [],
+          reactivos: parsed.reactivos ?? [],
+          quizAttempts: parsed.quizAttempts ?? [],
           nextId: parsed.nextId ?? 1,
         };
       }
@@ -121,6 +152,8 @@ function loadStore(): DemoStore {
     notifications: [],
     messages: [],
     habilitaciones: [],
+    reactivos: [],
+    quizAttempts: [],
     nextId: 1,
   };
 }
@@ -158,6 +191,12 @@ function getStore(): DemoStore {
   }
   if (!globalForDemo.__cbtisDemoStore.habilitaciones) {
     globalForDemo.__cbtisDemoStore.habilitaciones = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.reactivos) {
+    globalForDemo.__cbtisDemoStore.reactivos = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.quizAttempts) {
+    globalForDemo.__cbtisDemoStore.quizAttempts = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -257,6 +296,8 @@ export function demoClearStore() {
     notifications: [],
     messages: [],
     habilitaciones: [],
+    reactivos: [],
+    quizAttempts: [],
     nextId: 1,
   };
   persist();
@@ -592,4 +633,72 @@ export function demoPerfilDocente(userId: number) {
 export function demoPerfilAlumno(userId: number) {
   const store = getStore();
   return store.studentProfiles.find((p) => p.userId === userId) ?? null;
+}
+
+/* ---------------------------------------------------------------
+ * BANCO DE REACTIVOS Y CUESTIONARIOS (modo demo, sin base de datos)
+ * --------------------------------------------------------------- */
+
+function siguienteId(store: DemoStore) {
+  const id = store.nextId ?? 1;
+  store.nextId = id + 1;
+  return id;
+}
+
+export function demoListarReactivos(clave?: string): DemoReactivo[] {
+  const store = getStore();
+  const lista = clave
+    ? store.reactivos.filter((r) => r.cuestionarioClave === clave)
+    : store.reactivos.slice();
+  return lista.sort((a, b) => a.id - b.id);
+}
+
+export function demoCrearReactivo(data: Omit<DemoReactivo, "id" | "createdAt" | "activa">): DemoReactivo {
+  const store = getStore();
+  const reactivo: DemoReactivo = {
+    ...data,
+    id: siguienteId(store),
+    activa: true,
+    createdAt: new Date().toISOString(),
+  };
+  store.reactivos.push(reactivo);
+  persist();
+  return reactivo;
+}
+
+export function demoActualizarReactivo(
+  id: number,
+  cambios: Partial<Pick<DemoReactivo, "enunciado" | "opciones" | "correcta" | "explicacion" | "activa">>,
+): DemoReactivo | null {
+  const store = getStore();
+  const reactivo = store.reactivos.find((r) => r.id === id);
+  if (!reactivo) return null;
+  Object.assign(reactivo, cambios);
+  persist();
+  return reactivo;
+}
+
+export function demoIntentosDeAlumno(studentId: number, clave?: string): DemoAttempt[] {
+  const store = getStore();
+  return store.quizAttempts
+    .filter((i) => i.studentId === studentId && (!clave || i.cuestionarioClave === clave))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function demoIntentosDeTodos(): DemoAttempt[] {
+  return getStore().quizAttempts.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function demoGuardarIntento(
+  data: Omit<DemoAttempt, "id" | "createdAt">,
+): DemoAttempt {
+  const store = getStore();
+  const intento: DemoAttempt = {
+    ...data,
+    id: siguienteId(store),
+    createdAt: new Date().toISOString(),
+  };
+  store.quizAttempts.push(intento);
+  persist();
+  return intento;
 }
