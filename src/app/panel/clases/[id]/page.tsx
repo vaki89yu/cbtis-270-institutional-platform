@@ -190,6 +190,14 @@ export default async function AulaPage({ params }: Props) {
             <Link href={`/panel/calificaciones?aula=${courseId}`} className="btn-mini">
               Calificaciones
             </Link>
+            <a
+              href={`/api/reportes/grupo/${courseId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-mini"
+            >
+              Reporte del grupo
+            </a>
           </div>
         </div>
       </header>

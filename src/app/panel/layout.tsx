@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 const enlaces: Array<{ href: string; label: string; icono: NombreIcono; soloAdmin?: boolean }> = [
   { href: "/panel", label: "Inicio", icono: "inicio" },
   { href: "/panel/clases", label: "Aulas", icono: "aulas" },
+  { href: "/panel/calendario", label: "Calendario", icono: "calendario" },
   { href: "/panel/asistencias", label: "Asistencias", icono: "asistencias" },
   { href: "/panel/tareas", label: "Evidencias y Calificaciones", icono: "evidencias" },
   { href: "/panel/calificaciones", label: "Boleta y Concentrado", icono: "insignia" },

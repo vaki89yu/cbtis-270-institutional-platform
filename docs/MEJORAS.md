@@ -314,3 +314,16 @@ PR 4 y último del bloque B, ya implementado. Detalle en
 
 Con esto queda completo el bloque B del catálogo (B1, B2, B3, B5, B6, B7 y B8; B4 push quedó
 fuera de alcance por decisión del plantel).
+
+---
+
+## Bloque 11 — Calendario, avisos programados y reporte de grupo
+
+Mejoras de producto posteriores al bloque B. Detalle en
+[`docs/BLOQUE-11-CALENDARIO-AVISOS-Y-REPORTE.md`](./BLOQUE-11-CALENDARIO-AVISOS-Y-REPORTE.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Calendario de entregas | `/panel/calendario` | Rejilla mensual con las actividades de tus aulas, estado de entrega y filtro por aula. |
+| Avisos programados | `/panel/avisos` | Un comunicado puede guardarse con fecha futura y aparece solo cuando llega el momento. |
+| Reporte de grupo en PDF | botón en `/panel/clases/[id]` | Una hoja por aula con promedio, asistencia y pendientes de cada alumno, con folio y registro en la bitácora. |

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   announcements,
@@ -166,7 +166,14 @@ export async function avisosRecientes(limite = 5, soloPublicados = true) {
         })
         .from(announcements)
         .leftJoin(users, eq(users.id, announcements.autorId))
-        .where(soloPublicados ? eq(announcements.publicado, true) : undefined)
+        .where(
+          soloPublicados
+            ? and(
+                eq(announcements.publicado, true),
+                or(isNull(announcements.publicarEn), lte(announcements.publicarEn, new Date())),
+              )
+            : undefined,
+        )
         .orderBy(desc(announcements.createdAt))
         .limit(limite),
     [],

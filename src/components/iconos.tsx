@@ -44,7 +44,8 @@ export type NombreIcono =
   | "ruta"
   | "cuestionario"
   | "cronometro"
-  | "buscar";
+  | "buscar"
+  | "calendario";
 
 type TrazoProps = SVGProps<SVGSVGElement> & {
   nombre: NombreIcono;
@@ -53,6 +54,13 @@ type TrazoProps = SVGProps<SVGSVGElement> & {
 };
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
+  calendario: (
+    <>
+      <rect x="3.5" y="5" width="17" height="16" rx="2.5" />
+      <path d="M8 3v4M16 3v4M3.5 10h17" />
+      <path d="M8 14h2M14 14h2M8 17.5h2M14 17.5h2" />
+    </>
+  ),
   buscar: (
     <>
       <circle cx="11" cy="11" r="6.5" />

@@ -193,8 +193,12 @@ CREATE TABLE IF NOT EXISTS announcements (
   categoria text NOT NULL DEFAULT 'General',
   autor_id integer REFERENCES users(id) ON DELETE SET NULL,
   publicado boolean NOT NULL DEFAULT true,
+  publicar_en timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Columnas agregadas después de la creación original de la tabla.
+ALTER TABLE announcements ADD COLUMN IF NOT EXISTS publicar_en timestamptz;
 
 CREATE TABLE IF NOT EXISTS platform_settings (
   id serial PRIMARY KEY,
