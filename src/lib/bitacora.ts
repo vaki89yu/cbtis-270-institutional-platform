@@ -56,6 +56,9 @@ export const ETIQUETA_ACCION: Record<string, string> = {
   reactivo_reactivado: "Reactivo reactivado",
   cuestionario_resuelto: "Cuestionario resuelto",
   recordatorio_entrega: "Recordatorio de entrega",
+  cron_recordatorios: "Recordatorios automáticos",
+  enlace_tutor_creado: "Enlace de tutor creado",
+  enlace_tutor_revocado: "Enlace de tutor revocado",
   exportacion_generada: "Exportación generada",
   password_restablecida: "Contraseña restablecida",
 };
