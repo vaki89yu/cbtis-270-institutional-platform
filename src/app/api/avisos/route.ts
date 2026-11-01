@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { announcements } from "@/db/schema";
 
@@ -15,7 +15,12 @@ export async function GET() {
         fecha: announcements.createdAt,
       })
       .from(announcements)
-      .where(eq(announcements.publicado, true))
+      .where(
+        and(
+          eq(announcements.publicado, true),
+          or(isNull(announcements.publicarEn), lte(announcements.publicarEn, new Date())),
+        ),
+      )
       .orderBy(desc(announcements.createdAt))
       .limit(20);
 

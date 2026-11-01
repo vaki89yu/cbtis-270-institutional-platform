@@ -409,6 +409,14 @@ export async function crearAvisoAction(
   if (titulo.length < 4) return { error: "El título es muy corto." };
   if (contenido.length < 10) return { error: "Describe el aviso con más detalle." };
 
+  // Programación: la fecha llega en hora del plantel (UTC−6) desde el formulario.
+  const programado = texto(formData, "publicarEn");
+  let publicarEn: Date | null = null;
+  if (programado) {
+    const fecha = new Date(`${programado}:00-06:00`);
+    if (!Number.isNaN(fecha.getTime())) publicarEn = fecha;
+  }
+
   const inserted = await safeDb(
     () =>
       db.insert(announcements).values({
@@ -417,6 +425,7 @@ export async function crearAvisoAction(
         categoria: texto(formData, "categoria") || "General",
         autorId: user.id,
         publicado: formData.get("publicado") === "on",
+        publicarEn,
       }),
     null,
   );

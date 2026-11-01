@@ -278,6 +278,8 @@ export const announcements = pgTable("announcements", {
   categoria: text("categoria").notNull().default("General"),
   autorId: integer("autor_id").references(() => users.id, { onDelete: "set null" }),
   publicado: boolean("publicado").notNull().default(true),
+  /** Si trae fecha futura, el aviso se oculta hasta ese momento (programación). */
+  publicarEn: timestamp("publicar_en", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

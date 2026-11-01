@@ -6,7 +6,7 @@ import {
   crearAvisoAction,
   eliminarAvisoAction,
 } from "@/lib/actions/plataforma";
-import { formatoFechaHora, requireRole } from "@/lib/guards";
+import { fechaVencida, formatoFechaHora, requireRole } from "@/lib/guards";
 import {
   desactivarBannerAction,
   guardarBannerAction,
@@ -173,6 +173,22 @@ export default async function AvisosPage() {
                 placeholder="Detalle del comunicado dirigido a la comunidad de Logística."
               />
             </div>
+            <div>
+              <label htmlFor="publicarEn" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Publicar el <span className="font-normal text-slate-400">(opcional)</span>
+              </label>
+              <input
+                id="publicarEn"
+                name="publicarEn"
+                type="datetime-local"
+                className="campo"
+                aria-describedby="ayuda-publicar-en"
+              />
+              <p id="ayuda-publicar-en" className="mt-1 text-xs text-slate-500">
+                Si eliges una fecha futura, el aviso queda guardado pero oculto hasta ese momento. Se
+                interpreta en hora de Ciudad Juárez.
+              </p>
+            </div>
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <input type="checkbox" name="publicado" defaultChecked className="h-4 w-4 rounded border-slate-300" />
               Publicar en el portal público
@@ -195,12 +211,19 @@ export default async function AvisosPage() {
                   <span className="rounded-full bg-inst-50 px-3 py-1 text-[11px] font-bold text-inst-700">
                     {aviso.categoria}
                   </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                      aviso.publicado ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {aviso.publicado ? "Publicado" : "Borrador"}
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                        aviso.publicado ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {aviso.publicado ? "Publicado" : "Borrador"}
+                    </span>
+                    {aviso.publicarEn && !fechaVencida(aviso.publicarEn) ? (
+                      <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800">
+                        Programado para {formatoFechaHora(aviso.publicarEn)}
+                      </span>
+                    ) : null}
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-slate-900">{aviso.titulo}</h3>
