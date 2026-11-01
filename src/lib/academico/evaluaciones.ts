@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { courses, enrollments, quizAttempts, users } from "@/db/schema";
 import { CUESTIONARIOS, cuestionarioPorClave } from "@/lib/academico/cuestionarios";
 import { registrarAuditoria } from "@/lib/auditoria";
+import { demoGuardarIntento, demoIntentosDeAlumno } from "@/lib/demo-store";
 
 export type IntentoGuardado = {
   id: number;
@@ -52,26 +53,44 @@ export async function guardarIntento(params: {
   agotado: boolean;
   alumnoNombre: string;
 }): Promise<IntentoGuardado | null> {
-  const filas = await consultaSegura(
-    () =>
-      db
-        .insert(quizAttempts)
-        .values({
-          cuestionarioClave: params.clave,
-          studentId: params.studentId,
-          courseId: params.courseId ?? null,
-          correctas: params.correctas,
-          total: params.total,
-          calificacion: params.calificacion,
-          duracionSeg: Math.max(0, Math.round(params.duracionSeg)),
-          respuestas: JSON.stringify(params.respuestas),
-          agotado: params.agotado,
-        })
-        .returning(),
-    [] as IntentoGuardado[],
-  );
+  let fila: IntentoGuardado | null = null;
+  try {
+    const filas = await db
+      .insert(quizAttempts)
+      .values({
+        cuestionarioClave: params.clave,
+        studentId: params.studentId,
+        courseId: params.courseId ?? null,
+        correctas: params.correctas,
+        total: params.total,
+        calificacion: params.calificacion,
+        duracionSeg: Math.max(0, Math.round(params.duracionSeg)),
+        respuestas: JSON.stringify(params.respuestas),
+        agotado: params.agotado,
+      })
+      .returning();
+    fila = filas[0] ?? null;
+  } catch {
+    // Sin base de datos el intento se guarda en el almacén demo, para que la
+    // analítica y el historial del alumno sigan funcionando en el preview.
+    const demo = demoGuardarIntento({
+      cuestionarioClave: params.clave,
+      studentId: params.studentId,
+      courseId: params.courseId ?? null,
+      correctas: params.correctas,
+      total: params.total,
+      calificacion: params.calificacion,
+      duracionSeg: Math.max(0, Math.round(params.duracionSeg)),
+      respuestas: params.respuestas,
+      agotado: params.agotado,
+    });
+    fila = {
+      ...demo,
+      respuestas: JSON.stringify(demo.respuestas),
+      createdAt: new Date(demo.createdAt),
+    };
+  }
 
-  const fila = filas[0];
   if (!fila) return null;
 
   await registrarAuditoria({
@@ -91,10 +110,19 @@ export async function intentosDelAlumno(studentId: number, clave?: string) {
   const condicion = clave
     ? and(eq(quizAttempts.studentId, studentId), eq(quizAttempts.cuestionarioClave, clave))
     : eq(quizAttempts.studentId, studentId);
-  return consultaSegura(
-    () => db.select().from(quizAttempts).where(condicion).orderBy(desc(quizAttempts.createdAt)),
-    [] as IntentoGuardado[],
-  );
+  try {
+    return await db
+      .select()
+      .from(quizAttempts)
+      .where(condicion)
+      .orderBy(desc(quizAttempts.createdAt));
+  } catch {
+    return demoIntentosDeAlumno(studentId, clave).map((intento) => ({
+      ...intento,
+      respuestas: JSON.stringify(intento.respuestas),
+      createdAt: new Date(intento.createdAt),
+    }));
+  }
 }
 
 /** Mejor calificación del alumno en cada cuestionario, con su intento. */

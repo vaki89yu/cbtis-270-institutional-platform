@@ -87,6 +87,13 @@ export function formatoFechaHora(date: Date | string | null | undefined) {
   }).format(value);
 }
 
+/** ¿La fecha ya pasó? Se aísla del render para no leer el reloj en el componente. */
+export function fechaVencida(fecha: Date | string | null | undefined, referencia = new Date()) {
+  if (!fecha) return false;
+  const valor = typeof fecha === "string" ? new Date(fecha) : fecha;
+  return valor.getTime() < referencia.getTime();
+}
+
 export function paraInputDateTime(date: Date | string) {
   const value = typeof date === "string" ? new Date(date) : date;
   const offset = value.getTimezoneOffset() * 60000;

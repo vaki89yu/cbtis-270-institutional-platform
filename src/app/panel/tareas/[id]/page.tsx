@@ -6,7 +6,8 @@ import { assignments, courses, enrollments, submissions, users } from "@/db/sche
 import { BotonEnviar } from "@/components/form-estado";
 import { RUBRICA } from "@/lib/academico/rubrica";
 import { calificarEntregaAction, entregarTareaAction } from "@/lib/actions/plataforma";
-import { formatoFechaHora, requireUser } from "@/lib/guards";
+import { recordarPendientesAction } from "@/lib/actions/aula";
+import { fechaVencida, formatoFechaHora, requireUser } from "@/lib/guards";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function TareaDetallePage({ params }: Props) {
   const { tarea, curso, docente } = fila;
 
   const esDocente = user.rol === "admin" || curso.docenteId === user.id;
-  const vencida = new Date(tarea.fechaEntrega).getTime() < Date.now();
+  const vencida = fechaVencida(tarea.fechaEntrega);
 
   if (esDocente) {
     const entregas = await db
@@ -78,7 +79,28 @@ export default async function TareaDetallePage({ params }: Props) {
             <span className="rounded-full bg-inst-50 px-3 py-1 text-inst-700">
               {calificadas.length} calificadas
             </span>
+            {entregas.length - entregadas.length > 0 ? (
+              <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                {entregas.length - entregadas.length} sin entregar
+              </span>
+            ) : null}
           </div>
+
+          {entregas.length - entregadas.length > 0 ? (
+            <form action={recordarPendientesAction} className="mt-4">
+              <input type="hidden" name="courseId" value={curso.id} />
+              <input type="hidden" name="assignmentId" value={tarea.id} />
+              <BotonEnviar
+                className="rounded-xl bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800"
+                pendienteTexto="Avisando al grupo…"
+              >
+                Recordar a los {entregas.length - entregadas.length} que no han entregado
+              </BotonEnviar>
+              <p className="mt-1.5 text-xs text-slate-500">
+                Envía una notificación dentro de la plataforma. No se repite si ya se avisó hoy.
+              </p>
+            </form>
+          ) : null}
         </header>
 
         <section className="space-y-4">

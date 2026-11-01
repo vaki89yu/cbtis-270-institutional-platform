@@ -407,6 +407,21 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
 CREATE INDEX IF NOT EXISTS quiz_attempts_alumno ON quiz_attempts (student_id, cuestionario_clave);
 CREATE INDEX IF NOT EXISTS quiz_attempts_aula ON quiz_attempts (course_id);
 
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id serial PRIMARY KEY,
+  cuestionario_clave text NOT NULL,
+  enunciado text NOT NULL,
+  opciones text NOT NULL DEFAULT '[]',
+  correcta integer NOT NULL DEFAULT 0,
+  explicacion text NOT NULL DEFAULT '',
+  autor_id integer REFERENCES users(id) ON DELETE SET NULL,
+  autor_nombre text,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS quiz_questions_clave_idx ON quiz_questions (cuestionario_clave);
+
 CREATE UNIQUE INDEX IF NOT EXISTS material_origen_curso
   ON materials (course_id, origen) WHERE origen IS NOT NULL;
 

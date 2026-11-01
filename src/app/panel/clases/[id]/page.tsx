@@ -46,6 +46,7 @@ import {
   desactivarActividadAction,
   entregarEvidenciaAction,
   marcarMiAsistenciaAction,
+  recordarPendientesAction,
   sincronizarGrupoAction,
 } from "@/lib/actions/aula";
 import { alternarAccesoFormatoAction } from "@/lib/actions/formatos-acceso";
@@ -805,7 +806,8 @@ async function ActividadesDocente({
   modulo: number | null;
   precargadas: ReturnType<typeof actividadesDelModulo>;
 }) {
-  const activas = await actividadesDelAula(courseId);
+  const [activas, alumnos] = await Promise.all([actividadesDelAula(courseId), alumnosDelAula(courseId)]);
+  const totalAlumnos = alumnos.length;
   const porOrigen = new Map(activas.filter((a) => a.tarea.origen).map((a) => [a.tarea.origen!, a]));
 
   return (
@@ -884,12 +886,30 @@ async function ActividadesDocente({
                   <p className="mt-1 text-xs leading-relaxed text-slate-600">{act.instrucciones}</p>
                   <p className="mt-1 text-[11px] font-semibold text-slate-400">{act.submodulo}</p>
                   {fila ? (
-                    <p className="mt-2 text-[11px] font-bold text-inst-700">
-                      {fila.entregas} entregas · {fila.porCalificar} por calificar ·{" "}
-                      <Link href={`/panel/tareas/${fila.tarea.id}`} className="underline">
-                        revisar y calificar
-                      </Link>
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-bold text-inst-700">
+                      <span>
+                        {fila.entregas} entregas · {fila.porCalificar} por calificar ·{" "}
+                        <Link href={`/panel/tareas/${fila.tarea.id}`} className="underline">
+                          revisar y calificar
+                        </Link>
+                      </span>
+                      {(() => {
+                        const pendientes = Math.max(0, totalAlumnos - fila.entregas);
+                        if (!fila.tarea.activa || pendientes === 0) return null;
+                        return (
+                          <form action={recordarPendientesAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="assignmentId" value={fila.tarea.id} />
+                            <BotonEnviar
+                              className="rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800"
+                              pendienteTexto="Avisando…"
+                            >
+                              Recordar a {pendientes} {pendientes === 1 ? "pendiente" : "pendientes"}
+                            </BotonEnviar>
+                          </form>
+                        );
+                      })()}
+                    </div>
                   ) : null}
                 </div>
 
