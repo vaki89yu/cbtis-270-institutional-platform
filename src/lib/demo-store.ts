@@ -106,6 +106,17 @@ type DemoAttempt = {
   createdAt: string;
 };
 
+type DemoAudit = {
+  id: number;
+  userId: number | null;
+  actor: string | null;
+  accion: string;
+  entidad: string | null;
+  entidadId: string | null;
+  detalle: string | null;
+  createdAt: string;
+};
+
 type DemoStore = {
   users: DemoUser[];
   studentProfiles: DemoProfileStudent[];
@@ -116,6 +127,7 @@ type DemoStore = {
   habilitaciones: DemoHabilitacion[];
   reactivos: DemoReactivo[];
   quizAttempts: DemoAttempt[];
+  auditoria: DemoAudit[];
   nextId: number;
 };
 
@@ -137,6 +149,7 @@ function loadStore(): DemoStore {
           habilitaciones: parsed.habilitaciones ?? [],
           reactivos: parsed.reactivos ?? [],
           quizAttempts: parsed.quizAttempts ?? [],
+          auditoria: parsed.auditoria ?? [],
           nextId: parsed.nextId ?? 1,
         };
       }
@@ -154,6 +167,7 @@ function loadStore(): DemoStore {
     habilitaciones: [],
     reactivos: [],
     quizAttempts: [],
+    auditoria: [],
     nextId: 1,
   };
 }
@@ -197,6 +211,9 @@ function getStore(): DemoStore {
   }
   if (!globalForDemo.__cbtisDemoStore.quizAttempts) {
     globalForDemo.__cbtisDemoStore.quizAttempts = [];
+  }
+  if (!globalForDemo.__cbtisDemoStore.auditoria) {
+    globalForDemo.__cbtisDemoStore.auditoria = [];
   }
   return globalForDemo.__cbtisDemoStore;
 }
@@ -298,6 +315,7 @@ export function demoClearStore() {
     habilitaciones: [],
     reactivos: [],
     quizAttempts: [],
+    auditoria: [],
     nextId: 1,
   };
   persist();
@@ -701,4 +719,38 @@ export function demoGuardarIntento(
   store.quizAttempts.push(intento);
   persist();
   return intento;
+}
+
+/* ---------------------------------------------------------------
+ * BITÁCORA DE AUDITORÍA (modo demo, sin base de datos)
+ * --------------------------------------------------------------- */
+
+export function demoRegistrarAuditoria(entrada: {
+  userId?: number | null;
+  actor?: string | null;
+  accion: string;
+  entidad?: string | null;
+  entidadId?: string | number | null;
+  detalle?: string | null;
+}): DemoAudit {
+  const store = getStore();
+  const registro: DemoAudit = {
+    id: siguienteId(store),
+    userId: entrada.userId ?? null,
+    actor: entrada.actor ?? null,
+    accion: entrada.accion,
+    entidad: entrada.entidad ?? null,
+    entidadId: entrada.entidadId != null ? String(entrada.entidadId) : null,
+    detalle: entrada.detalle ?? null,
+    createdAt: new Date().toISOString(),
+  };
+  // Se conservan los últimos 5000 para no crecer sin límite en el preview.
+  store.auditoria.push(registro);
+  if (store.auditoria.length > 5000) store.auditoria = store.auditoria.slice(-5000);
+  persist();
+  return registro;
+}
+
+export function demoListarAuditoria(): DemoAudit[] {
+  return getStore().auditoria.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

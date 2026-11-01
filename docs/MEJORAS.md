@@ -263,3 +263,18 @@ Siguen pendientes del catálogo original: **4.3 offline real** (cola en IndexedD
 y Background Sync) y el endurecimiento de acceso detectado en la auditoría
 (rate limiting, códigos OTP fuera de logs y cookies legibles, secretos de firma
 hardcodeados y rutas de diagnóstico públicas).
+
+---
+
+## Bloque 6 — Bitácora y exportación (operativo escolar)
+
+PR 1 del bloque B, ya implementado. Detalle en
+[`docs/BLOQUE-6-BITACORA-Y-EXPORTACION.md`](./BLOQUE-6-BITACORA-Y-EXPORTACION.md).
+
+| Mejora | Dónde se ve | Para qué |
+|---|---|---|
+| Bitácora consultable | `/panel/bitacora` (admin) | Filtros por actor, acción, entidad y fechas, con paginación y exportación. |
+| Exportación XLSX/CSV | botones en 8 pantallas | Calificaciones, asistencias, alumnos, usuarios, analítica, prácticas, embarques y bitácora, con permisos por rol. |
+
+Siguen pendientes del bloque B: consulta para tutores (B1), búsqueda global
+(B3), cron de recordatorios (B5), multi-docente (B7) y constancias en PDF (B8).

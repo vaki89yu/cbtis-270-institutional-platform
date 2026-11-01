@@ -3,6 +3,7 @@ import Link from "next/link";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assignments, courses, submissions, users } from "@/db/schema";
+import { BotonExportar } from "@/components/boton-exportar";
 import { Icono } from "@/components/iconos";
 import {
   alumnosDelAula,
@@ -244,9 +245,12 @@ export default async function CalificacionesPage({ searchParams }: Props) {
           </p>
         </div>
         {aulaActual ? (
-          <Link href={`/panel/calificaciones/imprimir?aula=${aulaActual.id}`} className="btn-secundario px-4 py-2 text-sm">
-            Versión para imprimir
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <BotonExportar tipo="calificaciones" params={{ aula: aulaActual.id }} />
+            <Link href={`/panel/calificaciones/imprimir?aula=${aulaActual.id}`} className="btn-secundario px-4 py-2 text-sm">
+              Versión para imprimir
+            </Link>
+          </div>
         ) : null}
       </div>
 

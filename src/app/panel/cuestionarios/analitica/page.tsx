@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BotonExportar } from "@/components/boton-exportar";
 import { Icono } from "@/components/iconos";
 import { CUESTIONARIOS, cuestionarioPorClave } from "@/lib/academico/cuestionarios";
 import {
@@ -64,12 +65,15 @@ export default async function AnaliticaPage({ searchParams }: Props) {
             los intentos ya guardados de {alcance}.
           </p>
         </div>
-        <Link
-          href={clavePedida ? `/panel/cuestionarios/banco?clave=${clavePedida}` : "/panel/cuestionarios/banco"}
-          className="btn-secundario px-3.5 py-2 text-xs"
-        >
-          Editar el banco de reactivos
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <BotonExportar tipo="analitica" params={{ clave: clavePedida }} etiqueta="Exportar" compacto />
+          <Link
+            href={clavePedida ? `/panel/cuestionarios/banco?clave=${clavePedida}` : "/panel/cuestionarios/banco"}
+            className="btn-secundario px-3.5 py-2 text-xs"
+          >
+            Editar el banco de reactivos
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

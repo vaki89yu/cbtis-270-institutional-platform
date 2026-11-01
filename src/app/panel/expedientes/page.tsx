@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotonExportar } from "@/components/boton-exportar";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -37,6 +38,10 @@ export default async function ExpedientesPage() {
               : "Ficha técnica, registro de matrícula, tutor asignado y desempeño del alumnado de Logística."}
           </p>
         </div>
+        <BotonExportar
+          tipo="alumnos"
+          etiqueta={user.rol === "admin" ? "Exportar padrón" : "Exportar mis alumnos"}
+        />
       </div>
 
       <div className="tarjeta overflow-hidden">

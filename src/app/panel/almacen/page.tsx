@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icono } from "@/components/iconos";
 import type { Metadata } from "next";
+import { BotonExportar } from "@/components/boton-exportar";
 import { FormEstado } from "@/components/form-estado";
 import {
   actualizarEstadoPracticaAction,
@@ -29,6 +30,9 @@ export default async function AlmacenPage() {
             Centro de simulación industrial para prácticas de estiba, picking, conteo cíclico y operación de montacargas.
           </p>
         </div>
+        {user.rol !== "estudiante" ? (
+          <BotonExportar tipo="practicas" etiqueta="Exportar agenda" />
+        ) : null}
       </div>
 
       {/* Tarjeta de Seguridad Obligatoria */}
