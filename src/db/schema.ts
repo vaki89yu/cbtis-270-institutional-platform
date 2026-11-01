@@ -619,6 +619,8 @@ export const tutorLinks = pgTable(
     etiqueta: text("etiqueta").notNull().default("Tutor"),
     creadoPorId: integer("creado_por_id").references(() => users.id, { onDelete: "set null" }),
     creadoPorNombre: text("creado_por_nombre"),
+    /** Correo al que se envió la liga, si se mandó por ese medio */
+    tutorEmail: text("tutor_email"),
     expiraEn: timestamp("expira_en", { withTimezone: true }).notNull(),
     revocadoEn: timestamp("revocado_en", { withTimezone: true }),
     ultimoAccesoEn: timestamp("ultimo_acceso_en", { withTimezone: true }),

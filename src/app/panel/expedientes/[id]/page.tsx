@@ -58,11 +58,11 @@ export default async function ExpedienteDetallePage({ params }: Props) {
   }
 
   // Sin base de datos (preview) la ficha se arma con lo que haya en el almacén demo.
-  let ultimasAsistencias: Array<{ fecha: Date; estado: string; curso: string | null }> = [];
+  let ultimasAsistencias: Array<{ id: number; fecha: Date; estado: string; curso: string | null }> = [];
   let bitacora: Array<typeof userActivity.$inferSelect> = [];
   try {
     ultimasAsistencias = await db
-      .select({ fecha: attendances.fecha, estado: attendances.estado, curso: courses.nombre })
+      .select({ id: attendances.id, fecha: attendances.fecha, estado: attendances.estado, curso: courses.nombre })
       .from(attendances)
       .leftJoin(courses, eq(courses.id, attendances.courseId))
       .where(eq(attendances.studentId, studentId))
@@ -238,6 +238,55 @@ export default async function ExpedienteDetallePage({ params }: Props) {
         </section>
       ) : null}
 
+      {/* Faltas con justificante descargable */}
+      {(() => {
+        const faltas = ultimasAsistencias.filter((a) => a.estado === "falta" || a.estado === "justificado");
+        if (faltas.length === 0) return null;
+        return (
+          <section className="tarjeta p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <Icono nombre="reloj" tamano={20} className="text-inst-700" />
+                  Faltas recientes
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                  Descarga el justificante de inasistencia para presentarlo en control escolar o
+                  enviarlo a la familia. Queda registrado en la bitácora.
+                </p>
+              </div>
+            </div>
+            <ul className="mt-3 divide-y divide-slate-100">
+              {faltas.slice(0, 6).map((falta) => (
+                <li key={falta.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span className="min-w-0 text-xs text-slate-600">
+                    <span className="block text-sm font-bold text-slate-800">
+                      {falta.curso ?? "Asignatura sin nombre"}
+                    </span>
+                    {formatoFecha(falta.fecha)} ·{" "}
+                    <span
+                      className={
+                        falta.estado === "justificado" ? "font-bold text-sky-700" : "font-bold text-rose-700"
+                      }
+                    >
+                      {falta.estado === "justificado" ? "Falta justificada" : "Falta"}
+                    </span>
+                  </span>
+                  <a
+                    href={`/api/justificantes/${falta.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-mini shrink-0"
+                  >
+                    Justificante PDF
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })()}
+
       {/* Enlaces de consulta para tutores */}
       {esGestor ? (
         <section className="tarjeta p-6">
@@ -275,7 +324,7 @@ export default async function ExpedienteDetallePage({ params }: Props) {
             submitLabel="Generar enlace"
             pendienteTexto="Generando…"
             botonClase="btn-primario"
-            className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+            className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.4fr] sm:items-end"
           >
             <input type="hidden" name="studentId" value={studentId} />
             <label>
@@ -300,6 +349,22 @@ export default async function ExpedienteDetallePage({ params }: Props) {
                 <option value="30">30 días</option>
               </select>
             </label>
+            <label>
+              <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Correo del tutor <span className="font-normal lowercase text-slate-400">(opcional)</span>
+              </span>
+              <input
+                type="email"
+                name="emailTutor"
+                className="campo"
+                placeholder="tutor@correo.com"
+                autoComplete="email"
+                aria-describedby="ayuda-correo-tutor"
+              />
+              <span id="ayuda-correo-tutor" className="mt-1 block text-[10px] text-slate-400">
+                Si lo capturas, la liga se envía sola por correo (requiere SMTP).
+              </span>
+            </label>
           </FormEstado>
 
           {enlacesTutor.length > 0 ? (
@@ -322,6 +387,9 @@ export default async function ExpedienteDetallePage({ params }: Props) {
                         Creado {formatoFechaHora(enlace.createdAt)} por{" "}
                         {enlace.creadoPorNombre ?? "el plantel"} · vence {formatoFechaHora(enlace.expiraEn)}
                       </p>
+                      {enlace.tutorEmail ? (
+                        <p className="mt-0.5 text-slate-400">Enviado a {enlace.tutorEmail}</p>
+                      ) : null}
                       <p className="mt-0.5 text-slate-400">
                         {enlace.accesos} consulta(s)
                         {enlace.ultimoAccesoEn

@@ -443,6 +443,8 @@ CREATE TABLE IF NOT EXISTS tutor_links (
 
 CREATE INDEX IF NOT EXISTS tutor_links_alumno_idx ON tutor_links (student_id);
 
+ALTER TABLE tutor_links ADD COLUMN IF NOT EXISTS tutor_email text;
+
 CREATE TABLE IF NOT EXISTS course_teachers (
   id serial PRIMARY KEY,
   course_id integer NOT NULL REFERENCES courses(id) ON DELETE CASCADE,

@@ -38,6 +38,7 @@ export type EnlaceTutor = {
   tokenPista: string;
   etiqueta: string;
   creadoPorNombre: string | null;
+  tutorEmail: string | null;
   expiraEn: Date;
   revocadoEn: Date | null;
   ultimoAccesoEn: Date | null;
@@ -75,12 +76,52 @@ export function estadoEnlace(enlace: EnlaceTutor) {
   return estadoDeEnlace(enlace);
 }
 
+/** Correo con la liga personal del tutor. El token sólo existe en claro aquí. */
+export function plantillaEnlaceTutor(datos: {
+  etiqueta: string;
+  alumno: string;
+  url: string;
+  expiraEn: Date;
+}) {
+  const vence = new Intl.DateTimeFormat("es-MX", {
+    timeZone: "America/Ciudad_Juarez",
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(datos.expiraEn);
+
+  return {
+    asunto: `Consulta académica de ${datos.alumno} · CBTIS 270`,
+    texto: `Hola. El CBTIS No. 270 comparte una liga privada para seguir el avance académico de ${datos.alumno}. Ábrela aquí: ${datos.url} Estará vigente hasta el ${vence}. Es personal: no la reenvíes. Si no la solicitaste, ignora este correo.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f6f5;padding:24px">
+        <div style="max-width:540px;margin:auto;background:white;border-radius:18px;padding:28px;border:1px solid #d7e5dd">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1D5BD5">CBTIS No. 270 · Logística</p>
+          <h1 style="margin:10px 0 6px;font-size:20px;color:#0f172a">Consulta académica de ${datos.alumno}</h1>
+          <p style="margin:0 0 12px;font-size:14px;color:#475569">Hola, ${datos.etiqueta.toLowerCase()}:</p>
+          <p style="margin:0 0 14px;font-size:14px;color:#475569">
+            El plantel comparte una liga privada para que puedas revisar la asistencia, el promedio,
+            las actividades pendientes y las alertas de ${datos.alumno}. No necesitas crear cuenta.
+          </p>
+          <p style="margin:0 0 18px">
+            <a href="${datos.url}" style="display:inline-block;background:#1D5BD5;color:white;text-decoration:none;font-weight:700;font-size:13px;padding:11px 20px;border-radius:10px">Abrir la consulta</a>
+          </p>
+          <p style="margin:0 0 8px;font-size:13px;color:#64748b">Vigente hasta el <strong>${vence}</strong>.</p>
+          <p style="margin:0;font-size:11px;color:#94a3b8">
+            Esta liga es personal e intransferible. Si no la solicitaste, ignora este mensaje y avisa
+            a control escolar.
+          </p>
+        </div>
+      </div>`,
+  };
+}
+
 /* --------------------------------- ALTA/BAJA -------------------------------- */
 
 export async function crearEnlaceTutor(params: {
   studentId: number;
   etiqueta?: string;
   dias?: number;
+  email?: string | null;
   actor: { id: number; nombre: string };
 }): Promise<{ ok: true; token: string; enlace: EnlaceTutor } | { ok: false; error: string }> {
   if (!Number.isFinite(params.studentId)) return { ok: false, error: "Alumno inválido." };
@@ -96,6 +137,7 @@ export async function crearEnlaceTutor(params: {
     etiqueta,
     creadoPorId: params.actor.id,
     creadoPorNombre: params.actor.nombre,
+    tutorEmail: params.email ?? null,
   };
 
   try {
